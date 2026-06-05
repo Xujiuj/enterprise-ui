@@ -12,6 +12,28 @@ import { createCustomNameComponent } from '@/utils/createCustomNameComponent';
 
 // 匹配views里面所有的.vue文件
 const modules = import.meta.glob('./../../views/**/*.vue');
+
+const blockedRouteIdentifiers = [
+  'system/client',
+  'system/license',
+  'system/factorlibrary',
+  'system/reporttemplate',
+  'system/tenant',
+  'system/tenantpackage',
+  'enterprise/templateversion',
+  'enterprise/templatefield'
+];
+
+const blockedTitlePatterns = [
+  /客户管理/,
+  /License.*(签发|续费|吊销|生命周期)/,
+  /(签发|续费|吊销).*License/,
+  /厂商.*因子/,
+  /因子.*(版本治理|版本管控|标准库)/,
+  /模板.*(分发|上传|发布|版本控制|管理)/,
+  /(续费|支付)/
+];
+
 export const usePermissionStore = defineStore('permission', () => {
   const routes = ref<RouteRecordRaw[]>([]);
   const addRoutes = ref<RouteRecordRaw[]>([]);
@@ -48,9 +70,10 @@ export const usePermissionStore = defineStore('permission', () => {
   const generateRoutes = async (): Promise<RouteRecordRaw[]> => {
     const res = await getRouters();
     const { data } = res;
-    const sdata = JSON.parse(JSON.stringify(data));
-    const rdata = JSON.parse(JSON.stringify(data));
-    const defaultData = JSON.parse(JSON.stringify(data));
+    const enterpriseRoutes = filterEnterpriseRoutes(JSON.parse(JSON.stringify(data)));
+    const sdata = JSON.parse(JSON.stringify(enterpriseRoutes));
+    const rdata = JSON.parse(JSON.stringify(enterpriseRoutes));
+    const defaultData = JSON.parse(JSON.stringify(enterpriseRoutes));
     const sidebarRoutes = filterAsyncRouter(sdata);
     const rewriteRoutes = filterAsyncRouter(rdata, undefined, true);
     const defaultRoutes = filterAsyncRouter(defaultData);
@@ -65,6 +88,45 @@ export const usePermissionStore = defineStore('permission', () => {
     // 路由name重复检查
     duplicateRouteChecker(asyncRoutes, sidebarRoutes);
     return new Promise<RouteRecordRaw[]>((resolve) => resolve(rewriteRoutes));
+  };
+
+  const filterEnterpriseRoutes = (routeMap: RouteRecordRaw[]): RouteRecordRaw[] => {
+    return routeMap
+      .filter((route) => !isVendorOwnedRoute(route))
+      .map((route) => {
+        if (route.children && route.children.length) {
+          route.children = filterEnterpriseRoutes(route.children);
+        }
+        return route;
+      })
+      .filter((route) => !isEmptyRouteShell(route));
+  };
+
+  const isEmptyRouteShell = (route: RouteRecordRaw): boolean => {
+    const component = String(route.component ?? '');
+    return (component === 'Layout' || component === 'ParentView') && (!route.children || route.children.length === 0);
+  };
+
+  const isVendorOwnedRoute = (route: RouteRecordRaw): boolean => {
+    const routeNames = [route.path, route.name, route.component, route.redirect, route.meta?.activeMenu];
+    const hasBlockedIdentifier = routeNames.some((value) => matchesBlockedIdentifier(value));
+    const title = String(route.meta?.title ?? '');
+
+    return hasBlockedIdentifier || matchesBlockedTitle(title);
+  };
+
+  const matchesBlockedIdentifier = (value: unknown): boolean => {
+    const normalized = String(value ?? '')
+      .replace(/\\/g, '/')
+      .replace(/\/index$/, '')
+      .replace(/^\/+|\/+$/g, '')
+      .toLowerCase();
+
+    return blockedRouteIdentifiers.some((identifier) => normalized === identifier || normalized.endsWith(`/${identifier}`));
+  };
+
+  const matchesBlockedTitle = (title: string): boolean => {
+    return blockedTitlePatterns.some((pattern) => pattern.test(title));
   };
 
   /**
