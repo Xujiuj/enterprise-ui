@@ -20,18 +20,31 @@ const blockedRouteIdentifiers = [
   'system/reporttemplate',
   'system/tenant',
   'system/tenantpackage',
+  'tool/gen',
   'enterprise/templateversion',
   'enterprise/templatefield'
 ];
 
+const blockedRouteIdentifierPatterns = [
+  /(^|\/)(customer|tenant|tenantpackage|tenant-package)(\/|$)/,
+  /(^|\/)(license|license-sign|license-issue|license-renew|license-revoke)(\/|$)/,
+  /(^|\/)(factorlibrary|factor-library|factor-version|factor-governance)(\/|$)/,
+  /(^|\/)(reporttemplate|report-template|templateversion|template-version|templatefield|template-field)(\/|$)/,
+  /(^|\/)(renewal|payment|order)(\/|$)/,
+  /(^|\/)gen(\/|$)/
+];
+
 const blockedTitlePatterns = [
-  /客户管理/,
-  /License.*(签发|续费|吊销|生命周期)/,
-  /(签发|续费|吊销).*License/,
+  /(客户|租户).*管理/,
+  /^License管理$/,
+  /License.*(签发|续费|续签|吊销|撤销|注销|生命周期)/,
+  /(签发|续费|续签|吊销|撤销|注销).*License/,
   /厂商.*因子/,
-  /因子.*(版本治理|版本管控|标准库)/,
+  /因子.*(版本治理|版本管控|标准库|库管理)/,
+  /报表模板管理/,
   /模板.*(分发|上传|发布|版本控制|管理)/,
-  /(续费|支付)/
+  /代码生成/,
+  /(续费|支付|付款|订单)/
 ];
 
 export const usePermissionStore = defineStore('permission', () => {
@@ -122,7 +135,10 @@ export const usePermissionStore = defineStore('permission', () => {
       .replace(/^\/+|\/+$/g, '')
       .toLowerCase();
 
-    return blockedRouteIdentifiers.some((identifier) => normalized === identifier || normalized.endsWith(`/${identifier}`));
+    return (
+      blockedRouteIdentifiers.some((identifier) => normalized === identifier || normalized.endsWith(`/${identifier}`)) ||
+      blockedRouteIdentifierPatterns.some((pattern) => pattern.test(normalized))
+    );
   };
 
   const matchesBlockedTitle = (title: string): boolean => {
