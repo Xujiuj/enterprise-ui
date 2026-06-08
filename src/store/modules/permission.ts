@@ -9,43 +9,12 @@ import ParentView from '@/components/ParentView/index.vue';
 import InnerLink from '@/layout/components/InnerLink/index.vue';
 import { ref } from 'vue';
 import { createCustomNameComponent } from '@/utils/createCustomNameComponent';
+import { filterEnterprisePortalRoutes } from '@/portal/enterprisePortalContract';
+
+export { filterEnterprisePortalRoutes };
 
 // 匹配views里面所有的.vue文件
 const modules = import.meta.glob('./../../views/**/*.vue');
-
-const blockedRouteIdentifiers = [
-  'system/client',
-  'system/license',
-  'system/factorlibrary',
-  'system/reporttemplate',
-  'system/tenant',
-  'system/tenantpackage',
-  'tool/gen',
-  'enterprise/templateversion',
-  'enterprise/templatefield'
-];
-
-const blockedRouteIdentifierPatterns = [
-  /(^|\/)(customer|tenant|tenantpackage|tenant-package)(\/|$)/,
-  /(^|\/)(license|license-sign|license-issue|license-renew|license-revoke)(\/|$)/,
-  /(^|\/)(factorlibrary|factor-library|factor-version|factor-governance)(\/|$)/,
-  /(^|\/)(reporttemplate|report-template|templateversion|template-version|templatefield|template-field)(\/|$)/,
-  /(^|\/)(renewal|payment|order)(\/|$)/,
-  /(^|\/)gen(\/|$)/
-];
-
-const blockedTitlePatterns = [
-  /(客户|租户).*管理/,
-  /^License管理$/,
-  /License.*(签发|续费|续签|吊销|撤销|注销|生命周期)/,
-  /(签发|续费|续签|吊销|撤销|注销).*License/,
-  /厂商.*因子/,
-  /因子.*(版本治理|版本管控|标准库|库管理)/,
-  /报表模板管理/,
-  /模板.*(分发|上传|发布|版本控制|管理)/,
-  /代码生成/,
-  /(续费|支付|付款|订单)/
-];
 
 export const usePermissionStore = defineStore('permission', () => {
   const routes = ref<RouteRecordRaw[]>([]);
@@ -83,7 +52,7 @@ export const usePermissionStore = defineStore('permission', () => {
   const generateRoutes = async (): Promise<RouteRecordRaw[]> => {
     const res = await getRouters();
     const { data } = res;
-    const enterpriseRoutes = filterEnterpriseRoutes(JSON.parse(JSON.stringify(data)));
+    const enterpriseRoutes = filterEnterprisePortalRoutes(JSON.parse(JSON.stringify(data)));
     const sdata = JSON.parse(JSON.stringify(enterpriseRoutes));
     const rdata = JSON.parse(JSON.stringify(enterpriseRoutes));
     const defaultData = JSON.parse(JSON.stringify(enterpriseRoutes));
@@ -101,48 +70,6 @@ export const usePermissionStore = defineStore('permission', () => {
     // 路由name重复检查
     duplicateRouteChecker(asyncRoutes, sidebarRoutes);
     return new Promise<RouteRecordRaw[]>((resolve) => resolve(rewriteRoutes));
-  };
-
-  const filterEnterpriseRoutes = (routeMap: RouteRecordRaw[]): RouteRecordRaw[] => {
-    return routeMap
-      .filter((route) => !isVendorOwnedRoute(route))
-      .map((route) => {
-        if (route.children && route.children.length) {
-          route.children = filterEnterpriseRoutes(route.children);
-        }
-        return route;
-      })
-      .filter((route) => !isEmptyRouteShell(route));
-  };
-
-  const isEmptyRouteShell = (route: RouteRecordRaw): boolean => {
-    const component = String(route.component ?? '');
-    return (component === 'Layout' || component === 'ParentView') && (!route.children || route.children.length === 0);
-  };
-
-  const isVendorOwnedRoute = (route: RouteRecordRaw): boolean => {
-    const routeNames = [route.path, route.name, route.component, route.redirect, route.meta?.activeMenu];
-    const hasBlockedIdentifier = routeNames.some((value) => matchesBlockedIdentifier(value));
-    const title = String(route.meta?.title ?? '');
-
-    return hasBlockedIdentifier || matchesBlockedTitle(title);
-  };
-
-  const matchesBlockedIdentifier = (value: unknown): boolean => {
-    const normalized = String(value ?? '')
-      .replace(/\\/g, '/')
-      .replace(/\/index$/, '')
-      .replace(/^\/+|\/+$/g, '')
-      .toLowerCase();
-
-    return (
-      blockedRouteIdentifiers.some((identifier) => normalized === identifier || normalized.endsWith(`/${identifier}`)) ||
-      blockedRouteIdentifierPatterns.some((pattern) => pattern.test(normalized))
-    );
-  };
-
-  const matchesBlockedTitle = (title: string): boolean => {
-    return blockedTitlePatterns.some((pattern) => pattern.test(title));
   };
 
   /**

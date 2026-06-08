@@ -9,8 +9,8 @@ import {
 
 export const ENTERPRISE_LICENSE_IMPORT_ENDPOINTS = {
   import: '/enterprise/license-import/import',
-  currentState: '/enterprise/license-import/current',
-  gateStatus: '/enterprise/license-import/gate-status'
+  currentState: '/enterprise/license-state/current',
+  gateStatus: '/enterprise/license-gate/current'
 } as const;
 
 export const importEnterpriseLicense = (data: EnterpriseLicenseImportRequest): AxiosPromise<EnterpriseLicenseImportResult> => {
@@ -28,9 +28,10 @@ export const getCurrentLicenseState = (): AxiosPromise<EnterpriseLicenseCurrentS
   });
 };
 
-export const getLicenseGateStatus = (): AxiosPromise<EnterpriseLicenseGateStatus> => {
+export const getLicenseGateStatus = (expectedInstallId: string): AxiosPromise<EnterpriseLicenseGateStatus> => {
   return request({
     url: ENTERPRISE_LICENSE_IMPORT_ENDPOINTS.gateStatus,
-    method: 'get'
+    method: 'get',
+    params: { expectedInstallId }
   });
 };

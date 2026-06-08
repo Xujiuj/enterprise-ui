@@ -12,7 +12,7 @@
         <settings ref="settingRef" />
       </el-scrollbar> -->
       <div :class="{ 'fixed-header': fixedHeader }">
-        <navbar ref="navbarRef" @set-layout="setLayout" />
+        <navbar @set-layout="setLayout" />
         <tags-view v-if="needTagsView" />
       </div>
       <app-main />
@@ -66,14 +66,7 @@ watchEffect(() => {
   }
 });
 
-const navbarRef = ref<InstanceType<typeof Navbar>>();
 const settingRef = ref<InstanceType<typeof Settings>>();
-
-onMounted(() => {
-  nextTick(() => {
-    navbarRef.value?.initTenantList();
-  });
-});
 
 onMounted(() => {
   const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -127,7 +120,7 @@ const setLayout = () => {
   width: calc(100% - #{$base-sidebar-width});
   transition: width 0.28s;
   background: $fixed-header-bg;
-  box-shadow: 0 2px 8px rgba(0, 21, 41, 0.10);
+  box-shadow: 0 2px 8px rgba(0, 21, 41, 0.1);
 }
 
 .hideSidebar .fixed-header {

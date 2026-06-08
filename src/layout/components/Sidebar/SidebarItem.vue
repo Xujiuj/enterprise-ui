@@ -3,9 +3,10 @@
     <template v-if="hasOneShowingChild(item, item.children) && (!onlyOneChild.children || onlyOneChild.noShowingChildren) && !item.alwaysShow">
       <app-link v-if="onlyOneChild.meta" :to="resolvePath(onlyOneChild.path, onlyOneChild.query)">
         <el-menu-item :index="resolvePath(onlyOneChild.path)" :class="{ 'submenu-title-noDropdown': !isNest }">
-          <svg-icon :icon-class="onlyOneChild.meta.icon || (item.meta && item.meta.icon)" />
+          <svg-icon v-if="getRouteIcon(onlyOneChild)" class="menu-icon" :icon-class="getRouteIcon(onlyOneChild)" />
+          <span v-else class="menu-icon menu-icon-placeholder"></span>
           <template #title>
-            <span class="menu-title" :title="hasTitle(onlyOneChild.meta.title)">{{ onlyOneChild.meta.title }}</span>
+            <span class="menu-title" :title="hasTitle(getRouteTitle(onlyOneChild))">{{ getRouteTitle(onlyOneChild) }}</span>
           </template>
         </el-menu-item>
       </app-link>
@@ -13,8 +14,9 @@
 
     <el-sub-menu v-else ref="subMenu" :index="resolvePath(item.path)" teleported>
       <template v-if="item.meta" #title>
-        <svg-icon :icon-class="item.meta ? item.meta.icon : ''" />
-        <span class="menu-title" :title="hasTitle(item.meta?.title)">{{ item.meta?.title }}</span>
+        <svg-icon v-if="getRouteIcon(item)" class="menu-icon" :icon-class="getRouteIcon(item)" />
+        <span v-else class="menu-icon menu-icon-placeholder"></span>
+        <span class="menu-title" :title="hasTitle(getRouteTitle(item))">{{ getRouteTitle(item) }}</span>
       </template>
 
       <sidebar-item
@@ -76,6 +78,18 @@ const hasOneShowingChild = (parent: RouteRecordRaw, children?: RouteRecordRaw[])
   }
 
   return false;
+};
+
+const getRouteIcon = (route: RouteRecordRaw): string => {
+  return String(route.meta?.icon || itemIconFallback(route) || '');
+};
+
+const itemIconFallback = (route: RouteRecordRaw): string => {
+  return route === onlyOneChild.value ? String(props.item.meta?.icon || '') : '';
+};
+
+const getRouteTitle = (route: RouteRecordRaw): string => {
+  return String(route.meta?.title || '');
 };
 
 const resolvePath = (routePath: string, routeQuery?: string): any => {

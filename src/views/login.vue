@@ -1,11 +1,10 @@
 <template>
   <div class="login-page auth-page">
-    <div class="login-copy">
-      <div>
-        <div class="login-brand"><span class="logo-mark"></span>峰行智成集团碳数据平台</div>
-        <span class="tag ok">企业端</span>
-      </div>
+    <div class="login-brand">
+      <span class="logo-mark"></span>
+      <span>企业碳数据管理平台</span>
     </div>
+    <span class="portal-tag">企业端</span>
 
     <div class="login-box">
       <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-card">
@@ -36,19 +35,15 @@
           </div>
         </el-form-item>
 
-        <div class="field">
-          <label class="field-label">License 文件</label>
-          <label class="file-picker compact">
-            <input type="file" accept=".lic" @change="handleLicenseFileChange" />
-            <span>选择 .lic 文件</span>
-            <em>{{ licenseFileName || '未选择文件' }}</em>
-          </label>
-        </div>
-
         <el-button :loading="loading" type="primary" class="btn primary login-submit" @click.prevent="handleLogin">
           <span v-if="!loading">登录</span>
           <span v-else>校验中...</span>
         </el-button>
+
+        <div class="login-support">
+          <span>企业私有化部署</span>
+          <span>授权到期请联系本企业系统管理员</span>
+        </div>
       </el-form>
     </div>
   </div>
@@ -67,8 +62,8 @@ const { t } = useI18n();
 
 const loginForm = ref<LoginData>({
   tenantId: '000000',
-  username: 'zhangxiao',
-  password: '123456',
+  username: 'admin',
+  password: 'admin123',
   rememberMe: false,
   code: '',
   uuid: ''
@@ -85,7 +80,6 @@ const loading = ref(false);
 const captchaEnabled = ref(true);
 const redirect = ref('/');
 const loginRef = ref<ElFormInstance>();
-const licenseFileName = ref('');
 
 watch(
   () => router.currentRoute.value,
@@ -130,11 +124,6 @@ const getCode = async () => {
   }
 };
 
-const handleLicenseFileChange = (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  licenseFileName.value = input.files?.[0]?.name || '';
-};
-
 onMounted(() => {
   getCode();
 });
@@ -145,39 +134,31 @@ onMounted(() => {
   position: relative;
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 48px;
   background:
-    linear-gradient(90deg, rgba(6, 21, 38, 0.56), rgba(6, 21, 38, 0.16) 48%, rgba(255, 255, 255, 0.08)),
+    linear-gradient(90deg, rgba(16, 40, 32, 0.74), rgba(24, 52, 47, 0.42) 48%, rgba(255, 255, 255, 0.08)),
     url('../assets/images/login-carbon-bg.png') center / cover no-repeat;
 }
 
-.login-copy {
+.login-brand,
+.portal-tag {
   position: fixed;
-  inset: 0;
-  pointer-events: none;
-}
-
-.login-copy > div {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  top: 48px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  color: #fff;
+  pointer-events: auto;
 }
 
 .login-brand {
-  position: absolute;
-  top: 48px;
   left: 48px;
-  display: inline-flex;
-  align-items: center;
   gap: 10px;
-  color: #fff;
   font-size: 15px;
   font-weight: 700;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  pointer-events: auto;
 }
 
 .logo-mark {
@@ -188,28 +169,21 @@ onMounted(() => {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
-.tag {
-  position: absolute;
-  top: 48px;
+.portal-tag {
   right: 48px;
   height: 32px;
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.2);
-  color: #fff;
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.05em;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(12px);
-  pointer-events: auto;
 }
 
-.tag::before {
+.portal-tag::before {
   content: '';
   width: 6px;
   height: 6px;
@@ -225,18 +199,17 @@ onMounted(() => {
 
 .login-card {
   width: 100%;
-  padding: 36px 32px;
+  padding: 36px 32px 26px;
   border: 1px solid rgba(255, 255, 255, 0.48);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.94);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 28px 70px rgba(8, 24, 42, 0.28);
   backdrop-filter: blur(16px);
 }
 
 .login-card h2 {
   margin: 0 0 20px;
-  color: #1f2937;
-  font-family: KaiTi, '楷体', serif;
+  color: var(--carbon-ink);
   font-size: 20px;
   font-weight: 700;
   text-align: center;
@@ -246,18 +219,17 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
-.field-label,
+.login-card :deep(.el-form-item) {
+  display: block;
+}
+
 .login-card :deep(.el-form-item__label) {
   justify-content: flex-start;
   height: auto;
   margin-bottom: 6px;
-  color: #4b5563;
+  color: var(--carbon-text);
   font-weight: 500;
   line-height: 1.5;
-}
-
-.login-card :deep(.el-form-item) {
-  display: block;
 }
 
 .login-card :deep(.el-input__wrapper) {
@@ -269,7 +241,7 @@ onMounted(() => {
 
 .login-card :deep(.el-input__wrapper.is-focus) {
   box-shadow:
-    0 0 0 1px #1677ff inset,
+    0 0 0 1px var(--carbon-primary) inset,
     0 0 0 3px rgba(22, 119, 255, 0.12);
 }
 
@@ -282,7 +254,7 @@ onMounted(() => {
 .captcha-img {
   height: 36px;
   border: 1px solid #b9d9ca;
-  border-radius: 8px;
+  border-radius: 6px;
   background:
     linear-gradient(135deg, rgba(31, 143, 106, 0.14), rgba(22, 119, 255, 0.1)),
     repeating-linear-gradient(-35deg, transparent 0 8px, rgba(31, 143, 106, 0.1) 8px 10px), #f7fbf9;
@@ -300,46 +272,22 @@ onMounted(() => {
   object-fit: cover;
 }
 
-.file-picker {
-  width: 100%;
-  min-height: 66px;
-  padding: 10px 12px;
-  border: 1px dashed rgba(31, 143, 106, 0.36);
-  border-radius: 8px;
-  background: linear-gradient(180deg, #fbfdfc, #f4faf7);
-  display: grid;
-  gap: 6px;
-  align-content: center;
-  cursor: pointer;
-}
-
-.file-picker:hover {
-  border-color: #1f8f6a;
-  background: #f1fbf6;
-  box-shadow: 0 8px 24px rgba(31, 143, 106, 0.1);
-}
-
-.file-picker input {
-  display: none;
-}
-
-.file-picker span {
-  color: #1f2937;
-  font-weight: 700;
-}
-
-.file-picker em {
-  color: #8a94a6;
-  font-size: 12px;
-  font-style: normal;
-}
-
 .login-submit {
   width: 100%;
   height: 40px;
   margin-top: 16px;
   border-radius: 6px;
   font-weight: 700;
+}
+
+.login-support {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 12px;
+  margin-top: 18px;
+  color: var(--carbon-muted);
+  font-size: 12px;
 }
 
 @media (max-width: 720px) {
@@ -352,7 +300,7 @@ onMounted(() => {
     top: 24px;
   }
 
-  .tag {
+  .portal-tag {
     right: 24px;
     top: 24px;
   }

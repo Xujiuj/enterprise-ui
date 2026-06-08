@@ -2,36 +2,36 @@ export type LicenseGateDenialReason = 'NO_VALID_LICENSE' | 'CLOCK_ROLLBACK' | 'E
 
 export interface EnterpriseLicenseImportRequest {
   licenseContent: string;
+  expectedInstallId: string;
+}
+
+export interface EnterpriseLicenseState {
+  id?: string | number;
+  licenseId?: string | number;
+  customerId?: string | number;
+  installId?: string | number;
+  keyId?: string;
+  algorithm?: string;
+  schemaVersion?: string;
+  validFrom?: string;
+  validTo?: string;
+  lastVerifiedTime?: string;
+  maxObservedTime?: string;
+  licenseStatus?: string;
 }
 
 export interface EnterpriseLicenseImportResult {
-  licenseId?: string | number;
+  valid: boolean;
   status?: string;
-  validFrom?: string;
-  validTo?: string;
-  edition?: string;
-  features?: string[] | Record<string, unknown>;
-  importTime?: string;
   message?: string;
+  licenseState?: EnterpriseLicenseState;
 }
 
-export interface EnterpriseLicenseCurrentState {
-  licenseId?: string | number;
-  companyName?: string;
-  edition?: string;
-  status?: string;
-  validFrom?: string;
-  validTo?: string;
-  maxUsers?: number;
-  installId?: string | number;
-  lastCheckTime?: string;
-  features?: string[] | Record<string, unknown>;
-}
+export type EnterpriseLicenseCurrentState = EnterpriseLicenseState;
 
 export interface EnterpriseLicenseGateStatus {
-  allowed: boolean;
+  decision: 'ALLOW' | 'DENY' | string;
   reason?: LicenseGateDenialReason;
   message?: string;
-  checkedAt?: string;
-  license?: EnterpriseLicenseCurrentState;
+  licenseState?: EnterpriseLicenseState;
 }
