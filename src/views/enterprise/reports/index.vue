@@ -25,7 +25,10 @@
       <el-col :xs="24" :lg="14">
         <el-card shadow="never">
           <template #header>
-            <span>企业本地报表入口</span>
+            <div class="card-head compact">
+              <span>企业本地报表入口</span>
+              <el-button link type="primary" icon="Refresh" :loading="templateLoading" @click="loadTemplates">刷新模板</el-button>
+            </div>
           </template>
           <el-alert type="info" show-icon :closable="false" class="mb-4">
             <template #title>Power BI 只读账号连接企业本地 rpt 视图，不连接厂商库。</template>
@@ -40,6 +43,19 @@
               </template>
             </el-table-column>
           </el-table>
+
+          <el-divider />
+          <el-table v-loading="templateLoading" :data="templateFiles" row-key="id">
+            <el-table-column prop="templateCode" label="模板编码" width="150" />
+            <el-table-column prop="templateName" label="模板名称" min-width="180" show-overflow-tooltip />
+            <el-table-column prop="templateType" label="类型" width="110" />
+            <el-table-column prop="fileName" label="文件名" min-width="190" show-overflow-tooltip />
+            <el-table-column label="状态" width="90">
+              <template #default="scope">
+                <el-tag :type="scope.row.enabledFlag ? 'success' : 'info'">{{ scope.row.enabledFlag ? '启用' : '停用' }}</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
         </el-card>
       </el-col>
     </el-row>
@@ -51,10 +67,14 @@ import { computed, onMounted, ref } from 'vue';
 import { getEnterpriseReportGate, type EnterpriseReportGateStatus } from '@/api/enterprise/reports';
 import { getCurrentLicenseState } from '@/api/enterprise/licenseImport';
 import type { EnterpriseLicenseCurrentState } from '@/api/enterprise/licenseImport/types';
+import { listReportTemplateFile } from '@/api/enterprise/reportTemplateFile';
+import type { ReportTemplateFileVO } from '@/api/enterprise/reportTemplateFile/types';
 
 const loading = ref(false);
+const templateLoading = ref(false);
 const gateStatus = ref<EnterpriseReportGateStatus>();
 const currentState = ref<EnterpriseLicenseCurrentState>();
+const templateFiles = ref<ReportTemplateFileVO[]>([]);
 
 const reportEntries = [
   {
@@ -75,7 +95,7 @@ const gateLicenseStatus = computed(() => gateLicenseState.value?.licenseStatus |
 const gateExpiresAt = computed(() => gateLicenseState.value?.expiresAt || gateLicenseState.value?.validTo || '-');
 const gateReason = computed(() => gateStatus.value?.message || gateStatus.value?.reason || '后端未返回可用的 report-gate 授权状态。');
 
-const unwrapResponse = <T>(response: unknown): T => {
+const unwrapResponse = <T,>(response: unknown): T => {
   const payload = response as { data?: T };
   return payload.data ?? (response as T);
 };
@@ -97,8 +117,19 @@ const loadGate = async () => {
   }
 };
 
+const loadTemplates = async () => {
+  templateLoading.value = true;
+  try {
+    const res = await listReportTemplateFile({ enabledFlag: true, pageNum: 1, pageSize: 20 });
+    templateFiles.value = res.rows ?? res.data ?? [];
+  } finally {
+    templateLoading.value = false;
+  }
+};
+
 onMounted(() => {
   loadGate();
+  loadTemplates();
 });
 </script>
 

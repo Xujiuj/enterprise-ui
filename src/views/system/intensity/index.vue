@@ -36,7 +36,6 @@
           <el-input v-model="queryParams.trendDirection" placeholder="上升/下降/持平" clearable @keyup.enter="handleQuery" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -99,7 +98,6 @@
       :title="dialog.title"
       size="600px"
       append-to-body
-      :close-on-click-modal="false"
     >
       <el-form ref="intensityFormRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="强度指标编码" prop="intensityCode">
@@ -157,6 +155,7 @@
 import { listIntensity, getIntensity, delIntensity, addIntensity, updateIntensity } from '@/api/system/intensity';
 import { IntensityVO, IntensityQuery, IntensityForm } from '@/api/system/intensity/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const intensityList = ref<IntensityVO[]>([]);
@@ -316,4 +315,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

@@ -28,7 +28,8 @@
             </el-form-item>
 
             <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-form>
@@ -197,6 +198,7 @@ import { roleMenuTreeselect, treeselect as menuTreeselect } from '@/api/system/m
 import { RoleVO, RoleForm, RoleQuery, DeptTreeOption } from '@/api/system/role/types';
 import { MenuTreeOption, RoleMenuTree } from '@/api/system/menu/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_normal_disable } = toRefs<any>(proxy?.useDict('sys_normal_disable'));
@@ -500,4 +502,6 @@ const cancelDataScope = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery(), [dateRange]);
 </script>

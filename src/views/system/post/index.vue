@@ -55,7 +55,8 @@
                   </el-select>
                 </el-form-item>
                 <el-form-item>
-                  <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+                  <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
                   <el-button icon="Refresh" @click="resetQuery">重置</el-button>
                 </el-form-item>
               </el-form>
@@ -174,6 +175,7 @@ import { listPost, addPost, delPost, getPost, updatePost, deptTreeSelect } from 
 import { PostForm, PostQuery, PostVO } from '@/api/system/post/types';
 import { DeptTreeVO, DeptVO } from '@/api/system/dept/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_normal_disable } = toRefs<any>(proxy?.useDict('sys_normal_disable'));
 
@@ -358,4 +360,6 @@ onMounted(() => {
   getTreeSelect(); // 初始化部门数据
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

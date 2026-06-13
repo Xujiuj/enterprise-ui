@@ -36,7 +36,6 @@
           <el-input v-model="queryParams.submissionStatus" placeholder="0未提交 1已提交 2已退回 3已审核" clearable @keyup.enter="handleQuery" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -105,7 +104,6 @@
       :title="dialog.title"
       size="600px"
       append-to-body
-      :close-on-click-modal="false"
     >
       <el-form ref="submissionTrackingFormRef" :model="form" :rules="rules" label-width="120px">
         <el-form-item label="模块名称" prop="moduleName">
@@ -174,6 +172,7 @@
 import { listSubmissionTracking, getSubmissionTracking, delSubmissionTracking, addSubmissionTracking, updateSubmissionTracking } from '@/api/system/submissionTracking';
 import { SubmissionTrackingVO, SubmissionTrackingQuery, SubmissionTrackingForm } from '@/api/system/submissionTracking/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const submissionTrackingList = ref<SubmissionTrackingVO[]>([]);
@@ -333,4 +332,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

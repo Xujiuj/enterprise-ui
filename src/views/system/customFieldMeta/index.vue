@@ -36,7 +36,6 @@
           <el-input v-model="queryParams.isRequired" placeholder="0否 1是" clearable @keyup.enter="handleQuery" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -91,7 +90,6 @@
       :title="dialog.title"
       size="600px"
       append-to-body
-      :close-on-click-modal="false"
     >
       <el-form ref="customFieldMetaFormRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="模块名称" prop="moduleName">
@@ -144,6 +142,7 @@
 import { listCustomFieldMeta, getCustomFieldMeta, delCustomFieldMeta, addCustomFieldMeta, updateCustomFieldMeta } from '@/api/system/customFieldMeta';
 import { CustomFieldMetaVO, CustomFieldMetaQuery, CustomFieldMetaForm } from '@/api/system/customFieldMeta/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const customFieldMetaList = ref<CustomFieldMetaVO[]>([]);
@@ -302,4 +301,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

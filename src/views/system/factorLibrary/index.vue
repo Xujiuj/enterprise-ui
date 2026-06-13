@@ -36,7 +36,6 @@
           <el-input v-model="queryParams.dataSource" placeholder="IPCC/国家发改委/国际能源署" clearable @keyup.enter="handleQuery" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -98,7 +97,6 @@
       :title="dialog.title"
       size="600px"
       append-to-body
-      :close-on-click-modal="false"
     >
       <el-form ref="factorLibraryFormRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="因子编码" prop="factorCode">
@@ -175,6 +173,7 @@
 import { listFactorLibrary, getFactorLibrary, delFactorLibrary, addFactorLibrary, updateFactorLibrary } from '@/api/system/factorLibrary';
 import { FactorLibraryVO, FactorLibraryQuery, FactorLibraryForm } from '@/api/system/factorLibrary/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const factorLibraryList = ref<FactorLibraryVO[]>([]);
@@ -339,4 +338,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

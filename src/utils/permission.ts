@@ -34,10 +34,10 @@ export const checkRole = (value: any): boolean => {
   if (value && value instanceof Array && value.length > 0) {
     const roles = useUserStore().roles;
     const permissionRoles = value;
-    const super_admin = 'admin';
+    const superAdminRoles = ['superadmin', 'admin'];
 
     const hasRole = roles.some((role) => {
-      return super_admin === role || permissionRoles.includes(role);
+      return superAdminRoles.includes(role) || permissionRoles.includes(role);
     });
 
     if (!hasRole) {

@@ -27,7 +27,8 @@
               ></el-date-picker>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-form>
@@ -118,6 +119,7 @@ import { TableQuery, TableVO } from '@/api/tool/gen/types';
 import router from '@/router';
 import ImportTable from './importTable.vue';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const route = useRoute();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
@@ -247,6 +249,8 @@ onMounted(() => {
   getList();
   getDataNameList();
 });
+
+useAutoQuery(queryParams, () => handleQuery(), [dateRange]);
 </script>
 
 <style lang="scss" scoped>

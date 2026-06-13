@@ -36,7 +36,6 @@
           <el-input v-model="queryParams.responsibleDept" placeholder="请输入负责部门" clearable @keyup.enter="handleQuery" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -94,7 +93,6 @@
       :title="dialog.title"
       size="600px"
       append-to-body
-      :close-on-click-modal="false"
     >
       <el-form ref="emissionSourceFormRef" :model="form" :rules="rules" label-width="90px">
         <el-form-item label="排放源编码" prop="sourceCode">
@@ -174,6 +172,7 @@
 import { listEmissionSource, getEmissionSource, delEmissionSource, addEmissionSource, updateEmissionSource } from '@/api/system/emissionSource';
 import { EmissionSourceVO, EmissionSourceQuery, EmissionSourceForm } from '@/api/system/emissionSource/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const emissionSourceList = ref<EmissionSourceVO[]>([]);
@@ -336,4 +335,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

@@ -14,7 +14,8 @@
         <el-input v-model="queryParams.tableComment" placeholder="请输入表描述" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+        <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
@@ -41,6 +42,7 @@
 import { listDbTable, importTable, getDataNames } from '@/api/tool/gen';
 import { DbTableQuery, DbTableVO } from '@/api/tool/gen/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const total = ref(0);
 const visible = ref(false);
 const tables = ref<Array<string>>([]);
@@ -119,4 +121,6 @@ const handleImportTable = async () => {
 defineExpose({
   show
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

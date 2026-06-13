@@ -9,7 +9,8 @@
           <el-input v-model="queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="handleQuery" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
@@ -48,6 +49,7 @@ import { authUserSelectAll, unallocatedUserList } from '@/api/system/role';
 import { UserVO } from '@/api/system/user/types';
 import { UserQuery } from '@/api/system/user/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const props = defineProps({
   roleId: {
     type: [Number, String],
@@ -127,4 +129,6 @@ const handleSelectUser = async () => {
 defineExpose({
   show
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

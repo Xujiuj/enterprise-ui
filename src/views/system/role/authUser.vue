@@ -10,7 +10,8 @@
             <el-input v-model="queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
             <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-form>
@@ -71,6 +72,7 @@ import { UserVO } from '@/api/system/user/types';
 import SelectUser from './selectUser.vue';
 import { RouteLocationNormalized } from 'vue-router';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const route = useRoute();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_normal_disable } = toRefs<any>(proxy?.useDict('sys_normal_disable'));
@@ -155,4 +157,6 @@ const cancelAuthUserAll = async () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

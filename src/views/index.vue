@@ -2,126 +2,220 @@
   <div class="app-container enterprise-home">
     <section class="page-head">
       <div>
-        <h1>企业本地工作台</h1>
-        <p>聚合 License 状态、01-05 录入进度、因子同步与报表模板下载待办。</p>
+        <h1>工作台</h1>
+        <p>企业填报流程与本期数据验证概览。</p>
+      </div>
+      <div class="btns">
+        <button type="button" class="btn primary" @click="openBusiness('/activity-data/emission-activity-entry')">去录入</button>
+        <button type="button" class="btn" @click="openBusiness('/data-management/report-template-download')">下载报表模板</button>
       </div>
     </section>
 
-    <section class="status-grid">
-      <div v-for="item in statusCards" :key="item.label" class="status-card">
-        <span>{{ item.label }}</span>
-        <strong>{{ item.value }}</strong>
-        <em :class="item.tone">{{ item.note }}</em>
-      </div>
-    </section>
-
-    <section class="action-grid">
-      <button v-for="item in businessActions" :key="item.path" type="button" class="action-card" @click="openBusiness(item.path)">
-        <span class="action-icon">{{ item.step }}</span>
-        <strong>{{ item.title }}</strong>
-        <em>{{ item.detail }}</em>
-      </button>
-    </section>
-
-    <section class="panel">
-      <div class="toolbar">
-        <b>01-05 录入进度</b>
-        <span class="hint">按企业本地流程展示，不包含厂商客户、签发、分发或续费运营入口。</span>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>环节</th>
-            <th>当前状态</th>
-            <th>负责人</th>
-            <th>更新时间</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in workflowItems" :key="item.name">
-            <td>{{ item.name }}</td>
-            <td><span class="tag" :class="item.tone">{{ item.status }}</span></td>
-            <td>{{ item.owner }}</td>
-            <td>{{ item.updatedAt }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="home-columns">
-      <div class="panel">
-        <div class="toolbar">
-          <b>因子同步</b>
-          <span class="hint">只读查询企业可用因子。</span>
+    <section v-loading="loading" class="dash-stats">
+      <div v-for="item in statusCards" :key="item.label" class="dash-stat">
+        <div class="label">{{ item.label }}</div>
+        <div class="value" :class="item.valueClass">{{ item.value || '--' }}</div>
+        <div class="sub">
+          {{ item.note || '--' }}
+          <span v-if="item.badge" class="kpi-mini" :class="item.badgeTone">{{ item.badge }}</span>
         </div>
-        <div class="todo-list">
-          <div v-for="item in factorTasks" :key="item.title" class="todo-row">
-            <span>{{ item.title }}</span>
-            <em>{{ item.detail }}</em>
+      </div>
+    </section>
+
+    <section class="step-flow" aria-label="企业填报流程">
+      <template v-for="(item, index) in businessActions" :key="item.path">
+        <button type="button" class="step-card" @click="openBusiness(item.path)">
+          <span class="step-num">{{ item.step }}</span>
+          <span class="step-name">{{ item.title }}</span>
+          <span class="step-desc">{{ item.detail }}</span>
+        </button>
+        <span v-if="index < businessActions.length - 1" class="step-arrow">→</span>
+      </template>
+    </section>
+
+    <section class="workbench-grid">
+      <div class="panel workbench-main">
+        <div class="toolbar">
+          <b>本期填报与核算闭环</b>
+          <span class="hint">{{ currentPeriod }} · 从活动数据到报表库</span>
+        </div>
+        <div v-if="cycleStages.length || scopeEmissions.length" class="carbon-cycle-chart">
+          <div v-for="stage in cycleStages" :key="stage.label" class="cycle-stage" :class="stage.tone">
+            <strong>{{ stage.value || '--' }}</strong>
+            <span>{{ stage.label }}</span>
+            <em>{{ stage.detail || '--' }}</em>
+          </div>
+          <div v-if="scopeEmissions.length" class="scope-bars">
+            <div v-for="bar in scopeBars" :key="bar.label">
+              <b>{{ bar.label }}</b>
+              <span><i :style="{ width: bar.width }"></i></span>
+              <em>{{ bar.value }}</em>
+            </div>
           </div>
         </div>
+        <el-empty v-else description="暂无本期填报与核算数据" :image-size="72" />
+      </div>
+
+      <div class="panel notice-panel">
+        <div class="toolbar">
+          <b>系统通知</b>
+        </div>
+        <div v-if="systemNotices.length" class="notice-list">
+          <button
+            v-for="notice in systemNotices"
+            :key="notice.noticeId"
+            type="button"
+            class="notice-item"
+            :class="{ active: notice.status === '0' }"
+            @click="openNotice(notice)"
+          >
+            <b>{{ notice.noticeTitle || '未命名公告' }}</b>
+            <span>{{ plainText(notice.noticeContent || notice.remark || '') || '--' }}</span>
+          </button>
+        </div>
+        <el-empty v-else description="暂无系统通知" :image-size="72" />
+      </div>
+    </section>
+
+    <section class="dash-row">
+      <div class="panel">
+        <div class="toolbar">
+          <b>待办事项</b>
+        </div>
+        <table v-if="todoItems.length">
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>内容</th>
+              <th>状态</th>
+              <th class="w100">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in todoItems" :key="item.type + item.content">
+              <td>{{ item.type }}</td>
+              <td>{{ item.content || '--' }}</td>
+              <td><span class="tag" :class="item.tone">{{ item.status || '--' }}</span></td>
+              <td>
+                <button v-if="item.path" type="button" class="btn text" @click="openBusiness(item.path)">{{ item.action || '查看' }}</button>
+                <span v-else>--</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <el-empty v-else description="暂无待办事项" :image-size="72" />
       </div>
 
       <div class="panel">
         <div class="toolbar">
-          <b>报表模板下载</b>
-          <span class="hint">下载已发布模板。</span>
+          <b>最近动态</b>
         </div>
-        <div class="todo-list">
-          <div v-for="item in reportTasks" :key="item.title" class="todo-row">
-            <span>{{ item.title }}</span>
-            <em>{{ item.detail }}</em>
+        <div v-if="recentActivities.length" class="timeline">
+          <div v-for="item in recentActivities" :key="item.title + item.time" class="tl-item" :class="item.tone">
+            <b>{{ item.title }}</b>
+            <span>{{ item.time || '--' }}</span>
+            <p v-if="item.detail">{{ item.detail }}</p>
           </div>
         </div>
+        <el-empty v-else description="暂无最近动态" :image-size="72" />
       </div>
     </section>
+
+    <el-dialog v-model="noticeDialog.visible" :title="noticeDialog.notice?.noticeTitle || '公告详情'" width="720px" append-to-body>
+      <div class="notice-detail">
+        <div class="notice-meta">
+          <span>{{ noticeDialog.notice?.createTime || '--' }}</span>
+        </div>
+        <div class="notice-content" v-html="noticeDialog.notice?.noticeContent || noticeDialog.notice?.remark || '暂无公告内容'"></div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Index" lang="ts">
-const router = useRouter();
+import { computed, onMounted, reactive, ref } from 'vue';
+import { getWorkbenchOverview } from '@/api/enterprise/workbench';
+import type {
+  WorkbenchCycleStage,
+  WorkbenchMetricCard,
+  WorkbenchOverview,
+  WorkbenchRecentActivity,
+  WorkbenchScopeEmission,
+  WorkbenchSystemNotice,
+  WorkbenchTodoItem
+} from '@/api/enterprise/workbench/types';
 
-const statusCards = [
-  { label: 'License 状态', value: '有效', note: '剩余 86 天', tone: 'ok' },
-  { label: '录入完成率', value: '68%', note: '3 项待确认', tone: 'warn' },
-  { label: '因子同步', value: '今日 09:20', note: '最新', tone: 'ok' },
-  { label: '报表模板', value: '12 个', note: '可下载', tone: 'info' }
+const router = useRouter();
+const loading = ref(false);
+const overview = ref<WorkbenchOverview>({});
+const noticeDialog = reactive<{ visible: boolean; notice?: WorkbenchSystemNotice }>({
+  visible: false
+});
+
+const emptyCards: WorkbenchMetricCard[] = [
+  { label: '授权状态', value: '--', note: '--' },
+  { label: '当前期间', value: '--', note: '--' },
+  { label: '碳排放总量', value: '--', note: '--' },
+  { label: '因子库版本', value: '--', note: '--' }
 ];
+
+const statusCards = computed<WorkbenchMetricCard[]>(() => {
+  const cards = overview.value.statusCards || [];
+  return cards.length ? cards : emptyCards;
+});
+const currentPeriod = computed(() => overview.value.currentPeriod || '--');
+const cycleStages = computed<WorkbenchCycleStage[]>(() => overview.value.cycleStages || []);
+const scopeEmissions = computed<WorkbenchScopeEmission[]>(() => overview.value.scopeEmissions || []);
+const todoItems = computed<WorkbenchTodoItem[]>(() => overview.value.todoItems || []);
+const recentActivities = computed<WorkbenchRecentActivity[]>(() => overview.value.recentActivities || []);
+const systemNotices = computed<WorkbenchSystemNotice[]>(() => overview.value.systemNotices || []);
+
+const scopeBars = computed(() =>
+  scopeEmissions.value.map((item) => ({
+    label: item.label,
+    width: `${Math.max(0, Math.min(Number(item.percent || 0), 100))}%`,
+    value: item.value === undefined || item.value === null ? '--' : `${formatNumber(item.value)} ${item.unit || ''}`.trim()
+  }))
+);
 
 const businessActions = [
-  { step: 'L', title: 'License 授权/导入', detail: '导入 .lic 并查看本地授权状态', path: '/enterprise/license-import' },
-  { step: '01', title: '配置排放源', detail: '维护企业本地排放源主数据', path: '/enterprise/emission-source' },
-  { step: '02', title: '确认排放因子', detail: '确认企业可用因子和引用口径', path: '/enterprise/factor-confirm' },
-  { step: '03', title: '活动数据填报', detail: '录入 sheet_656 活动数据', path: '/enterprise/activity-data' },
-  { step: '04', title: '绿电绿证', detail: '补齐绿电、绿证相关数据', path: '/enterprise/green-electricity' },
-  { step: '05', title: '强度管理', detail: '维护强度指标分母和结果', path: '/enterprise/intensity' },
-  { step: 'F', title: '因子查询', detail: '只读查询企业可用因子库', path: '/enterprise/factor-library' },
-  { step: 'R', title: '报表模板下载', detail: '下载已发布报表模板', path: '/enterprise/report-template-download' }
+  { step: '01', title: '配置排放源', detail: '建立排放源台账', path: '/emission-source-config/emission-source' },
+  { step: '02', title: '确认排放因子', detail: '同步厂商因子库', path: '/factor-confirm/factor-confirmation' },
+  { step: '03', title: '录入活动数据', detail: '上传并校验 656 表数据', path: '/activity-data/emission-activity-entry' },
+  { step: '04', title: '绿电绿证', detail: '登记抵扣记录', path: '/green-electricity/green-electricity-data' },
+  { step: '05', title: '强度管理', detail: '分母录入与目标核算', path: '/intensity/intensity-target' }
 ];
 
-const workflowItems = [
-  { name: '01 配置排放源', status: '已完成', owner: '数据管理员', updatedAt: '2026-06-08 09:10', tone: 'ok' },
-  { name: '02 确认排放因子', status: '待确认', owner: '核算专员', updatedAt: '2026-06-08 09:18', tone: 'warn' },
-  { name: '03 活动数据', status: '录入中', owner: '业务部门', updatedAt: '2026-06-08 09:30', tone: 'info' },
-  { name: '04 绿电绿证', status: '待补充', owner: '能源管理员', updatedAt: '2026-06-07 17:42', tone: 'gray' },
-  { name: '05 强度管理', status: '未开始', owner: '管理组', updatedAt: '2026-06-07 16:05', tone: 'gray' }
-];
+const formatNumber = (value?: number | string) => {
+  if (value === undefined || value === null || value === '') return '--';
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toLocaleString('zh-CN') : String(value);
+};
 
-const factorTasks = [
-  { title: '组织边界因子', detail: '2 个因子等待确认引用范围' },
-  { title: '电力排放因子', detail: '已同步 2026 年最新口径' },
-  { title: '运输活动因子', detail: '3 条记录需要业务复核' }
-];
-
-const reportTasks = [
-  { title: '月度碳排放汇总模板', detail: '适用于 01-05 全流程数据' },
-  { title: '强度指标分析模板', detail: '依赖强度管理数据完成后下载' },
-  { title: '绿电绿证明细模板', detail: '待绿电绿证数据补齐' }
-];
+const plainText = (value: string) => value.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
 
 const openBusiness = (path: string) => {
   router.push(path);
 };
+
+const openNotice = (notice: WorkbenchSystemNotice) => {
+  noticeDialog.notice = notice;
+  noticeDialog.visible = true;
+};
+
+const loadOverview = async () => {
+  loading.value = true;
+  try {
+    const res = await getWorkbenchOverview();
+    overview.value = res.data || {};
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  loadOverview();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -129,89 +223,115 @@ const openBusiness = (path: string) => {
   color: var(--carbon-ink);
 }
 
-.status-grid {
+.dash-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
-.status-card {
+.dash-stat {
+  position: relative;
   display: grid;
-  gap: 8px;
-  padding: 16px;
-  border: 1px solid #eef0f3;
+  gap: 12px;
+  min-height: 126px;
+  padding: 22px 24px;
+  border: 1px solid var(--carbon-soft-line);
+  border-left: 4px solid var(--carbon-brand);
   border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(31, 45, 61, 0.025), 0 6px 18px -10px rgba(31, 45, 61, 0.06);
+  background: var(--carbon-panel);
+  box-shadow: var(--carbon-shadow);
 }
 
-.status-card span {
+.dash-stat .label {
+  color: var(--carbon-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dash-stat .value {
+  color: var(--carbon-ink);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dash-stat .value.is-success {
+  color: var(--carbon-success);
+}
+
+.dash-stat .value.is-warning {
+  color: var(--carbon-warning);
+}
+
+.dash-stat .sub {
+  min-height: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   color: var(--carbon-muted);
   font-size: 13px;
 }
 
-.status-card strong {
-  color: var(--carbon-ink);
-  font-size: 24px;
-  line-height: 1;
-}
-
-.status-card em {
+.kpi-mini {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
   font-size: 12px;
-  font-style: normal;
+  font-weight: 700;
 }
 
-.status-card .ok,
-.todo-row .ok {
+.kpi-mini.up {
+  background: rgba(24, 160, 88, 0.12);
   color: var(--carbon-success);
 }
 
-.status-card .warn,
-.todo-row .warn {
-  color: var(--carbon-warning);
+.kpi-mini.down {
+  background: rgba(217, 45, 32, 0.1);
+  color: var(--carbon-danger);
 }
 
-.status-card .info,
-.todo-row .info {
-  color: var(--carbon-primary);
-}
-
-.action-grid {
+.step-flow {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: minmax(136px, 1fr) 28px minmax(136px, 1fr) 28px minmax(136px, 1fr) 28px minmax(136px, 1fr) 28px minmax(136px, 1fr);
+  align-items: stretch;
+  gap: 10px;
   margin-bottom: 14px;
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 
-.action-card {
-  min-height: 126px;
+.step-card {
+  min-height: 118px;
   display: grid;
   grid-template-rows: auto auto 1fr;
-  gap: 8px;
+  gap: 9px;
   align-content: start;
   padding: 16px;
   border: 1px solid var(--carbon-soft-line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--carbon-panel);
   color: var(--carbon-text);
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(31, 45, 61, 0.025), 0 6px 18px -10px rgba(31, 45, 61, 0.06);
+  box-shadow: var(--carbon-shadow);
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
     transform 0.18s ease;
 }
 
-.action-card:hover {
+.step-card:hover {
   border-color: rgba(31, 143, 106, 0.4);
   box-shadow: 0 12px 28px -18px rgba(31, 143, 106, 0.45);
   transform: translateY(-1px);
 }
 
-.action-icon {
-  width: 34px;
+.step-num {
+  width: 38px;
   height: 28px;
   display: inline-flex;
   align-items: center;
@@ -223,72 +343,301 @@ const openBusiness = (path: string) => {
   font-weight: 800;
 }
 
-.action-card strong {
+.step-name {
   color: var(--carbon-ink);
   font-size: 15px;
+  font-weight: 700;
 }
 
-.action-card em {
+.step-desc {
+  color: var(--carbon-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.step-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--carbon-muted);
+  font-weight: 800;
+}
+
+.workbench-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(280px, 0.9fr);
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.workbench-main,
+.notice-panel {
+  overflow: hidden;
+}
+
+.carbon-cycle-chart {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+}
+
+.cycle-stage {
+  min-height: 132px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--carbon-soft-line);
+  border-radius: 8px;
+  background: var(--carbon-panel-soft);
+}
+
+.cycle-stage strong {
+  color: var(--carbon-ink);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.cycle-stage span {
+  color: var(--carbon-text);
+  font-weight: 700;
+}
+
+.cycle-stage em {
   color: var(--carbon-muted);
   font-size: 12px;
   font-style: normal;
   line-height: 1.5;
 }
 
-.home-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+.cycle-stage.done {
+  border-color: rgba(24, 160, 88, 0.18);
 }
 
-.todo-list {
-  display: grid;
-  gap: 0;
+.cycle-stage.warn {
+  border-color: rgba(212, 136, 6, 0.24);
 }
 
-.todo-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 13px 18px;
-  border-bottom: 1px solid var(--carbon-soft-line);
+.cycle-stage.info {
+  border-color: rgba(22, 119, 255, 0.18);
+}
+
+.scope-bars {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 12px;
+  padding: 6px 2px 0;
+}
+
+.scope-bars div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 140px;
+  align-items: center;
+  gap: 12px;
   color: var(--carbon-text);
+  font-size: 13px;
 }
 
-.todo-row:last-child {
-  border-bottom: 0;
+.scope-bars span {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--carbon-soft-line);
 }
 
-.todo-row span {
-  font-weight: 600;
+.scope-bars i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--carbon-brand), var(--carbon-primary));
 }
 
-.todo-row em {
+.scope-bars em {
   color: var(--carbon-muted);
   font-style: normal;
   text-align: right;
 }
 
+.notice-list {
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.notice-item {
+  position: relative;
+  padding: 0 0 0 18px;
+  border: 0;
+  background: transparent;
+  color: var(--carbon-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.notice-item::before,
+.tl-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--carbon-muted);
+  box-shadow: 0 0 0 3px var(--carbon-soft-line);
+}
+
+.notice-item.active::before,
+.tl-item.ok::before {
+  background: var(--carbon-primary);
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.14);
+}
+
+.notice-item b {
+  display: block;
+  color: var(--carbon-ink);
+  font-size: 13px;
+}
+
+.notice-item span {
+  display: -webkit-box;
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--carbon-muted);
+  font-size: 12px;
+  line-height: 1.65;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.dash-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 20px;
+}
+
+.timeline {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.tl-item {
+  position: relative;
+  padding-left: 18px;
+}
+
+.tl-item b {
+  display: block;
+  color: var(--carbon-ink);
+  font-size: 13px;
+}
+
+.tl-item span,
+.tl-item p {
+  display: block;
+  margin: 6px 0 0;
+  color: var(--carbon-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.notice-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.notice-meta {
+  color: var(--carbon-muted);
+  font-size: 12px;
+}
+
+.notice-content {
+  color: var(--carbon-text);
+  line-height: 1.8;
+}
+
+:global(html.dark) {
+  .enterprise-home {
+    color: var(--carbon-ink);
+  }
+
+  .step-card,
+  .dash-stat,
+  .cycle-stage,
+  .workbench-main,
+  .notice-panel,
+  .dash-row .panel {
+    background: var(--carbon-panel);
+    border-color: var(--carbon-soft-line);
+    box-shadow: var(--carbon-shadow-soft);
+  }
+
+  .cycle-stage {
+    background: var(--carbon-panel-soft);
+  }
+
+  .step-card:hover {
+    border-color: rgba(96, 165, 250, 0.42);
+    box-shadow: 0 12px 28px -18px rgba(96, 165, 250, 0.48);
+  }
+
+  .step-num,
+  .kpi-mini.up {
+    background: rgba(69, 212, 131, 0.16);
+  }
+
+  .kpi-mini.down {
+    background: rgba(248, 113, 113, 0.14);
+  }
+
+  .scope-bars span {
+    background: var(--carbon-soft-line);
+  }
+
+  .notice-item.active::before,
+  .tl-item.ok::before {
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
+  }
+}
+
 @media (max-width: 1200px) {
-  .status-grid,
-  .action-grid,
-  .home-columns {
+  .dash-stats,
+  .workbench-grid,
+  .dash-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .carbon-cycle-chart {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 720px) {
-  .status-grid,
-  .action-grid,
-  .home-columns {
+  .dash-stats,
+  .workbench-grid,
+  .dash-row,
+  .carbon-cycle-chart {
     grid-template-columns: 1fr;
   }
 
-  .todo-row {
-    display: grid;
+  .step-flow {
+    grid-template-columns: 1fr;
+    overflow: visible;
   }
 
-  .todo-row em {
+  .step-arrow {
+    justify-content: center;
+    transform: rotate(90deg);
+  }
+
+  .scope-bars div {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .scope-bars em {
     text-align: left;
   }
 }

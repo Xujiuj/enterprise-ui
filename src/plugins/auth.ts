@@ -13,11 +13,11 @@ const authPermission = (permission: string): boolean => {
 };
 
 const authRole = (role: string): boolean => {
-  const super_admin = 'admin';
+  const superAdminRoles = ['superadmin', 'admin'];
   const roles = useUserStore().roles;
   if (role && role.length > 0) {
     return roles.some((v) => {
-      return super_admin === v || v === role;
+      return superAdminRoles.includes(v) || v === role;
     });
   } else {
     return false;

@@ -19,7 +19,7 @@
           <el-input v-model="queryParams.moduleCode" clearable placeholder="moduleCode" />
         </el-form-item>
         <el-form-item label="校验状态">
-          <el-select v-model="queryParams.validationStatus" clearable placeholder="全部" style="width: 150px">
+          <el-select v-model="queryParams.validationStatus" clearable placeholder="全部">
             <el-option label="通过" value="PASS" />
             <el-option label="失败" value="FAIL" />
             <el-option label="警告" value="WARN" />
@@ -27,6 +27,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
           <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
@@ -100,6 +101,7 @@ import type { CaptureBatchQuery, CaptureBatchVO } from '@/api/enterprise/capture
 import { listCaptureRow } from '@/api/enterprise/captureRow';
 import type { CaptureRowQuery, CaptureRowVO } from '@/api/enterprise/captureRow/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const loading = ref(false);
 const rowLoading = ref(false);
 const batchList = ref<CaptureBatchVO[]>([]);
@@ -183,6 +185,8 @@ const openRows = async (batch: CaptureBatchVO) => {
 onMounted(() => {
   loadBatches();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>
 
 <style scoped lang="scss">

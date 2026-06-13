@@ -36,7 +36,6 @@
           <el-input v-model="queryParams.status" placeholder="0待确认 1已确认 2已过期" clearable @keyup.enter="handleQuery" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -105,7 +104,6 @@
       :title="dialog.title"
       size="600px"
       append-to-body
-      :close-on-click-modal="false"
     >
       <el-form ref="factorConfirmFormRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="排放源ID" prop="sourceId">
@@ -166,6 +164,7 @@
 import { listFactorConfirm, getFactorConfirm, delFactorConfirm, addFactorConfirm, updateFactorConfirm } from '@/api/system/factorConfirm';
 import { FactorConfirmVO, FactorConfirmQuery, FactorConfirmForm } from '@/api/system/factorConfirm/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const factorConfirmList = ref<FactorConfirmVO[]>([]);
@@ -329,4 +328,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

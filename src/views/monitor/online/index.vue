@@ -10,7 +10,8 @@
             <el-input v-model="queryParams.userName" placeholder="请输入用户名称" clearable @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
             <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-form>
@@ -67,6 +68,7 @@ import { OnlineQuery, OnlineVO } from '@/api/monitor/online/types';
 import api from '@/api/system/user';
 import { to } from 'await-to-js';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_device_type } = toRefs<any>(proxy?.useDict('sys_device_type'));
 
@@ -114,4 +116,6 @@ const handleForceLogout = async (row: OnlineVO) => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

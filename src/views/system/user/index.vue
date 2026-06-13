@@ -51,7 +51,8 @@
                   ></el-date-picker>
                 </el-form-item>
                 <el-form-item>
-                  <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+                  <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
                   <el-button icon="Refresh" @click="resetQuery">重置</el-button>
                 </el-form-item>
               </el-form>
@@ -300,6 +301,7 @@ import { optionselect } from '@/api/system/post';
 import { checkPermi } from '@/utils/permission';
 import { useUserStore } from '@/store/modules/user';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_normal_disable, sys_user_sex } = toRefs<any>(proxy?.useDict('sys_normal_disable', 'sys_user_sex'));
@@ -676,4 +678,6 @@ async function handleDeptChange(value: number | string) {
   postOptions.value = response.data;
   form.value.postIds = [];
 }
+
+useAutoQuery(queryParams, () => handleQuery(), [dateRange]);
 </script>

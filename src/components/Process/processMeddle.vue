@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" draggable title="流程干预" :width="props.width" :height="props.height" :close-on-click-modal="false">
+  <el-dialog v-model="visible" draggable title="流程干预" :width="props.width" :height="props.height">
     <el-descriptions v-loading="loading" class="margin-top" :title="`${task.flowName}(${task.flowCode})`" :column="2" border>
       <el-descriptions-item label="任务名称">{{ task.nodeName }}</el-descriptions-item>
       <el-descriptions-item label="节点编码">{{ task.nodeCode }}</el-descriptions-item>
@@ -34,7 +34,7 @@
     <UserSelect ref="transferTaskRef" :multiple="false" @confirm-call-back="handleTransferTask"></UserSelect>
     <!-- 加签组件 -->
     <UserSelect ref="multiInstanceUserRef" :multiple="true" @confirm-call-back="addMultiInstanceUser"></UserSelect>
-    <el-dialog v-model="deleteSignatureVisible" draggable title="减签人员" width="700px" height="400px" append-to-body :close-on-click-modal="false"
+    <el-dialog v-model="deleteSignatureVisible" draggable title="减签人员" width="700px" height="400px" append-to-body
       ><div>
         <el-table :data="deleteUserList" border>
           <el-table-column prop="nodeName" label="任务名称" />

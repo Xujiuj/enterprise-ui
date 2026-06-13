@@ -299,25 +299,34 @@
 // RuoYi prototype sidebar alignment.
 #app {
   .sidebar-container {
-    background: #fff !important;
-    color: #475569;
-    border-right: 1px solid #e5eaf2;
+    --enterprise-sidebar-bg: #fff;
+    --enterprise-sidebar-text: #475569;
+    --enterprise-sidebar-border: #e5eaf2;
+    --enterprise-sidebar-title: #0f172a;
+    --enterprise-sidebar-hover-bg: #f1f5f9;
+    --enterprise-sidebar-active-bg: #eaf1ff;
+    --enterprise-sidebar-active-text: #2563eb;
+    --enterprise-sidebar-arrow: #94a3b8;
+
+    background: var(--enterprise-sidebar-bg) !important;
+    color: var(--enterprise-sidebar-text);
+    border-right: 1px solid var(--enterprise-sidebar-border);
     box-shadow: none;
 
     .sidebar-logo-container {
       height: 56px;
       line-height: 56px;
-      background: #fff !important;
-      border-bottom: 1px solid #e5eaf2;
+      background: var(--enterprise-sidebar-bg) !important;
+      border-bottom: 1px solid var(--enterprise-sidebar-border);
 
       .sidebar-title {
-        color: #0f172a !important;
+        color: var(--enterprise-sidebar-title) !important;
         font-weight: 700;
       }
     }
 
     .el-scrollbar {
-      background: #fff;
+      background: var(--enterprise-sidebar-bg);
     }
 
     &.has-logo {
@@ -329,11 +338,11 @@
     .theme-dark.el-menu,
     .theme-dark .el-menu,
     .el-menu {
-      background: #fff !important;
-      --el-menu-bg-color: #fff;
-      --el-menu-text-color: #475569;
-      --el-menu-hover-bg-color: #f1f5f9;
-      --el-menu-active-color: #2563eb;
+      background: var(--enterprise-sidebar-bg) !important;
+      --el-menu-bg-color: var(--enterprise-sidebar-bg);
+      --el-menu-text-color: var(--enterprise-sidebar-text);
+      --el-menu-hover-bg-color: var(--enterprise-sidebar-hover-bg);
+      --el-menu-active-color: var(--enterprise-sidebar-active-text);
     }
 
     .svg-icon,
@@ -358,7 +367,7 @@
       margin: 0 10px 4px !important;
       padding-right: 12px !important;
       border-radius: 6px !important;
-      color: #475569 !important;
+      color: var(--enterprise-sidebar-text) !important;
       background: transparent !important;
       line-height: 40px !important;
     }
@@ -366,16 +375,16 @@
     .el-sub-menu__title:hover,
     .el-menu-item:hover,
     .sub-menu-title-noDropdown:hover {
-      color: #2563eb !important;
-      background: #f1f5f9 !important;
+      color: var(--enterprise-sidebar-active-text) !important;
+      background: var(--enterprise-sidebar-hover-bg) !important;
     }
 
     .el-menu-item.is-active,
     .sub-menu-title-noDropdown.is-active,
     .el-sub-menu.is-active > .el-sub-menu__title {
-      color: #2563eb !important;
-      background: #eaf1ff !important;
-      box-shadow: inset 3px 0 0 #2563eb;
+      color: var(--enterprise-sidebar-active-text) !important;
+      background: var(--enterprise-sidebar-active-bg) !important;
+      box-shadow: inset 3px 0 0 var(--enterprise-sidebar-active-text);
       font-weight: 600;
     }
 
@@ -402,7 +411,7 @@
 
     .el-sub-menu__icon-arrow {
       right: 12px;
-      color: #94a3b8;
+      color: var(--enterprise-sidebar-arrow);
     }
   }
 
@@ -433,5 +442,18 @@
     .main-container {
       margin-left: 64px;
     }
+  }
+}
+
+html.dark #app {
+  .sidebar-container {
+    --enterprise-sidebar-bg: #111827;
+    --enterprise-sidebar-text: #cbd5e1;
+    --enterprise-sidebar-border: #263244;
+    --enterprise-sidebar-title: #f8fafc;
+    --enterprise-sidebar-hover-bg: #182235;
+    --enterprise-sidebar-active-bg: #123056;
+    --enterprise-sidebar-active-text: #93c5fd;
+    --enterprise-sidebar-arrow: #64748b;
   }
 }

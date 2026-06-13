@@ -8,7 +8,7 @@
               <el-input v-model="queryParams.deptName" placeholder="请输入部门名称" clearable @keyup.enter="handleQuery" />
             </el-form-item>
             <el-form-item label="类别编码" prop="deptCategory">
-              <el-input v-model="queryParams.deptCategory" placeholder="请输入类别编码" clearable style="width: 240px" @keyup.enter="handleQuery" />
+              <el-input v-model="queryParams.deptCategory" placeholder="请输入类别编码" clearable @keyup.enter="handleQuery" />
             </el-form-item>
             <el-form-item label="状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="部门状态" clearable>
@@ -16,7 +16,8 @@
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-form>
@@ -147,6 +148,7 @@ import { DeptForm, DeptQuery, DeptVO } from '@/api/system/dept/types';
 import { UserVO } from '@/api/system/user/types';
 import { listUserByDeptId } from '@/api/system/user';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 interface DeptOptionsType {
   deptId: number | string;
   deptName: string;
@@ -317,4 +319,6 @@ const handleDelete = async (row: DeptVO) => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

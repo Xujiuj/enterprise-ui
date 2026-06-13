@@ -5,7 +5,7 @@ import path from 'path';
 
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd());
-  const proxyTarget = env.VITE_APP_PROXY_TARGET || process.env.VITE_APP_PROXY_TARGET || 'http://localhost:8080';
+  const proxyTarget = env.VITE_APP_PROXY_TARGET || process.env.VITE_APP_PROXY_TARGET || 'http://localhost:18001';
   return {
     // 部署生产环境和开发环境下的URL。
     // 默认情况下，vite 会假设你的应用是被部署在一个域名的根路径上

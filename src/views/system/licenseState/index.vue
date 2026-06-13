@@ -36,7 +36,6 @@
           <el-input v-model="queryParams.isTampered" placeholder="0否 1是" clearable @keyup.enter="handleQuery" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -96,7 +95,6 @@
       :title="dialog.title"
       size="600px"
       append-to-body
-      :close-on-click-modal="false"
     >
       <el-form ref="licenseStateFormRef" :model="form" :rules="rules" label-width="120px">
         <el-form-item label="License标识" prop="licenseId">
@@ -143,6 +141,7 @@
 import { listLicenseState, getLicenseState, delLicenseState, addLicenseState, updateLicenseState } from '@/api/system/licenseState';
 import { LicenseStateVO, LicenseStateQuery, LicenseStateForm } from '@/api/system/licenseState/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const licenseStateList = ref<LicenseStateVO[]>([]);
@@ -286,4 +285,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

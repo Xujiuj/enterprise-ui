@@ -27,7 +27,8 @@
               ></el-date-picker>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-form>
@@ -109,6 +110,7 @@
 import { list, delLoginInfo, cleanLoginInfo, unlockLoginInfo } from '@/api/monitor/loginInfo';
 import { LoginInfoQuery, LoginInfoVO } from '@/api/monitor/loginInfo/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_device_type } = toRefs<any>(proxy?.useDict('sys_device_type'));
 const { sys_common_status } = toRefs<any>(proxy?.useDict('sys_common_status'));
@@ -206,4 +208,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery(), [dateRange]);
 </script>

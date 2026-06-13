@@ -36,7 +36,6 @@
           <el-input v-model="queryParams.status" placeholder="0待激活 1有效 2即将到期 3已过期 4已吊销" clearable @keyup.enter="handleQuery" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -109,7 +108,6 @@
       :title="dialog.title"
       size="600px"
       append-to-body
-      :close-on-click-modal="false"
     >
       <el-form ref="licenseFormRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="License标识" prop="licenseId">
@@ -182,6 +180,7 @@
 import { listLicense, getLicense, delLicense, addLicense, updateLicense } from '@/api/system/license';
 import { LicenseVO, LicenseQuery, LicenseForm } from '@/api/system/license/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const licenseList = ref<LicenseVO[]>([]);
@@ -337,4 +336,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

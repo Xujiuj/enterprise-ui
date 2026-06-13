@@ -3,7 +3,7 @@
 This project is the enterprise-side frontend for the carbon data management platform.
 
 - Delivery boundary: independent Vue/Vite frontend under `enterprise-ui`.
-- Backend target: enterprise backend, development proxy `http://localhost:8080`.
+- Backend target: enterprise backend, development proxy `http://localhost:18001`.
 - Current slice: frontend base split only. Existing generated pages are retained as reference material and will be aligned to real enterprise requirements in later slices.
 
 ## 平台简介

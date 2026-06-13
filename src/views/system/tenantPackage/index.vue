@@ -8,7 +8,8 @@
               <el-input v-model="queryParams.packageName" placeholder="请输入套餐名称" clearable @keyup.enter="handleQuery" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-form>
@@ -108,6 +109,7 @@ import {
   updateTenantPackage,
   changePackageStatus
 } from '@/api/system/tenantPackage';
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { tenantPackageMenuTreeselect } from '@/api/system/menu';
 import { TenantPkgForm, TenantPkgQuery, TenantPkgVO } from '@/api/system/tenantPackage/types';
 import { MenuTreeOption } from '@/api/system/menu/types';
@@ -326,4 +328,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

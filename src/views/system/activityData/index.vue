@@ -36,7 +36,6 @@
           <el-input v-model="queryParams.verificationStatus" placeholder="0待校验 1已校验 2已退回" clearable @keyup.enter="handleQuery" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -91,7 +90,7 @@
     </div>
 
     <!-- 侧栏抽屉表单 -->
-    <el-drawer v-model="dialog.visible" :title="dialog.title" size="760px" append-to-body :close-on-click-modal="false">
+    <el-drawer v-model="dialog.visible" :title="dialog.title" size="760px" append-to-body>
       <el-alert class="mb16" type="info" show-icon :closable="false">
         <template #title>sheet_656 活动数据录入：f001 从排放源主数据选择，f002-f010 和 f018 由服务端校验派生只读展示。</template>
       </el-alert>
@@ -212,6 +211,7 @@ import {
   Sheet656ImportValidationResult,
   Sheet656ValidationIssue
 } from '@/api/enterprise/sheet656ActivityValidation/types';
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 
 interface Sheet656Form {
   f001?: string;
@@ -599,6 +599,8 @@ onMounted(() => {
   getList();
   loadEmissionSources();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>
 
 <style scoped lang="scss">

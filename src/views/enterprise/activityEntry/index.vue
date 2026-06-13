@@ -2,24 +2,92 @@
   <div class="p-2 enterprise-activity-page">
     <el-row :gutter="16">
       <el-col :xs="24" :lg="14">
+        <el-card shadow="never" class="mb-4">
+          <template #header>
+            <div class="card-head">
+              <div>
+                <span>sheet_656 Excel 上传导入</span>
+                <p>上传 `.xlsx` 后先走服务端解析和校验，无强错误时再批量写入企业端活动数据。</p>
+              </div>
+              <el-button
+                v-hasPermi="['enterprise:activityImport:import']"
+                type="primary"
+                icon="Upload"
+                :loading="uploadImporting"
+                :disabled="!canImportUploadedRows"
+                @click="importUploadedRows"
+              >
+                导入上传文件
+              </el-button>
+            </div>
+          </template>
+
+          <el-upload drag action="#" accept=".xlsx" :auto-upload="false" :show-file-list="false" :before-upload="parseUploadedFile">
+            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+            <div class="el-upload__text">拖拽 sheet_656 Excel 到此处，或点击选择 `.xlsx` 文件</div>
+          </el-upload>
+
+          <el-descriptions v-if="uploadFileName" class="mt-4" :column="3" border>
+            <el-descriptions-item label="文件名">{{ uploadFileName }}</el-descriptions-item>
+            <el-descriptions-item label="解析行数">{{ parsedUploadRowCount }}</el-descriptions-item>
+            <el-descriptions-item label="解析状态">
+              {{ uploadParsing ? '解析中' : uploadValidation ? (uploadValidation.blocking ? '存在强错误' : '可导入') : '待解析' }}
+            </el-descriptions-item>
+          </el-descriptions>
+
+          <el-alert v-if="uploadBlockingIssues.length" class="mt-4" type="error" show-icon :closable="false">
+            <template #title>上传文件存在 {{ uploadBlockingIssues.length }} 条强错误，不能导入。</template>
+          </el-alert>
+          <el-alert v-else-if="uploadWarningIssues.length" class="mt-4" type="warning" show-icon :closable="false">
+            <template #title>上传文件存在 {{ uploadWarningIssues.length }} 条弱警告，允许导入但需复核。</template>
+          </el-alert>
+          <el-alert v-else-if="uploadValidation && parsedUploadRowCount" class="mt-4" type="success" show-icon :closable="false">
+            <template #title>上传文件已通过服务端校验，可执行导入。</template>
+          </el-alert>
+          <el-alert v-else-if="uploadValidation" class="mt-4" type="info" show-icon :closable="false">
+            <template #title>文件解析成功，但没有可导入的数据行。</template>
+          </el-alert>
+
+          <el-table v-if="uploadIssues.length" class="mt-4" :data="uploadIssues" size="small" border max-height="260">
+            <el-table-column label="级别" width="82">
+              <template #default="scope">
+                <el-tag size="small" :type="isBlockingIssue(scope.row) ? 'danger' : 'warning'">
+                  {{ isBlockingIssue(scope.row) ? '强错误' : '弱警告' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="rowNumber" label="行号" width="72" />
+            <el-table-column prop="sourceColumnCode" label="字段" width="86" />
+            <el-table-column prop="message" label="说明" show-overflow-tooltip />
+          </el-table>
+        </el-card>
+
         <el-card shadow="never">
           <template #header>
             <div class="card-head">
               <div>
-                <span>sheet_656 活动录入</span>
+                <span>sheet_656 手工活动录入</span>
                 <p>先走企业端校验接口，校验通过后再写入本地活动数据。</p>
               </div>
-              <el-button type="primary" icon="CircleCheck" :loading="validating" @click="handleValidate">服务端校验</el-button>
+              <el-button
+                v-hasPermi="['enterprise:activityImportValidation:validate']"
+                type="primary"
+                icon="CircleCheck"
+                :loading="validating"
+                @click="handleValidate"
+              >
+                服务端校验
+              </el-button>
             </div>
           </template>
 
-          <el-alert v-if="blockingIssues.length" class="mb-4" type="error" show-icon :closable="false">
-            <template #title>存在 {{ blockingIssues.length }} 条强错误，不能保存。</template>
+          <el-alert v-if="manualBlockingIssues.length" class="mb-4" type="error" show-icon :closable="false">
+            <template #title>存在 {{ manualBlockingIssues.length }} 条强错误，不能保存。</template>
           </el-alert>
-          <el-alert v-else-if="warningIssues.length" class="mb-4" type="warning" show-icon :closable="false">
-            <template #title>存在 {{ warningIssues.length }} 条弱警告，允许保存但需复核。</template>
+          <el-alert v-else-if="manualWarningIssues.length" class="mb-4" type="warning" show-icon :closable="false">
+            <template #title>存在 {{ manualWarningIssues.length }} 条弱警告，允许保存但需复核。</template>
           </el-alert>
-          <el-alert v-else-if="lastValidation" class="mb-4" type="success" show-icon :closable="false">
+          <el-alert v-else-if="manualValidation" class="mb-4" type="success" show-icon :closable="false">
             <template #title>服务端校验通过。</template>
           </el-alert>
 
@@ -27,15 +95,7 @@
             <el-row :gutter="16">
               <el-col :xs="24" :sm="12">
                 <el-form-item label="排放源" prop="sourceCode">
-                  <el-select
-                    v-model="form.sourceCode"
-                    class="w-full"
-                    clearable
-                    filterable
-                    :loading="sourceLoading"
-                    placeholder="选择本地排放源"
-                    @change="handleSourceChange"
-                  >
+                  <el-select v-model="form.sourceCode" class="w-full" clearable filterable :loading="sourceLoading" placeholder="选择本地排放源">
                     <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceCode" />
                   </el-select>
                 </el-form-item>
@@ -70,11 +130,6 @@
                   <el-input v-model="form.dataSource" maxlength="64" clearable />
                 </el-form-item>
               </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="保存状态" prop="saveMode">
-                  <el-segmented v-model="form.saveMode" :options="saveModeOptions" />
-                </el-form-item>
-              </el-col>
               <el-col :xs="24">
                 <el-form-item label="备注">
                   <el-input v-model="form.remark" type="textarea" :rows="3" maxlength="200" show-word-limit />
@@ -85,7 +140,9 @@
 
           <div class="action-row">
             <el-button icon="Refresh" @click="resetForm">重置</el-button>
-            <el-button type="primary" icon="Upload" :loading="saving" @click="saveActivity">保存到本地活动数据</el-button>
+            <el-button v-hasPermi="['enterprise:activity:save']" type="primary" icon="Upload" :loading="saving" @click="saveActivity"
+              >保存到本地活动数据</el-button
+            >
           </div>
         </el-card>
       </el-col>
@@ -99,13 +156,14 @@
             </div>
           </template>
           <el-table v-loading="listLoading" :data="recentActivities" size="small" height="230">
-            <el-table-column prop="dataPeriod" label="期间" width="90" />
+            <el-table-column prop="activityPeriod" label="期间" width="90" />
             <el-table-column prop="activityValue" label="活动数据" width="110" />
-            <el-table-column prop="dataSource" label="来源" show-overflow-tooltip />
+            <el-table-column prop="activityUnit" label="单位" width="80" />
+            <el-table-column prop="remark" label="备注" show-overflow-tooltip />
             <el-table-column label="状态" width="90">
               <template #default="scope">
-                <el-tag size="small" :type="scope.row.verificationStatus === '1' ? 'success' : 'info'">
-                  {{ scope.row.verificationStatus === '1' ? '已校验' : '草稿' }}
+                <el-tag size="small" :type="scope.row.dataStatus === 'submitted' ? 'success' : 'info'">
+                  {{ scope.row.dataStatus === 'submitted' ? '已提交' : '草稿' }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -114,10 +172,10 @@
 
         <el-card shadow="never">
           <template #header>
-            <span>校验结果</span>
+            <span>手工校验结果</span>
           </template>
-          <el-empty v-if="!allIssues.length" description="暂无错误或警告" />
-          <el-table v-else :data="allIssues" size="small" border>
+          <el-empty v-if="!manualIssues.length" description="暂无错误或警告" />
+          <el-table v-else :data="manualIssues" size="small" border>
             <el-table-column label="级别" width="82">
               <template #default="scope">
                 <el-tag size="small" :type="isBlockingIssue(scope.row) ? 'danger' : 'warning'">
@@ -125,6 +183,7 @@
                 </el-tag>
               </template>
             </el-table-column>
+            <el-table-column prop="rowNumber" label="行号" width="72" />
             <el-table-column prop="sourceColumnCode" label="字段" width="86" />
             <el-table-column prop="message" label="说明" show-overflow-tooltip />
           </el-table>
@@ -135,16 +194,20 @@
 </template>
 
 <script setup name="EnterpriseActivityEntry" lang="ts">
+import { UploadFilled } from '@element-plus/icons-vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
+import { useRoute } from 'vue-router';
+import { ElMessage, type FormInstance, type FormRules, type UploadRawFile } from 'element-plus';
 import {
-  createLocalActivityData,
+  importLocalSheet656Activity,
   listLocalActivityData,
   listLocalEmissionSource,
+  parseLocalSheet656ActivityFile,
+  saveLocalSheet656Activity,
   validateLocalSheet656Activity
 } from '@/api/enterprise/activityEntry';
-import type { ActivityDataForm, ActivityDataVO } from '@/api/system/activityData/types';
-import type { EmissionSourceVO } from '@/api/system/emissionSource/types';
+import type { ActivityDataVO } from '@/api/enterprise/activityData/types';
+import type { EmissionSourceVO } from '@/api/enterprise/emissionSource/types';
 import type {
   Sheet656FieldDescriptor,
   Sheet656FieldValue,
@@ -162,13 +225,21 @@ interface ActivityEntryForm {
   responsibleDept?: string;
   dataSource?: string;
   remark?: string;
-  saveMode: 'draft' | 'submit';
 }
 
 type DerivedValueMap = Record<string, string>;
 
+const route = useRoute();
+
 const FIELD_DESCRIPTORS: Sheet656FieldDescriptor[] = [
-  { fieldOrder: 1, sourceColumnCode: 'f001', sourceColumnName: 'PK_排放源识别编号', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  {
+    fieldOrder: 1,
+    sourceColumnCode: 'f001',
+    sourceColumnName: 'PK_排放源识别编号',
+    sourceRequired: false,
+    rowValueRequired: true,
+    derivedField: false
+  },
   { fieldOrder: 2, sourceColumnCode: 'f002', sourceColumnName: 'FK_公司编号', sourceRequired: false, rowValueRequired: false, derivedField: true },
   { fieldOrder: 3, sourceColumnCode: 'f003', sourceColumnName: '公司名称', sourceRequired: false, rowValueRequired: false, derivedField: true },
   { fieldOrder: 4, sourceColumnCode: 'f004', sourceColumnName: '工厂', sourceRequired: false, rowValueRequired: false, derivedField: true },
@@ -191,12 +262,17 @@ const FIELD_DESCRIPTORS: Sheet656FieldDescriptor[] = [
 const activityFormRef = ref<FormInstance>();
 const validating = ref(false);
 const saving = ref(false);
+const uploadParsing = ref(false);
+const uploadImporting = ref(false);
 const sourceLoading = ref(false);
 const listLoading = ref(false);
 const emissionSources = ref<EmissionSourceVO[]>([]);
 const recentActivities = ref<ActivityDataVO[]>([]);
-const lastValidation = ref<Sheet656ImportValidationResult>();
-const resolvedDerivedValues = ref<DerivedValueMap>({});
+const manualValidation = ref<Sheet656ImportValidationResult>();
+const uploadValidation = ref<Sheet656ImportValidationResult>();
+const manualResolvedDerivedValues = ref<DerivedValueMap>({});
+const parsedUploadRequest = ref<Sheet656ImportValidationRequest>();
+const uploadFileName = ref('');
 
 const form = reactive<ActivityEntryForm>({
   sourceCode: undefined,
@@ -206,8 +282,7 @@ const form = reactive<ActivityEntryForm>({
   activityValue: undefined,
   responsibleDept: undefined,
   dataSource: undefined,
-  remark: undefined,
-  saveMode: 'draft'
+  remark: undefined
 });
 
 const rules: FormRules<ActivityEntryForm> = {
@@ -220,26 +295,57 @@ const rules: FormRules<ActivityEntryForm> = {
   dataSource: [{ required: true, message: '请输入数据来源', trigger: 'blur' }]
 };
 
-const saveModeOptions = [
-  { label: '草稿', value: 'draft' },
-  { label: '提交', value: 'submit' }
-];
-
 const selectedSource = computed(() => emissionSources.value.find((source) => source.sourceCode === form.sourceCode));
-const headerIssues = computed(() => lastValidation.value?.headerIssues ?? []);
-const rowIssues = computed(() => lastValidation.value?.rowResults?.flatMap((row) => row.issues ?? []) ?? []);
-const allIssues = computed(() => [...headerIssues.value, ...rowIssues.value]);
-const blockingIssues = computed(() => allIssues.value.filter((issue) => isBlockingIssue(issue)));
-const warningIssues = computed(() => allIssues.value.filter((issue) => !isBlockingIssue(issue)));
+const manualIssues = computed(() => collectIssues(manualValidation.value));
+const manualBlockingIssues = computed(() => manualIssues.value.filter((issue) => isBlockingIssue(issue)));
+const manualWarningIssues = computed(() => manualIssues.value.filter((issue) => !isBlockingIssue(issue)));
+const uploadIssues = computed(() => collectIssues(uploadValidation.value));
+const uploadBlockingIssues = computed(() => uploadIssues.value.filter((issue) => isBlockingIssue(issue)));
+const uploadWarningIssues = computed(() => uploadIssues.value.filter((issue) => !isBlockingIssue(issue)));
+const parsedUploadRowCount = computed(() => parsedUploadRequest.value?.rows?.length ?? 0);
+const canImportUploadedRows = computed(
+  () =>
+    parsedUploadRowCount.value > 0 && !!uploadValidation.value && !uploadValidation.value.blocking && !uploadParsing.value && !uploadImporting.value
+);
 
 const sourceLabel = (source: EmissionSourceVO) => `${source.sourceCode} / ${source.sourceName}`;
 const isBlockingIssue = (issue: Sheet656ValidationIssue) => issue.severity === 'ERROR';
 const valueToString = (value?: string | number) => (value === undefined || value === null ? '' : String(value));
+const firstQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
 
-const handleSourceChange = () => {
-  lastValidation.value = undefined;
-  resolvedDerivedValues.value = {};
+const applyRouteQuery = () => {
+  const sourceCode = firstQueryValue(route.query.emissionSourceCode);
+  if (typeof sourceCode === 'string' && sourceCode) {
+    form.sourceCode = sourceCode;
+  }
+  const activityPeriod = firstQueryValue(route.query.activityPeriod);
+  if (typeof activityPeriod === 'string') {
+    const [year, month] = activityPeriod.split('-').map((part) => Number(part));
+    if (Number.isInteger(year) && year > 0) {
+      form.year = year;
+    }
+    if (Number.isInteger(month) && month >= 1 && month <= 12) {
+      form.month = month;
+    }
+  }
 };
+
+const collectIssues = (result?: Sheet656ImportValidationResult): Sheet656ValidationIssue[] => [
+  ...(result?.headerIssues ?? []),
+  ...(result?.rowResults?.flatMap((row) => row.issues ?? []) ?? [])
+];
+
+const cloneFieldDescriptors = (fields: Sheet656FieldDescriptor[] = []): Sheet656FieldDescriptor[] => fields.map((field) => ({ ...field }));
+
+const cloneFieldValues = (fieldValues: Sheet656FieldValue[] = []): Sheet656FieldValue[] => fieldValues.map((fieldValue) => ({ ...fieldValue }));
+
+const cloneImportValidationRequest = (request: Sheet656ImportValidationRequest): Sheet656ImportValidationRequest => ({
+  headerFields: cloneFieldDescriptors(request.headerFields ?? []),
+  rows: (request.rows ?? []).map((row) => ({
+    rowNumber: row.rowNumber,
+    fieldValues: cloneFieldValues(row.fieldValues ?? [])
+  }))
+});
 
 const buildFieldValues = (): Sheet656FieldValue[] => {
   const values: DerivedValueMap = {
@@ -251,7 +357,7 @@ const buildFieldValues = (): Sheet656FieldValue[] => {
     f015: form.responsibleDept ?? '',
     f016: form.dataSource ?? '',
     f017: form.remark ?? '',
-    ...resolvedDerivedValues.value
+    ...manualResolvedDerivedValues.value
   };
 
   return FIELD_DESCRIPTORS.map((field) => ({
@@ -261,8 +367,8 @@ const buildFieldValues = (): Sheet656FieldValue[] => {
   }));
 };
 
-const buildValidationRequest = (): Sheet656ImportValidationRequest => ({
-  headerFields: FIELD_DESCRIPTORS,
+const buildManualValidationRequest = (): Sheet656ImportValidationRequest => ({
+  headerFields: cloneFieldDescriptors(FIELD_DESCRIPTORS),
   rows: [
     {
       rowNumber: 2,
@@ -274,13 +380,14 @@ const buildValidationRequest = (): Sheet656ImportValidationRequest => ({
 watch(
   () => [form.sourceCode, form.year, form.month, form.date, form.activityValue, form.responsibleDept, form.dataSource, form.remark],
   () => {
-    lastValidation.value = undefined;
+    manualValidation.value = undefined;
+    manualResolvedDerivedValues.value = {};
   }
 );
 
-const applyResolvedDerivedValues = (result: Sheet656ImportValidationResult) => {
+const applyManualResolvedDerivedValues = (result: Sheet656ImportValidationResult) => {
   const resolved = result.rowResults?.[0]?.resolvedDerivedFieldValues ?? [];
-  resolvedDerivedValues.value = resolved.reduce<DerivedValueMap>((acc, field) => {
+  manualResolvedDerivedValues.value = resolved.reduce<DerivedValueMap>((acc, field) => {
     if (field.sourceColumnCode) {
       acc[field.sourceColumnCode] = field.value ?? '';
     }
@@ -293,22 +400,28 @@ const validateFormFields = async () => {
   return activityFormRef.value.validate().catch(() => false);
 };
 
-const runServerValidation = async () => {
+const runManualServerValidation = async (request: Sheet656ImportValidationRequest = buildManualValidationRequest()) => {
   validating.value = true;
   try {
-    const res = await validateLocalSheet656Activity(buildValidationRequest());
-    lastValidation.value = res.data;
-    applyResolvedDerivedValues(res.data);
+    const res = await validateLocalSheet656Activity(request);
+    manualValidation.value = res.data;
+    applyManualResolvedDerivedValues(res.data);
     return res.data;
   } finally {
     validating.value = false;
   }
 };
 
+const runUploadServerValidation = async (request: Sheet656ImportValidationRequest) => {
+  const res = await validateLocalSheet656Activity(request);
+  uploadValidation.value = res.data;
+  return res.data;
+};
+
 const handleValidate = async () => {
   const valid = await validateFormFields();
   if (!valid) return;
-  const result = await runServerValidation();
+  const result = await runManualServerValidation(buildManualValidationRequest());
   if (result.blocking) {
     ElMessage.error('服务端校验存在强错误');
     return;
@@ -316,61 +429,117 @@ const handleValidate = async () => {
   ElMessage.success(result.valid ? '服务端校验通过' : '校验完成，存在弱警告');
 };
 
-const buildActivityPayload = (): ActivityDataForm => {
-  const month = String(form.month).padStart(2, '0');
-  return {
-    sourceId: selectedSource.value?.id,
-    dataPeriod: `${form.year}-${month}`,
-    dataYear: form.year,
-    activityValue: form.activityValue,
-    dataType: '原始数据',
-    dataSource: form.dataSource,
-    verificationStatus: form.saveMode === 'submit' ? '1' : '0',
-    extendJson: JSON.stringify({
-      templateCode: 'sheet_656',
-      headerFields: FIELD_DESCRIPTORS,
-      fieldValues: buildFieldValues(),
-      validation: lastValidation.value,
-      saveMode: form.saveMode
-    }),
-    remark: form.remark
-  };
-};
-
 const saveActivity = async () => {
   const valid = await validateFormFields();
   if (!valid) return;
-  if (!selectedSource.value?.id) {
+  if (!selectedSource.value) {
     ElMessage.warning('请选择有效的本地排放源');
     return;
   }
 
   saving.value = true;
   try {
-    const result = await runServerValidation();
+    const request = buildManualValidationRequest();
+    const result = await runManualServerValidation(request);
     if (result.blocking) {
       ElMessage.error('存在强错误，不能保存');
       return;
     }
-    await createLocalActivityData(buildActivityPayload());
-    ElMessage.success(warningIssues.value.length ? '已保存，存在弱警告请复核' : '保存成功');
+
+    const saveRes = await saveLocalSheet656Activity(request.rows[0]);
+    if (saveRes.data?.validationResult) {
+      manualValidation.value = saveRes.data.validationResult;
+      applyManualResolvedDerivedValues(saveRes.data.validationResult);
+    }
+
+    const persisted = saveRes.data?.persisted === true || (saveRes.data?.persistedRowCount ?? 0) > 0;
+    if (!persisted) {
+      ElMessage.warning('导入未持久化，请根据校验结果复核后重试');
+      return;
+    }
+
+    ElMessage.success(manualWarningIssues.value.length ? '已保存，存在弱警告请复核' : '保存成功');
     await loadRecentActivities();
   } finally {
     saving.value = false;
   }
 };
 
+const parseUploadedFile = async (file: UploadRawFile) => {
+  if (!file.name.toLowerCase().endsWith('.xlsx')) {
+    ElMessage.warning('请选择 .xlsx 文件');
+    return false;
+  }
+
+  uploadParsing.value = true;
+  uploadFileName.value = file.name;
+  parsedUploadRequest.value = undefined;
+  uploadValidation.value = undefined;
+  try {
+    const parseRes = await parseLocalSheet656ActivityFile(file);
+    parsedUploadRequest.value = cloneImportValidationRequest(parseRes.data);
+    const validation = await runUploadServerValidation(parsedUploadRequest.value);
+    if (parsedUploadRowCount.value === 0) {
+      ElMessage.warning('文件解析完成，但没有可导入的数据行');
+      return false;
+    }
+    if (validation.blocking) {
+      ElMessage.error('上传文件校验存在强错误');
+      return false;
+    }
+    ElMessage.success(validation.valid ? '上传文件校验通过' : '文件校验完成，存在弱警告');
+  } catch {
+    parsedUploadRequest.value = undefined;
+    uploadValidation.value = undefined;
+    return false;
+  } finally {
+    uploadParsing.value = false;
+  }
+  return false;
+};
+
+const importUploadedRows = async () => {
+  if (!parsedUploadRequest.value) {
+    return;
+  }
+
+  uploadImporting.value = true;
+  try {
+    const request = cloneImportValidationRequest(parsedUploadRequest.value);
+    const validation = await runUploadServerValidation(request);
+    if (validation.blocking) {
+      ElMessage.error('上传文件存在强错误，不能导入');
+      return;
+    }
+
+    const importRes = await importLocalSheet656Activity(request);
+    if (importRes.data?.validationResult) {
+      uploadValidation.value = importRes.data.validationResult;
+    }
+
+    const persisted = importRes.data?.persisted === true || (importRes.data?.persistedRowCount ?? 0) > 0;
+    if (!persisted) {
+      ElMessage.warning('上传文件未持久化，请根据校验结果复核后重试');
+      return;
+    }
+
+    ElMessage.success(uploadWarningIssues.value.length ? '上传文件已导入，存在弱警告请复核' : '上传文件导入成功');
+    await loadRecentActivities();
+  } finally {
+    uploadImporting.value = false;
+  }
+};
+
 const resetForm = () => {
   activityFormRef.value?.resetFields();
-  form.saveMode = 'draft';
-  lastValidation.value = undefined;
-  resolvedDerivedValues.value = {};
+  manualValidation.value = undefined;
+  manualResolvedDerivedValues.value = {};
 };
 
 const loadEmissionSources = async () => {
   sourceLoading.value = true;
   try {
-    const res = await listLocalEmissionSource({ pageNum: 1, pageSize: 500, status: '0' });
+    const res = await listLocalEmissionSource({ pageNum: 1, pageSize: 500, enabledFlag: true });
     emissionSources.value = (res.rows ?? res.data ?? []) as EmissionSourceVO[];
   } finally {
     sourceLoading.value = false;
@@ -388,6 +557,7 @@ const loadRecentActivities = async () => {
 };
 
 onMounted(() => {
+  applyRouteQuery();
   loadEmissionSources();
   loadRecentActivities();
 });

@@ -36,7 +36,6 @@
           <el-date-picker clearable v-model="queryParams.validFrom" type="date" value-format="YYYY-MM-DD" placeholder="请选择有效期起" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -107,7 +106,6 @@
       :title="dialog.title"
       size="600px"
       append-to-body
-      :close-on-click-modal="false"
     >
       <el-form ref="greenElectricityFormRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="绿证编码" prop="certificateCode">
@@ -181,6 +179,7 @@
 import { listGreenElectricity, getGreenElectricity, delGreenElectricity, addGreenElectricity, updateGreenElectricity } from '@/api/system/greenElectricity';
 import { GreenElectricityVO, GreenElectricityQuery, GreenElectricityForm } from '@/api/system/greenElectricity/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const greenElectricityList = ref<GreenElectricityVO[]>([]);
@@ -338,4 +337,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

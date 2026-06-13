@@ -36,7 +36,6 @@
           <el-input v-model="queryParams.dataPeriod" placeholder="请输入数据期间" clearable @keyup.enter="handleQuery" />
         </div>
         <div class="search-actions">
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
             <el-icon><ArrowUp /></el-icon>
@@ -84,7 +83,6 @@
       :title="dialog.title"
       size="600px"
       append-to-body
-      :close-on-click-modal="false"
     >
       <el-form ref="intensityDenominatorFormRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="强度指标ID" prop="intensityId">
@@ -128,6 +126,7 @@
 import { listIntensityDenominator, getIntensityDenominator, delIntensityDenominator, addIntensityDenominator, updateIntensityDenominator } from '@/api/system/intensityDenominator';
 import { IntensityDenominatorVO, IntensityDenominatorQuery, IntensityDenominatorForm } from '@/api/system/intensityDenominator/types';
 
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const intensityDenominatorList = ref<IntensityDenominatorVO[]>([]);
@@ -281,4 +280,6 @@ const handleExport = () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

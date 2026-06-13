@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="dialog.visible" :title="dialog.title" width="50%" draggable :before-close="cancel" center :close-on-click-modal="false">
+  <el-dialog v-model="dialog.visible" :title="dialog.title" width="50%" draggable :before-close="cancel" center>
     <el-form v-loading="loading" :model="form" label-width="120px">
       <el-form-item label="消息提醒">
         <el-checkbox-group v-model="form.messageType">
@@ -89,7 +89,7 @@
     ></UserSelect>
 
     <!-- 驳回开始 -->
-    <el-dialog v-model="backVisible" draggable title="驳回" width="40%" :close-on-click-modal="false">
+    <el-dialog v-model="backVisible" draggable title="驳回" width="40%">
       <el-form v-if="task.flowStatus === 'waiting'" v-loading="backLoading" :model="backForm" label-width="120px">
         <el-form-item label="驳回节点">
           <el-select v-model="backForm.nodeCode" clearable placeholder="请选择" style="width: 300px">
@@ -122,7 +122,7 @@
       </template>
     </el-dialog>
     <!-- 驳回结束 -->
-    <el-dialog v-model="deleteSignatureVisible" draggable title="减签人员" width="700px" height="400px" append-to-body :close-on-click-modal="false">
+    <el-dialog v-model="deleteSignatureVisible" draggable title="减签人员" width="700px" height="400px" append-to-body>
       <div>
         <el-table :data="deleteUserList" border>
           <el-table-column prop="nodeName" label="任务名称" />

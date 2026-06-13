@@ -17,7 +17,8 @@
               <el-input v-model="queryParams.companyName" placeholder="请输入企业名称" clearable @keyup.enter="handleQuery" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-form>
@@ -158,6 +159,7 @@ import {
   syncTenantDict,
   syncTenantConfig
 } from '@/api/system/tenant';
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { selectTenantPackage } from '@/api/system/tenantPackage';
 import { useUserStore } from '@/store/modules/user';
 import { TenantForm, TenantQuery, TenantVO } from '@/api/system/tenant/types';
@@ -379,4 +381,6 @@ const handleSyncTenantConfig = async () => {
 onMounted(() => {
   getList();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>

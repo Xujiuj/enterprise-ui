@@ -88,23 +88,23 @@ html.dark {
   }
 
   .el-button--success {
-    --el-button-bg-color: #1f8a5a;
-    --el-button-border-color: #29a46d;
-    --el-button-text-color: #eefaf4;
-    --el-button-hover-bg-color: #29a46d;
-    --el-button-hover-border-color: #29a46d;
-    --el-button-active-bg-color: #1b784f;
-    --el-button-active-border-color: #1b784f;
+    --el-button-bg-color: #2b6bd3;
+    --el-button-border-color: #3a7be8;
+    --el-button-text-color: #eef4ff;
+    --el-button-hover-bg-color: #3a7be8;
+    --el-button-hover-border-color: #3a7be8;
+    --el-button-active-bg-color: #255fb8;
+    --el-button-active-border-color: #255fb8;
   }
 
   .el-button--success.is-plain {
-    --el-button-bg-color: rgba(31, 138, 90, 0.12);
-    --el-button-border-color: rgba(41, 164, 109, 0.5);
-    --el-button-text-color: #dbf6e8;
-    --el-button-hover-bg-color: rgba(41, 164, 109, 0.2);
-    --el-button-hover-border-color: rgba(41, 164, 109, 0.7);
-    --el-button-active-bg-color: rgba(31, 138, 90, 0.28);
-    --el-button-active-border-color: rgba(31, 138, 90, 0.8);
+    --el-button-bg-color: rgba(43, 107, 211, 0.12);
+    --el-button-border-color: rgba(58, 123, 232, 0.5);
+    --el-button-text-color: #dbe8ff;
+    --el-button-hover-bg-color: rgba(58, 123, 232, 0.2);
+    --el-button-hover-border-color: rgba(58, 123, 232, 0.7);
+    --el-button-active-bg-color: rgba(43, 107, 211, 0.28);
+    --el-button-active-border-color: rgba(43, 107, 211, 0.8);
   }
 
   .el-button--warning {

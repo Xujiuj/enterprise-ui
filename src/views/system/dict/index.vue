@@ -31,7 +31,6 @@
                 ></el-date-picker>
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" icon="Search" @click="handleTypeQuery">搜索</el-button>
                 <el-button icon="Refresh" @click="handleTypeResetQuery">重置</el-button>
               </el-form-item>
             </el-form>
@@ -121,7 +120,6 @@
                 />
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" icon="Search" :disabled="!hasCurrentDict" @click="handleDataQuery">搜索</el-button>
                 <el-button icon="Refresh" :disabled="!hasCurrentDict" @click="handleDataResetQuery">重置</el-button>
               </el-form-item>
             </el-form>
@@ -281,6 +279,7 @@ import { listType, getType, delType, addType, updateType, refreshCache } from '@
 import { listData, getData, delData, addData, updateData } from '@/api/system/dict/data';
 import { DictTypeForm, DictTypeQuery, DictTypeVO } from '@/api/system/dict/type/types';
 import { DictDataForm, DictDataQuery, DictDataVO } from '@/api/system/dict/data/types';
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
@@ -607,6 +606,9 @@ const handleDataExport = () => {
 onMounted(() => {
   getTypeList();
 });
+
+useAutoQuery(typeQueryParams, () => handleTypeQuery(), [dateRange]);
+useAutoQuery(() => ({ dictLabel: dataQueryParams.value.dictLabel }), () => handleDataQuery());
 </script>
 
 <style lang="scss" scoped>
