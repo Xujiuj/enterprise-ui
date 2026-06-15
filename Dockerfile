@@ -6,6 +6,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+RUN npm run test:unit
 RUN npm run build:prod
 
 FROM nginx:1.27-alpine
