@@ -19,6 +19,31 @@ export default defineConfig(({ mode, command }) => {
     },
     // https://cn.vitejs.dev/config/#resolve-extensions
     plugins: createPlugins(env, command === 'build'),
+    build: {
+      chunkSizeWarningLimit: 1200,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return undefined;
+            }
+            if (id.includes('element-plus') || id.includes('@element-plus')) {
+              return 'vendor-element-plus';
+            }
+            if (id.includes('vxe-table')) {
+              return 'vendor-vxe-table';
+            }
+            if (id.includes('echarts')) {
+              return 'vendor-echarts';
+            }
+            if (id.includes('@vueup/vue-quill') || id.includes('quill') || id.includes('highlight.js')) {
+              return 'vendor-editor';
+            }
+            return undefined;
+          }
+        }
+      }
+    },
     server: {
       host: '0.0.0.0',
       port: Number(env.VITE_APP_PORT),
