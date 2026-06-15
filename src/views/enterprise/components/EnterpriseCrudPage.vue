@@ -153,7 +153,7 @@
   </div>
 </template>
 
-<script setup name="EnterpriseRuoyiCrudPage" lang="ts">
+<script setup name="EnterpriseCrudPage" lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import {

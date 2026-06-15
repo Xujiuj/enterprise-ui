@@ -25,7 +25,6 @@ export const enterpriseAllowedPermissionPrefixes = ['enterprise:', 'system:', 'm
 
 const enterpriseAllowedTopLevelPaths = new Set([
   'system-auth',
-  'data-management',
   'emission-source-config',
   'factor-confirm',
   'activity-data',
@@ -37,7 +36,6 @@ const enterpriseAllowedTopLevelPaths = new Set([
 ]);
 
 const enterpriseAllowedTopLevelTitles = new Set([
-  '数据管理',
   '系统授权',
   '配置排放源',
   '确认排放因子',

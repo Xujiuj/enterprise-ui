@@ -126,8 +126,10 @@
                 </el-form-item>
               </el-col>
               <el-col :xs="24" :sm="12">
-                <el-form-item label="数据来源" prop="dataSource">
-                  <el-input v-model="form.dataSource" maxlength="64" clearable />
+                <el-form-item label="f016 数据来源" prop="f016">
+                  <el-select v-model="form.f016" class="w-full" clearable filterable placeholder="选择数据来源">
+                    <el-option v-for="option in dataSourceOptions" :key="option.value" :label="option.label" :value="option.value" />
+                  </el-select>
                 </el-form-item>
               </el-col>
               <el-col :xs="24">
@@ -223,7 +225,7 @@ interface ActivityEntryForm {
   date?: string;
   activityValue?: number;
   responsibleDept?: string;
-  dataSource?: string;
+  f016?: string;
   remark?: string;
 }
 
@@ -281,9 +283,18 @@ const form = reactive<ActivityEntryForm>({
   date: undefined,
   activityValue: undefined,
   responsibleDept: undefined,
-  dataSource: undefined,
+  f016: undefined,
   remark: undefined
 });
+
+const dataSourceOptions = [
+  { label: '发票/结算单', value: 'invoice' },
+  { label: '仪表/计量系统', value: 'meter' },
+  { label: 'ERP/MES 系统', value: 'erp_mes' },
+  { label: '台账记录', value: 'ledger' },
+  { label: '供应商证明', value: 'supplier_evidence' },
+  { label: '其他原始凭证', value: 'other_evidence' }
+];
 
 const rules: FormRules<ActivityEntryForm> = {
   sourceCode: [{ required: true, message: '请选择排放源', trigger: 'change' }],
@@ -292,7 +303,7 @@ const rules: FormRules<ActivityEntryForm> = {
   date: [{ required: true, message: '请选择日期', trigger: 'change' }],
   activityValue: [{ required: true, message: '请输入活动数据', trigger: 'blur' }],
   responsibleDept: [{ required: true, message: '请输入负责部门', trigger: 'blur' }],
-  dataSource: [{ required: true, message: '请输入数据来源', trigger: 'blur' }]
+  f016: [{ required: true, message: '请输入数据来源', trigger: 'blur' }]
 };
 
 const selectedSource = computed(() => emissionSources.value.find((source) => source.sourceCode === form.sourceCode));
@@ -355,7 +366,7 @@ const buildFieldValues = (): Sheet656FieldValue[] => {
     f013: form.date ?? '',
     f014: valueToString(form.activityValue),
     f015: form.responsibleDept ?? '',
-    f016: form.dataSource ?? '',
+    f016: form.f016 ?? '',
     f017: form.remark ?? '',
     ...manualResolvedDerivedValues.value
   };
@@ -378,10 +389,25 @@ const buildManualValidationRequest = (): Sheet656ImportValidationRequest => ({
 });
 
 watch(
-  () => [form.sourceCode, form.year, form.month, form.date, form.activityValue, form.responsibleDept, form.dataSource, form.remark],
+  () => [form.sourceCode, form.year, form.month, form.date, form.activityValue, form.responsibleDept, form.f016, form.remark],
   () => {
     manualValidation.value = undefined;
     manualResolvedDerivedValues.value = {};
+  }
+);
+
+watch(
+  selectedSource,
+  (source) => {
+    if (!source || form.responsibleDept) {
+      return;
+    }
+    const derivedDept =
+      (source as EmissionSourceVO & { responsibleDept?: string; deptName?: string }).responsibleDept ||
+      (source as EmissionSourceVO & { deptName?: string }).deptName;
+    if (derivedDept) {
+      form.responsibleDept = derivedDept;
+    }
   }
 );
 

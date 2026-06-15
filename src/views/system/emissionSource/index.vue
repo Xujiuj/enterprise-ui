@@ -65,7 +65,6 @@
         <el-table-column label="温室气体类型" align="center" prop="ghgType" />
         <el-table-column label="负责部门" align="center" prop="responsibleDept" />
         <el-table-column label="负责人" align="center" prop="responsiblePerson" />
-        <el-table-column label="数据来源类型" align="center" prop="dataSourceType" />
         <el-table-column label="更新频率" align="center" prop="updateFrequency" />
         <el-table-column label="状态" align="center" prop="status">
           <template #default="scope">
@@ -139,13 +138,6 @@
         <el-form-item label="负责人" prop="responsiblePerson">
           <el-input v-model="form.responsiblePerson" placeholder="请输入负责人" />
         </el-form-item>
-        <el-form-item label="数据来源类型" prop="dataSourceType">
-          <el-select v-model="form.dataSourceType" placeholder="请选择数据来源类型" clearable class="w-full">
-            <el-option label="计量" value="计量" />
-            <el-option label="估算" value="估算" />
-            <el-option label="默认" value="默认" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="更新频率" prop="updateFrequency">
           <el-select v-model="form.updateFrequency" placeholder="请选择更新频率" clearable class="w-full">
             <el-option label="月度" value="月度" />
@@ -202,7 +194,6 @@ const initFormData: EmissionSourceForm = {
   ghgType: undefined,
   description: undefined,
   responsibleDept: undefined,
-  dataSourceType: undefined,
   responsiblePerson: undefined,
   updateFrequency: undefined,
   dataPermission: undefined,
@@ -222,7 +213,6 @@ const data = reactive<PageData<EmissionSourceForm, EmissionSourceQuery>>({
     ghgType: undefined,
     description: undefined,
     responsibleDept: undefined,
-    dataSourceType: undefined,
     responsiblePerson: undefined,
     updateFrequency: undefined,
     dataPermission: undefined,

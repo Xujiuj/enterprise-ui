@@ -23,12 +23,6 @@
             <el-input v-model="queryParams.recordName" :placeholder="`请输入${page.nameLabel}`" clearable @keyup.enter="handleQuery" />
           </div>
           <div class="search-item">
-            <label>数据来源</label>
-            <el-select v-model="queryParams.sourceType" placeholder="请选择数据来源" clearable>
-              <el-option v-for="item in sourceOptions" :key="item.value" :label="item.label" :value="item.value" />
-            </el-select>
-          </div>
-          <div class="search-item">
             <label>状态</label>
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
               <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -74,13 +68,6 @@
             :min-width="field.width ?? 140"
             :show-overflow-tooltip="true"
           />
-          <el-table-column label="数据来源" align="center" prop="sourceType" width="110">
-            <template #default="scope">
-              <span class="tag" :class="scope.row.sourceType === 'vendor' ? 'info' : 'gray'">
-                {{ sourceLabel(scope.row.sourceType) }}
-              </span>
-            </template>
-          </el-table-column>
           <el-table-column label="状态" align="center" prop="status" width="100">
             <template #default="scope">
               <span class="tag" :class="scope.row.status === '0' ? 'ok' : 'gray'">
@@ -128,11 +115,6 @@
             />
             <el-input v-else-if="field.type === 'number'" v-model="form[field.prop]" type="number" :placeholder="`请输入${field.label}`" />
             <el-input v-else v-model="form[field.prop]" :placeholder="`请输入${field.label}`" />
-          </el-form-item>
-          <el-form-item label="数据来源" prop="sourceType">
-            <el-select v-model="form.sourceType" placeholder="请选择数据来源" clearable class="w-full">
-              <el-option v-for="item in sourceOptions" :key="item.value" :label="item.label" :value="item.value" />
-            </el-select>
           </el-form-item>
           <el-form-item label="状态" prop="status">
             <el-radio-group v-model="form.status">
@@ -202,12 +184,6 @@ const statusOptions = [
   { label: '启用', value: '0' },
   { label: '停用', value: '1' }
 ];
-const sourceOptions = [
-  { label: '厂商同步', value: 'vendor' },
-  { label: '企业维护', value: 'enterprise' },
-  { label: '系统生成', value: 'system' }
-];
-
 const dimensionPages: Record<string, PageConfig> = {
   'admin-division': {
     title: '行政区划',
@@ -485,7 +461,6 @@ const initFormData: DimensionRecordForm = {
   recordCode: undefined,
   recordName: undefined,
   parentCode: undefined,
-  sourceType: 'enterprise',
   field01: undefined,
   field02: undefined,
   field03: undefined,
@@ -506,19 +481,16 @@ const data = reactive<PageData<DimensionRecordForm, DimensionRecordQuery>>({
     recordCode: undefined,
     recordName: undefined,
     parentCode: undefined,
-    sourceType: undefined,
     status: undefined
   },
   rules: {
     recordCode: [{ required: true, message: '编码不能为空', trigger: 'blur' }],
-    recordName: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
-    sourceType: [{ required: true, message: '数据来源不能为空', trigger: 'change' }]
+    recordName: [{ required: true, message: '名称不能为空', trigger: 'blur' }]
   }
 });
 
 const { queryParams, form, rules } = toRefs(data);
 
-const sourceLabel = (value?: string) => sourceOptions.find((item) => item.value === value)?.label ?? value ?? '-';
 const statusLabel = (value?: string) => statusOptions.find((item) => item.value === value)?.label ?? value ?? '-';
 
 const getList = async () => {
@@ -564,7 +536,6 @@ const resetQuery = () => {
     recordCode: undefined,
     recordName: undefined,
     parentCode: undefined,
-    sourceType: undefined,
     status: undefined
   };
   getList();

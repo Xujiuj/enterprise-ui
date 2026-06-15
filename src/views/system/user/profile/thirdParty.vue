@@ -12,7 +12,9 @@
       <el-table-column label="绑定时间" width="180" align="center" prop="createTime" />
       <el-table-column label="操作" width="80" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button size="small" type="text" @click="unlockAuth(scope.row)">解绑</el-button>
+          <el-tooltip content="解绑" placement="top">
+            <el-button size="small" type="text" icon="Unlock" aria-label="解绑" @click="unlockAuth(scope.row)"></el-button>
+          </el-tooltip>
         </template>
       </el-table-column>
     </el-table>
@@ -37,18 +39,6 @@
             <svg-icon icon-class="topiam" />
           </div>
           <span class="app-name">TopIam</span>
-        </a>
-        <a class="third-app" href="#" title="使用 Gitee 账号授权登录" @click="authUrl('gitee')">
-          <div class="git-other-login-icon">
-            <svg-icon icon-class="gitee" />
-          </div>
-          <span class="app-name">Gitee</span>
-        </a>
-        <a class="third-app" href="#" title="使用 GitHub 账号授权登录" @click="authUrl('github')">
-          <div class="git-other-login-icon">
-            <svg-icon icon-class="github" />
-          </div>
-          <span class="app-name">Github</span>
         </a>
       </div>
     </div>

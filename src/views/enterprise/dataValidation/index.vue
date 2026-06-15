@@ -90,7 +90,7 @@
         </el-table-column>
         <el-table-column label="操作" width="110" fixed="right">
           <template #default="scope">
-            <el-button link type="primary" @click="openIssue(scope.row)">
+            <el-button link type="primary" icon="View" @click="openIssue(scope.row)">
               {{ scope.row.issueStatus === 'missing' ? '去录入' : '查看数据' }}
             </el-button>
           </template>

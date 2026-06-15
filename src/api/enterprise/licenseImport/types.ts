@@ -1,4 +1,12 @@
-export type LicenseGateDenialReason = 'NO_VALID_LICENSE' | 'CLOCK_ROLLBACK' | 'EXPIRED' | 'INSTALL_ID_MISMATCH' | string;
+export type LicenseGateDenialReason =
+  | 'VALID'
+  | 'NO_VALID_LICENSE'
+  | 'CLOCK_ROLLBACK'
+  | 'EXPIRED'
+  | 'NOT_YET_VALID'
+  | 'INSTALL_ID_MISMATCH'
+  | 'FEATURE_NOT_ENABLED'
+  | string;
 
 export interface EnterpriseLicenseImportRequest {
   licenseContent: string;
@@ -32,6 +40,8 @@ export type EnterpriseLicenseCurrentState = EnterpriseLicenseState;
 export interface EnterpriseLicenseGateStatus {
   decision: 'ALLOW' | 'DENY' | string;
   reason?: LicenseGateDenialReason;
+  status?: string;
+  allowed?: boolean;
   message?: string;
   licenseState?: EnterpriseLicenseState;
 }

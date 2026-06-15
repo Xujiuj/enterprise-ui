@@ -7,7 +7,7 @@
       </div>
       <div class="btns">
         <button type="button" class="btn primary" @click="openBusiness('/activity-data/emission-activity-entry')">去录入</button>
-        <button type="button" class="btn" @click="openBusiness('/data-management/report-template-download')">下载报表模板</button>
+        <button type="button" class="btn" @click="openBusiness('/report-management/report-template-download')">下载报表模板</button>
       </div>
     </section>
 

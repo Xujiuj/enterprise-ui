@@ -35,11 +35,6 @@ export interface ActivityDataVO {
   dataType: string;
 
   /**
-   * 鏁版嵁鏉ユ簮璇存槑
-   */
-  dataSource: string;
-
-  /**
    * 璁＄畻鍏?紡
    */
   calculationFormula: string;
@@ -103,11 +98,6 @@ export interface ActivityDataForm extends BaseEntity {
   dataType?: string;
 
   /**
-   * 鏁版嵁鏉ユ簮璇存槑
-   */
-  dataSource?: string;
-
-  /**
    * 璁＄畻鍏?紡
    */
   calculationFormula?: string;
@@ -165,11 +155,6 @@ export interface ActivityDataQuery extends PageQuery {
    * 鏁版嵁绫诲瀷(鍘熷?鏁版嵁/璁＄畻鍊?
    */
   dataType?: string;
-
-  /**
-   * 鏁版嵁鏉ユ簮璇存槑
-   */
-  dataSource?: string;
 
   /**
    * 璁＄畻鍏?紡

@@ -31,10 +31,6 @@
           <label>适用区域</label>
           <el-input v-model="queryParams.region" placeholder="全国/华东/华北/华南/华中/西北/西南/东北" clearable @keyup.enter="handleQuery" />
         </div>
-        <div class="search-item">
-          <label>数据来源</label>
-          <el-input v-model="queryParams.dataSource" placeholder="IPCC/国家发改委/国际能源署" clearable @keyup.enter="handleQuery" />
-        </div>
         <div class="search-actions">
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button link type="primary" @click="showSearch = false">
@@ -65,7 +61,6 @@
         <el-table-column label="适用区域" align="center" prop="region" />
         <el-table-column label="适用年份" align="center" prop="factorYear" />
         <el-table-column label="GWP" align="center" prop="gwpValue" />
-        <el-table-column label="数据来源" align="center" prop="dataSource" />
         <el-table-column label="发布状态" align="center" prop="isPublished">
           <template #default="scope">
             <span class="tag" :class="scope.row.isPublished === '1' ? 'ok' : scope.row.isPublished === '0' ? 'gray' : 'error'">
@@ -139,13 +134,6 @@
         <el-form-item label="GWP" prop="gwpValue">
           <el-input v-model="form.gwpValue" placeholder="请输入全球变暖潜势GWP" />
         </el-form-item>
-        <el-form-item label="数据来源" prop="dataSource">
-          <el-select v-model="form.dataSource" placeholder="请选择数据来源" clearable class="w-full">
-            <el-option label="IPCC" value="IPCC" />
-            <el-option label="国家发改委" value="国家发改委" />
-            <el-option label="国际能源署" value="国际能源署" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="发布状态" prop="isPublished">
           <el-input v-model="form.isPublished" placeholder="0草稿 1已发布 2已冻结" />
         </el-form-item>
@@ -203,7 +191,6 @@ const initFormData: FactorLibraryForm = {
   region: undefined,
   factorYear: undefined,
   gwpValue: undefined,
-  dataSource: undefined,
   isPublished: undefined,
   publishedTime: undefined,
   remark: undefined,
@@ -221,7 +208,6 @@ const data = reactive<PageData<FactorLibraryForm, FactorLibraryQuery>>({
     region: undefined,
     factorYear: undefined,
     gwpValue: undefined,
-    dataSource: undefined,
     isPublished: undefined,
     publishedTime: undefined,
     params: {

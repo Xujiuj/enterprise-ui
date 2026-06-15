@@ -4,7 +4,6 @@ export interface DimensionRecordVO {
   recordCode: string;
   recordName: string;
   parentCode?: string;
-  sourceType?: string;
   field01?: string;
   field02?: string;
   field03?: string;
@@ -24,7 +23,6 @@ export interface DimensionRecordForm extends BaseEntity {
   recordCode?: string;
   recordName?: string;
   parentCode?: string;
-  sourceType?: string;
   field01?: string;
   field02?: string;
   field03?: string;
@@ -41,6 +39,5 @@ export interface DimensionRecordQuery extends PageQuery {
   recordCode?: string;
   recordName?: string;
   parentCode?: string;
-  sourceType?: string;
   status?: string;
 }

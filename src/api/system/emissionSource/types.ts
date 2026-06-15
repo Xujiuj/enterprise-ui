@@ -45,11 +45,6 @@ export interface EmissionSourceVO {
   responsibleDept: string;
 
   /**
-   * 鏁版嵁鏉ユ簮绫诲瀷(璁￠噺/浼扮畻/榛樿?)
-   */
-  dataSourceType: string;
-
-  /**
    * 璐熻矗浜
    */
   responsiblePerson: string;
@@ -123,11 +118,6 @@ export interface EmissionSourceForm extends BaseEntity {
   responsibleDept?: string;
 
   /**
-   * 鏁版嵁鏉ユ簮绫诲瀷(璁￠噺/浼扮畻/榛樿?)
-   */
-  dataSourceType?: string;
-
-  /**
    * 璐熻矗浜
    */
   responsiblePerson?: string;
@@ -195,11 +185,6 @@ export interface EmissionSourceQuery extends PageQuery {
    * 璐熻矗閮ㄩ棬
    */
   responsibleDept?: string;
-
-  /**
-   * 鏁版嵁鏉ユ簮绫诲瀷(璁￠噺/浼扮畻/榛樿?)
-   */
-  dataSourceType?: string;
 
   /**
    * 璐熻矗浜

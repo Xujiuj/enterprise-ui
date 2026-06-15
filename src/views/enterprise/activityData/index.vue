@@ -1,9 +1,9 @@
 <template>
-  <RuoyiCrudPage :config="config" :api="api" />
+  <EnterpriseCrudPage :config="config" :api="api" />
 </template>
 
 <script setup name="EnterpriseActivityData" lang="ts">
-import RuoyiCrudPage from '@/views/enterprise/components/RuoyiCrudPage.vue';
+import EnterpriseCrudPage from '@/views/enterprise/components/EnterpriseCrudPage.vue';
 import { addActivityData, delActivityData, getActivityData, listActivityData, updateActivityData } from '@/api/enterprise/activityData';
 
 const statusOptions = [

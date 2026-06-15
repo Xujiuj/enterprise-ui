@@ -1,9 +1,9 @@
 <template>
-  <RuoyiCrudPage :config="config" :api="api" />
+  <EnterpriseCrudPage :config="config" :api="api" />
 </template>
 
 <script setup name="EnterpriseFactorCacheRecord" lang="ts">
-import RuoyiCrudPage from '@/views/enterprise/components/RuoyiCrudPage.vue';
+import EnterpriseCrudPage from '@/views/enterprise/components/EnterpriseCrudPage.vue';
 import {
   addFactorCacheRecord,
   delFactorCacheRecord,

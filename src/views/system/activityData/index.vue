@@ -65,7 +65,6 @@
         <el-table-column label="活动数据值" align="center" prop="activityValue" />
         <el-table-column label="活动数据单位" align="center" prop="activityUnit" />
         <el-table-column label="数据类型" align="center" prop="dataType" />
-        <el-table-column label="数据来源说明" align="center" prop="dataSource" :show-overflow-tooltip="true" />
         <el-table-column label="计算公式" align="center" prop="calculationFormula" :show-overflow-tooltip="true" />
         <el-table-column label="排放量计算结果" align="center" prop="emissionResult" />
         <el-table-column label="校验状态" align="center" prop="verificationStatus">
@@ -292,7 +291,6 @@ const initFormData: ActivityDataForm = {
   activityValue: undefined,
   activityUnit: undefined,
   dataType: undefined,
-  dataSource: undefined,
   calculationFormula: undefined,
   emissionResult: undefined,
   verificationStatus: undefined,
@@ -322,7 +320,6 @@ const data = reactive<PageData<ActivityDataForm, ActivityDataQuery>>({
     activityValue: undefined,
     activityUnit: undefined,
     dataType: undefined,
-    dataSource: undefined,
     calculationFormula: undefined,
     emissionResult: undefined,
     verificationStatus: undefined,
@@ -476,7 +473,6 @@ const buildActivityDataPayload = (mode: SaveMode): ActivityDataForm => {
     dataYear: sheetForm.f011,
     activityValue: sheetForm.f014,
     dataType: '原始数据',
-    dataSource: sheetForm.f016,
     verificationStatus: mode === 'submit' ? '1' : '0',
     extendJson: JSON.stringify({
       templateCode: 'sheet_656',

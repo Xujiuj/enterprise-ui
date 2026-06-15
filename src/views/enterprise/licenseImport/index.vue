@@ -14,22 +14,35 @@
           <template #header>
             <div class="card-header">
               <span>当前授权</span>
-              <el-tag :type="stateTagType">{{ stateText }}</el-tag>
+              <el-tag :type="stateTagType">导入状态：{{ stateText }}</el-tag>
             </div>
           </template>
 
           <el-skeleton :loading="statusLoading" animated :rows="6">
             <el-empty v-if="!currentState" description="暂无可用授权状态" />
-            <el-descriptions v-else :column="2" border>
-              <el-descriptions-item label="客户标识">{{ currentState.customerId || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="授权编号">{{ currentState.licenseId || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="授权状态">{{ normalizeStatus(currentState.licenseStatus) }}</el-descriptions-item>
-              <el-descriptions-item label="签名密钥">{{ currentState.keyId || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="有效期起">{{ formatTime(currentState.validFrom) }}</el-descriptions-item>
-              <el-descriptions-item label="有效期止">{{ formatTime(currentState.validTo) }}</el-descriptions-item>
-              <el-descriptions-item label="部署指纹">{{ currentState.installId || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="最近校验">{{ formatTime(currentState.lastVerifiedTime) }}</el-descriptions-item>
-            </el-descriptions>
+            <template v-else>
+              <el-alert v-if="statusMismatch" class="mb-4" type="warning" :closable="false" show-icon>
+                <template #title>
+                  导入状态为 {{ stateText }}，但当前运行状态为 {{ effectiveStatusText }}。请以运行状态作为访问控制结果。
+                </template>
+              </el-alert>
+              <el-descriptions :column="2" border>
+                <el-descriptions-item label="客户标识">{{ currentState.customerId || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="授权编号">{{ currentState.licenseId || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="导入状态/持久状态">
+                  <el-tag :type="stateTagType">{{ stateText }}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="运行状态/有效状态">
+                  <el-tag :type="effectiveStatusTagType">{{ effectiveStatusText }}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="签名密钥">{{ currentState.keyId || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="有效期起">{{ formatTime(currentState.validFrom) }}</el-descriptions-item>
+                <el-descriptions-item label="有效期止">{{ formatTime(currentState.validTo) }}</el-descriptions-item>
+                <el-descriptions-item label="部署指纹">{{ currentState.installId || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="最近校验">{{ formatTime(currentState.lastVerifiedTime) }}</el-descriptions-item>
+                <el-descriptions-item label="最大观测时间">{{ formatTime(currentState.maxObservedTime) }}</el-descriptions-item>
+              </el-descriptions>
+            </template>
           </el-skeleton>
         </el-card>
 
@@ -37,21 +50,24 @@
           <template #header>
             <div class="card-header">
               <span>访问网关</span>
-              <el-tag :type="gateAllowed ? 'success' : 'danger'">{{ gateAllowed ? '已放行' : '已拦截' }}</el-tag>
+              <el-tag :type="gateDecisionTagType">{{ gateDecisionText }}</el-tag>
             </div>
           </template>
 
           <el-skeleton :loading="statusLoading" animated :rows="4">
             <div class="gate-status">
-              <el-alert :type="gateAllowed ? 'success' : 'warning'" :closable="false" show-icon>
+              <el-alert :type="gateAlertType" :closable="false" show-icon>
                 <template #title>{{ gateMessage }}</template>
               </el-alert>
               <el-descriptions class="mt-4" :column="2" border>
-                <el-descriptions-item label="网关结果">{{ gateAllowed ? '允许访问企业业务接口' : '企业业务接口暂不可访问' }}</el-descriptions-item>
-              <el-descriptions-item label="拒绝原因">{{ gateStatus?.reason || '-' }}</el-descriptions-item>
-            </el-descriptions>
-          </div>
-        </el-skeleton>
+                <el-descriptions-item label="网关结果">{{ gateResultText }}</el-descriptions-item>
+                <el-descriptions-item label="原因">
+                  <el-tag :type="effectiveStatusTagType">{{ effectiveStatusText }}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="说明" :span="2">{{ gateStatus?.message || '-' }}</el-descriptions-item>
+              </el-descriptions>
+            </div>
+          </el-skeleton>
         </el-card>
       </el-col>
 
@@ -139,10 +155,59 @@ const gateStatus = ref<EnterpriseLicenseGateStatus>();
 const lastImportResult = ref<EnterpriseLicenseImportResult>();
 
 const canImport = computed(() => licenseContent.value.trim().length > 0 && expectedInstallId.value.trim().length > 0 && !importLoading.value);
-const gateAllowed = computed(() => gateStatus.value?.decision === 'ALLOW');
+const effectiveReason = computed(() => {
+  const reason = normalizeGateReason(gateStatus.value?.reason || gateStatus.value?.status);
+  if (!reason && gateStatus.value && gateAllowed.value) {
+    return 'VALID';
+  }
+  return reason;
+});
+const gateAllowed = computed(() => {
+  if (typeof gateStatus.value?.allowed === 'boolean') {
+    return gateStatus.value.allowed;
+  }
+  return String(gateStatus.value?.decision ?? '').toUpperCase() === 'ALLOW';
+});
 const stateText = computed(() => normalizeStatus(currentState.value?.licenseStatus));
 const stateTagType = computed(() => statusTagType(currentState.value?.licenseStatus));
 const importResultTagType = computed(() => statusTagType(lastImportResult.value?.status));
+const effectiveStatusText = computed(() => gateStatus.value ? gateReasonText(effectiveReason.value) : '未读取网关状态');
+const effectiveStatusTagType = computed(() => gateReasonTagType(effectiveReason.value));
+const gateDecisionText = computed(() => {
+  if (!gateStatus.value) {
+    return '未读取';
+  }
+  return gateAllowed.value ? '已放行' : '已拦截';
+});
+const gateResultText = computed(() => {
+  if (!gateStatus.value) {
+    return '尚未读取访问网关状态';
+  }
+  return gateAllowed.value ? '允许访问企业业务接口' : '企业业务接口暂不可访问';
+});
+const gateDecisionTagType = computed(() => {
+  if (!gateStatus.value) {
+    return 'info';
+  }
+  return gateAllowed.value ? 'success' : 'danger';
+});
+const gateAlertType = computed(() => {
+  if (!gateStatus.value) {
+    return 'info';
+  }
+  if (gateAllowed.value) {
+    return 'success';
+  }
+  return gateReasonTagType(effectiveReason.value) === 'danger' ? 'error' : 'warning';
+});
+const statusMismatch = computed(() => {
+  if (!currentState.value || !gateStatus.value) {
+    return false;
+  }
+  const persisted = normalizeComparableStatus(currentState.value.licenseStatus);
+  const effective = normalizeComparableStatus(effectiveReason.value);
+  return Boolean(persisted && effective && persisted !== effective);
+});
 const gateMessage = computed(() => {
   if (!gateStatus.value) {
     return '尚未读取访问网关状态';
@@ -150,7 +215,7 @@ const gateMessage = computed(() => {
   if (gateAllowed.value) {
     return gateStatus.value.message || '当前授权可访问企业业务接口';
   }
-  return denialReasonText(gateStatus.value.reason, gateStatus.value.message);
+  return gateReasonText(effectiveReason.value);
 });
 
 function unwrapResponse<T>(response: unknown): T {
@@ -159,42 +224,86 @@ function unwrapResponse<T>(response: unknown): T {
 }
 
 function normalizeStatus(status?: string): string {
-  const normalized = String(status ?? '').toUpperCase();
   const statusMap: Record<string, string> = {
     VALID: '有效',
     ACTIVE: '有效',
     NORMAL: '有效',
     INSTALLED: '已安装',
     EXPIRED: '已过期',
+    NOT_YET_VALID: '未到生效时间',
+    INSTALL_ID_MISMATCH: '部署指纹不匹配',
+    CLOCK_ROLLBACK: '系统时间异常',
+    FEATURE_NOT_ENABLED: '功能未启用',
+    NO_VALID_LICENSE: '无有效授权',
     INVALID: '无效',
     DISABLED: '停用',
     PENDING: '待校验'
   };
+  const normalized = normalizeStatusKey(status);
   return statusMap[normalized] || status || '未知';
 }
 
 function statusTagType(status?: string): 'success' | 'warning' | 'danger' | 'info' {
-  const normalized = String(status ?? '').toUpperCase();
+  const normalized = normalizeStatusKey(status);
   if (['VALID', 'ACTIVE', 'NORMAL', 'INSTALLED'].includes(normalized)) {
     return 'success';
   }
-  if (['EXPIRED', 'INVALID', 'DISABLED'].includes(normalized)) {
+  if (['EXPIRED', 'INVALID', 'DISABLED', 'NO_VALID_LICENSE'].includes(normalized)) {
     return 'danger';
   }
-  if (['PENDING', 'WARNING'].includes(normalized)) {
+  if (['PENDING', 'WARNING', 'INSTALL_ID_MISMATCH', 'CLOCK_ROLLBACK', 'FEATURE_NOT_ENABLED'].includes(normalized)) {
     return 'warning';
+  }
+  if (normalized === 'NOT_YET_VALID') {
+    return 'info';
   }
   return 'info';
 }
 
-function denialReasonText(reason?: LicenseGateDenialReason, fallback?: string): string {
+function normalizeStatusKey(status?: string): string {
+  return String(status ?? '').trim().toUpperCase();
+}
+
+function normalizeComparableStatus(status?: string): string {
+  const normalized = normalizeStatusKey(status);
+  if (['VALID', 'ACTIVE', 'NORMAL', 'INSTALLED'].includes(normalized)) {
+    return 'VALID';
+  }
+  return normalized;
+}
+
+function normalizeGateReason(reason?: LicenseGateDenialReason | string): string {
+  return normalizeStatusKey(reason);
+}
+
+function gateReasonText(reason?: string): string {
   const reasonMap: Record<string, string> = {
-    NO_VALID_LICENSE: 'no valid license',
-    CLOCK_ROLLBACK: 'clock rollback',
-    EXPIRED: 'expired',
-    INSTALL_ID_MISMATCH: 'install ID mismatch'
+    VALID: '有效',
+    NO_VALID_LICENSE: '无有效授权',
+    CLOCK_ROLLBACK: '系统时间回拨，授权校验被拒绝',
+    EXPIRED: '授权已过期',
+    NOT_YET_VALID: '授权未到生效时间',
+    INSTALL_ID_MISMATCH: '部署指纹不匹配',
+    FEATURE_NOT_ENABLED: '功能未启用'
   };
-  return reasonMap[String(reason ?? '').toUpperCase()] || fallback || 'no valid license';
+  return reasonMap[normalizeGateReason(reason)] || reason || '无有效授权';
+}
+
+function gateReasonTagType(reason?: string): 'success' | 'warning' | 'danger' | 'info' {
+  const normalized = normalizeGateReason(reason);
+  if (normalized === 'VALID') {
+    return 'success';
+  }
+  if (['EXPIRED', 'NO_VALID_LICENSE'].includes(normalized)) {
+    return 'danger';
+  }
+  if (['INSTALL_ID_MISMATCH', 'CLOCK_ROLLBACK', 'FEATURE_NOT_ENABLED'].includes(normalized)) {
+    return 'warning';
+  }
+  if (normalized === 'NOT_YET_VALID') {
+    return 'info';
+  }
+  return 'info';
 }
 
 function formatTime(value?: string): string {

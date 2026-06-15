@@ -16,6 +16,12 @@ describe('enterprise dynamic router guard', () => {
             permissions: ['enterprise:emissionSource:list']
           },
           {
+            path: 'admin-division',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'admin division' },
+            permissions: ['enterprise:dimension:view']
+          },
+          {
             path: 'license-issue',
             component: 'system/license/index',
             meta: { title: 'License issue' },
@@ -26,43 +32,6 @@ describe('enterprise dynamic router guard', () => {
             component: 'vendor/templateScope/index',
             meta: { title: 'template scope' },
             permissions: ['vendor:templateScope:list']
-          }
-        ]
-      },
-      {
-        path: 'data-management',
-        component: 'Layout',
-        meta: { title: '数据管理' },
-        children: [
-          {
-            path: 'admin-division',
-            component: 'enterprise/dimension/index',
-            meta: { title: 'admin division' },
-            permissions: ['enterprise:dimension:view']
-          },
-          {
-            path: 'ef-electricity-version',
-            component: 'enterprise/dimension/index',
-            meta: { title: 'EF电力因子版本对应' },
-            permissions: ['enterprise:dimension:view']
-          },
-          {
-            path: 'ef-electricity-scope',
-            component: 'enterprise/dimension/index',
-            meta: { title: 'EF电力因子口径维度' },
-            permissions: ['enterprise:dimension:view']
-          },
-          {
-            path: 'factor-cache-record',
-            component: 'enterprise/factorCacheRecord/index',
-            meta: { title: 'factor cache record' },
-            permissions: ['enterprise:factorCacheRecord:list']
-          },
-          {
-            path: 'report-template-download',
-            component: 'enterprise/reportTemplateFile/index',
-            meta: { title: 'report template file' },
-            permissions: ['enterprise:reportTemplateFile:list']
           }
         ]
       },
@@ -89,6 +58,24 @@ describe('enterprise dynamic router guard', () => {
             component: 'enterprise/factorConfirmation/index',
             meta: { title: 'factor confirmation' },
             permissions: ['enterprise:factorConfirmation:list']
+          },
+          {
+            path: 'ef-electricity-version',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'EF电力因子版本对应' },
+            permissions: ['enterprise:dimension:view']
+          },
+          {
+            path: 'ef-electricity-scope',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'EF电力因子口径维度' },
+            permissions: ['enterprise:dimension:view']
+          },
+          {
+            path: 'factor-cache-record',
+            component: 'enterprise/factorCacheRecord/index',
+            meta: { title: 'factor cache record' },
+            permissions: ['enterprise:factorCacheRecord:list']
           }
         ]
       },
@@ -147,6 +134,12 @@ describe('enterprise dynamic router guard', () => {
             component: 'enterprise/dataValidation/index',
             meta: { title: 'data validation' },
             permissions: ['enterprise:dataValidation:view']
+          },
+          {
+            path: 'report-template-download',
+            component: 'enterprise/reportTemplateFile/index',
+            meta: { title: 'report template file' },
+            permissions: ['enterprise:reportTemplateFile:list']
           },
           {
             path: 'tool-gen',
@@ -295,15 +288,27 @@ describe('enterprise dynamic router guard', () => {
       ])
     );
     expect(components).not.toEqual(
-      expect.arrayContaining(['tool/gen/index', 'vendor/templateScope/index', 'system/tenant/index', 'system/dept/index', 'monitor/online/index'])
+      expect.arrayContaining([
+        'tool/gen/index',
+        'vendor/templateScope/index',
+        'system/tenant/index',
+        'system/dept/index',
+        'monitor/online/index',
+        'system/license/index',
+        'system/factorLibrary/index',
+        'system/reportTemplate/index'
+      ])
     );
-    const dataManagement = filtered.find((route: any) => route.path === '/data-management') as any;
-    expect(dataManagement.children.map((route: any) => route.path)).toEqual(
-      expect.arrayContaining(['admin-division', 'ef-electricity-version', 'ef-electricity-scope', 'factor-cache-record', 'report-template-download'])
+    const emissionSourceConfig = filtered.find((route: any) => route.path === '/emission-source-config') as any;
+    expect(emissionSourceConfig.children.map((route: any) => route.path)).toEqual(expect.arrayContaining(['admin-division']));
+    const factorConfirm = filtered.find((route: any) => route.path === '/factor-confirm') as any;
+    expect(factorConfirm.children.map((route: any) => route.path)).toEqual(
+      expect.arrayContaining(['ef-electricity-version', 'ef-electricity-scope', 'factor-cache-record'])
     );
+    const reportManagement = filtered.find((route: any) => route.path === '/report-management') as any;
+    expect(reportManagement.children.map((route: any) => route.path)).toEqual(expect.arrayContaining(['report-template-download']));
     expect(filtered.map((route: any) => route.path)).toEqual([
       '/emission-source-config',
-      '/data-management',
       '/system-auth',
       '/factor-confirm',
       '/activity-data',

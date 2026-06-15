@@ -1,5 +1,5 @@
 <template>
-  <RuoyiCrudPage :config="config" :api="api">
+  <EnterpriseCrudPage :config="config" :api="api">
     <template #toolbar-actions="{ refresh }">
       <el-button
         type="success"
@@ -12,13 +12,13 @@
         同步厂商因子
       </el-button>
     </template>
-  </RuoyiCrudPage>
+  </EnterpriseCrudPage>
 </template>
 
 <script setup name="EnterpriseFactorConfirmation" lang="ts">
 import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import RuoyiCrudPage from '@/views/enterprise/components/RuoyiCrudPage.vue';
+import EnterpriseCrudPage from '@/views/enterprise/components/EnterpriseCrudPage.vue';
 import {
   addFactorConfirmation,
   delFactorConfirmation,

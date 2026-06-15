@@ -45,11 +45,6 @@ export interface FactorLibraryVO {
   gwpValue: number;
 
   /**
-   * 鏁版嵁鏉ユ簮(IPCC/鍥藉?鍙戞敼濮?鍥介檯鑳芥簮缃?
-   */
-  dataSource: string;
-
-  /**
    * 鏄?惁鍙戝竷(0鑽夌? 1宸插彂甯?2宸插喕缁?
    */
   isPublished: string;
@@ -113,11 +108,6 @@ export interface FactorLibraryForm extends BaseEntity {
   gwpValue?: number;
 
   /**
-   * 鏁版嵁鏉ユ簮(IPCC/鍥藉?鍙戞敼濮?鍥介檯鑳芥簮缃?
-   */
-  dataSource?: string;
-
-  /**
    * 鏄?惁鍙戝竷(0鑽夌? 1宸插彂甯?2宸插喕缁?
    */
   isPublished?: string;
@@ -175,11 +165,6 @@ export interface FactorLibraryQuery extends PageQuery {
    * 鍏ㄧ悆鍙樻殩娼滃娍GWP
    */
   gwpValue?: number;
-
-  /**
-   * 鏁版嵁鏉ユ簮(IPCC/鍥藉?鍙戞敼濮?鍥介檯鑳芥簮缃?
-   */
-  dataSource?: string;
 
   /**
    * 鏄?惁鍙戝竷(0鑽夌? 1宸插彂甯?2宸插喕缁?
