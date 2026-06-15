@@ -19,7 +19,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/enterprise-ui
+  IMAGE_NAME: xujiuj/enterprise-ui
   DEPLOY_SERVICE: enterprise-ui
 
 jobs:
@@ -86,7 +86,7 @@ jobs:
           set -euo pipefail
           cat > .env.deploy <<EOF
           REGISTRY=ghcr.io
-          GHCR_OWNER=${{ github.repository_owner }}
+          GHCR_OWNER=xujiuj
           IMAGE_TAG=latest
           DB_HOST=$DB_HOST
           DB_PORT=$DB_PORT
