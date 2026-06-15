@@ -14,131 +14,88 @@ permissions:
 
 concurrency:
   group: cd-enterprise-ui
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: xujiuj/enterprise-ui
   DEPLOY_SERVICE: enterprise-ui
+  DEPLOY_PORT: 17001
+  BACKEND_PORT: 18001
 
 jobs:
-  build-and-deploy:
-    name: Build image and deploy
+  deploy:
+    name: Build and deploy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.0
 
-      - name: Build image
-        shell: bash
-        run: |
-          docker build \
-            -t "${REGISTRY}/${IMAGE_NAME}:${GITHUB_SHA}" \
-            -t "${REGISTRY}/${IMAGE_NAME}:latest" \
-            .
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Check deploy configuration
-        id: deploy-config
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Build
+        run: npm run build:prod
+
+      - name: Package dist
+        run: tar -C dist -czf enterprise-ui-dist.tar.gz .
+
+      - name: Deploy over SSH
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        shell: bash
-        run: |
-          if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_USER" ] && { [ -n "$DEPLOY_SSH_KEY" ] || [ -n "$DEPLOY_PASSWORD" ]; } && [ -n "$DB_HOST" ] && [ -n "$DB_USERNAME" ] && [ -n "$DB_PASSWORD" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Deployment skipped because deploy or database secrets are incomplete."
-          fi
-
-      - name: Upload deployment files
-        if: steps.deploy-config.outputs.enabled == 'true'
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || 22 }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/opt/fx' }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT || 3306 }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          docker save "${REGISTRY}/${IMAGE_NAME}:latest" | gzip > "${DEPLOY_SERVICE}.tar.gz"
-          cat > .env.deploy <<EOF
-          REGISTRY=ghcr.io
-          GHCR_OWNER=xujiuj
-          IMAGE_TAG=latest
-          DB_HOST=$DB_HOST
-          DB_PORT=$DB_PORT
-          DB_USERNAME=$DB_USERNAME
-          DB_PASSWORD=$DB_PASSWORD
-          REDIS_PASSWORD=ruoyi123
-          VENDOR_UI_PORT=17000
-          VENDOR_BACKEND_PORT=18000
-          VENDOR_SNAIL_PORT=28080
-          ENTERPRISE_UI_PORT=17001
-          ENTERPRISE_BACKEND_PORT=18001
-          ENTERPRISE_SNAIL_PORT=28081
-          VENDOR_BACKEND_JAVA_OPTS=
-          ENTERPRISE_BACKEND_JAVA_OPTS=
-          EOF
-          sed -i 's/^          //' .env.deploy
-          install -m 700 -d ~/.ssh
-          if [ -n "$DEPLOY_SSH_KEY" ]; then
-            printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
-            chmod 600 ~/.ssh/deploy_key
-            ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" -o StrictHostKeyChecking=accept-new "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH'"
-            scp -i ~/.ssh/deploy_key -P "$DEPLOY_PORT" -o StrictHostKeyChecking=accept-new deploy/docker-compose.yml "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/docker-compose.yml"
-            scp -i ~/.ssh/deploy_key -P "$DEPLOY_PORT" -o StrictHostKeyChecking=accept-new .env.deploy "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.env"
-            scp -i ~/.ssh/deploy_key -P "$DEPLOY_PORT" -o StrictHostKeyChecking=accept-new "${DEPLOY_SERVICE}.tar.gz" "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/${DEPLOY_SERVICE}.tar.gz"
-          else
-            sudo apt-get update
-            sudo apt-get install -y sshpass
-            sshpass -p "$DEPLOY_PASSWORD" ssh -p "$DEPLOY_PORT" -o StrictHostKeyChecking=accept-new "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH'"
-            sshpass -p "$DEPLOY_PASSWORD" scp -P "$DEPLOY_PORT" -o StrictHostKeyChecking=accept-new deploy/docker-compose.yml "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/docker-compose.yml"
-            sshpass -p "$DEPLOY_PASSWORD" scp -P "$DEPLOY_PORT" -o StrictHostKeyChecking=accept-new .env.deploy "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.env"
-            sshpass -p "$DEPLOY_PASSWORD" scp -P "$DEPLOY_PORT" -o StrictHostKeyChecking=accept-new "${DEPLOY_SERVICE}.tar.gz" "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/${DEPLOY_SERVICE}.tar.gz"
-          fi
-
-      - name: Deploy service
-        if: steps.deploy-config.outputs.enabled == 'true'
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || 22 }}
+          DEPLOY_PORT_SECRET: ${{ secrets.DEPLOY_PORT || 22 }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/opt/fx' }}
         shell: bash
         run: |
           set -euo pipefail
-          cat > deploy-remote.sh <<'EOF'
-          set -euo pipefail
-          cd "$DEPLOY_PATH"
-          docker load -i "${DEPLOY_SERVICE}.tar.gz"
-          docker compose up -d --no-deps "$DEPLOY_SERVICE"
-          rm -f "${DEPLOY_SERVICE}.tar.gz"
-          docker image prune -f
-          EOF
-          sed -i 's/^          //' deploy-remote.sh
-          if [ -n "$DEPLOY_SSH_KEY" ]; then
-            printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
-            chmod 600 ~/.ssh/deploy_key
-            ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" -o StrictHostKeyChecking=accept-new "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_PATH='$DEPLOY_PATH' DEPLOY_SERVICE='$DEPLOY_SERVICE' bash -s" < deploy-remote.sh
-          else
-            sudo apt-get update
-            sudo apt-get install -y sshpass
-            sshpass -p "$DEPLOY_PASSWORD" ssh -p "$DEPLOY_PORT" -o StrictHostKeyChecking=accept-new "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_PATH='$DEPLOY_PATH' DEPLOY_SERVICE='$DEPLOY_SERVICE' bash -s" < deploy-remote.sh
+          if [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_USER" ] || [ -z "$DEPLOY_PASSWORD" ]; then
+            echo "Deployment skipped because deploy secrets are incomplete."
+            exit 0
           fi
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+          cat > deploy-ui.sh <<'EOF'
+          set -euo pipefail
+          echo "$SUDO_PASSWORD" | sudo -S mkdir -p "$DEPLOY_PATH/www/$DEPLOY_SERVICE"
+          tar -xzf "$DEPLOY_PATH/$DEPLOY_SERVICE-dist.tar.gz" -C "$DEPLOY_PATH/www/$DEPLOY_SERVICE"
+          rm -f "$DEPLOY_PATH/$DEPLOY_SERVICE-dist.tar.gz"
+          echo "$SUDO_PASSWORD" | sudo -S apt-get update
+          echo "$SUDO_PASSWORD" | sudo -S apt-get install -y nginx
+          cat > "/tmp/$DEPLOY_SERVICE.conf" <<NGINX
+          server {
+              listen $DEPLOY_PORT;
+              server_name _;
+              root $DEPLOY_PATH/www/$DEPLOY_SERVICE;
+              index index.html;
+
+              location / {
+                  try_files \$uri \$uri/ /index.html;
+              }
+
+              location /prod-api/ {
+                  proxy_pass http://127.0.0.1:$BACKEND_PORT/;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \$scheme;
+              }
+          }
+          NGINX
+          echo "$SUDO_PASSWORD" | sudo -S mv "/tmp/$DEPLOY_SERVICE.conf" "/etc/nginx/conf.d/$DEPLOY_SERVICE.conf"
+          echo "$SUDO_PASSWORD" | sudo -S nginx -t
+          echo "$SUDO_PASSWORD" | sudo -S systemctl enable --now nginx
+          echo "$SUDO_PASSWORD" | sudo -S systemctl reload nginx
+          EOF
+          sshpass -p "$DEPLOY_PASSWORD" ssh -p "$DEPLOY_PORT_SECRET" -o StrictHostKeyChecking=accept-new "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH'"
+          sshpass -p "$DEPLOY_PASSWORD" scp -P "$DEPLOY_PORT_SECRET" -o StrictHostKeyChecking=accept-new enterprise-ui-dist.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/$DEPLOY_SERVICE-dist.tar.gz"
+          sshpass -p "$DEPLOY_PASSWORD" ssh -p "$DEPLOY_PORT_SECRET" -o StrictHostKeyChecking=accept-new "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' DEPLOY_SERVICE='$DEPLOY_SERVICE' DEPLOY_PORT='$DEPLOY_PORT' BACKEND_PORT='$BACKEND_PORT' SUDO_PASSWORD='$DEPLOY_PASSWORD' bash -s" < deploy-ui.sh
