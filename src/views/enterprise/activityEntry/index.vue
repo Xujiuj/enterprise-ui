@@ -60,7 +60,13 @@
         </el-table-column>
       </el-table>
 
-      <pagination v-show="total > 0" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" :total="total" @pagination="loadActivities" />
+      <pagination
+        v-show="total > 0"
+        v-model:page="queryParams.pageNum"
+        v-model:limit="queryParams.pageSize"
+        :total="total"
+        @pagination="loadActivities"
+      />
     </el-card>
 
     <el-drawer v-model="formDrawer.open" :title="formDrawer.title" size="680px" append-to-body destroy-on-close>
@@ -249,7 +255,14 @@ type DerivedValueMap = Record<string, string>;
 const route = useRoute();
 
 const FIELD_DESCRIPTORS: Sheet656FieldDescriptor[] = [
-  { fieldOrder: 1, sourceColumnCode: 'f001', sourceColumnName: 'PK_排放源识别编号', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  {
+    fieldOrder: 1,
+    sourceColumnCode: 'f001',
+    sourceColumnName: 'PK_排放源识别编号',
+    sourceRequired: false,
+    rowValueRequired: true,
+    derivedField: false
+  },
   { fieldOrder: 2, sourceColumnCode: 'f002', sourceColumnName: 'FK_公司编号', sourceRequired: false, rowValueRequired: false, derivedField: true },
   { fieldOrder: 3, sourceColumnCode: 'f003', sourceColumnName: '公司名称', sourceRequired: false, rowValueRequired: false, derivedField: true },
   { fieldOrder: 4, sourceColumnCode: 'f004', sourceColumnName: '工厂', sourceRequired: false, rowValueRequired: false, derivedField: true },
@@ -346,7 +359,8 @@ const uploadBlockingIssues = computed(() => uploadIssues.value.filter((issue) =>
 const uploadWarningIssues = computed(() => uploadIssues.value.filter((issue) => !isBlockingIssue(issue)));
 const parsedUploadRowCount = computed(() => parsedUploadRequest.value?.rows?.length ?? 0);
 const canImportUploadedRows = computed(
-  () => parsedUploadRowCount.value > 0 && !!uploadValidation.value && !uploadValidation.value.blocking && !uploadParsing.value && !uploadImporting.value
+  () =>
+    parsedUploadRowCount.value > 0 && !!uploadValidation.value && !uploadValidation.value.blocking && !uploadParsing.value && !uploadImporting.value
 );
 const derivedActivityUnit = computed(() => manualResolvedDerivedValues.value.f010 ?? '');
 const uploadStatusText = computed(() => {
@@ -667,20 +681,17 @@ watch(
   }
 );
 
-watch(
-  selectedSource,
-  (source) => {
-    if (!source || form.responsibleDept || formDrawer.readonly) {
-      return;
-    }
-    const derivedDept =
-      (source as EmissionSourceVO & { responsibleDept?: string; deptName?: string }).responsibleDept ||
-      (source as EmissionSourceVO & { deptName?: string }).deptName;
-    if (derivedDept) {
-      form.responsibleDept = derivedDept;
-    }
+watch(selectedSource, (source) => {
+  if (!source || form.responsibleDept || formDrawer.readonly) {
+    return;
   }
-);
+  const derivedDept =
+    (source as EmissionSourceVO & { responsibleDept?: string; deptName?: string }).responsibleDept ||
+    (source as EmissionSourceVO & { deptName?: string }).deptName;
+  if (derivedDept) {
+    form.responsibleDept = derivedDept;
+  }
+});
 
 onMounted(async () => {
   applyRouteQuery();

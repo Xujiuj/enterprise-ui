@@ -5,9 +5,40 @@ describe('enterprise dynamic router guard', () => {
   it('keeps backend returned enterprise menus and removes vendor menus', () => {
     const routes = [
       {
+        path: 'report-management',
+        component: 'Layout',
+        meta: { title: 'report management' },
+        children: [
+          {
+            path: 'report-template-download',
+            component: 'enterprise/reportTemplateFile/index',
+            meta: { title: 'report template file' },
+            permissions: ['enterprise:reportTemplateFile:list']
+          },
+          {
+            path: 'tool-gen',
+            component: 'tool/gen/index',
+            meta: { title: 'code generation' },
+            permissions: ['tool:gen:list']
+          },
+          {
+            path: 'content',
+            component: 'enterprise/reports/index',
+            meta: { title: 'Power BI content' },
+            permissions: ['enterprise:reports:view']
+          },
+          {
+            path: 'data-validation',
+            component: 'enterprise/dataValidation/index',
+            meta: { title: 'data validation' },
+            permissions: ['enterprise:dataValidation:view']
+          }
+        ]
+      },
+      {
         path: 'emission-source-config',
         component: 'Layout',
-        meta: { title: 'emission source config' },
+        meta: { title: '配置排放源' },
         children: [
           {
             path: 'emission-source',
@@ -19,6 +50,24 @@ describe('enterprise dynamic router guard', () => {
             path: 'admin-division',
             component: 'enterprise/dimension/index',
             meta: { title: 'admin division' },
+            permissions: ['enterprise:dimension:view']
+          },
+          {
+            path: 'base-year',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'base year' },
+            permissions: ['enterprise:dimension:view']
+          },
+          {
+            path: 'emission-source-category',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'category' },
+            permissions: ['enterprise:dimension:view']
+          },
+          {
+            path: 'company',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'company' },
             permissions: ['enterprise:dimension:view']
           },
           {
@@ -51,13 +100,19 @@ describe('enterprise dynamic router guard', () => {
       {
         path: 'factor-confirm',
         component: 'Layout',
-        meta: { title: 'factor confirm' },
+        meta: { title: '确认排放因子' },
         children: [
           {
-            path: 'factor-confirmation',
-            component: 'enterprise/factorConfirmation/index',
-            meta: { title: 'factor confirmation' },
-            permissions: ['enterprise:factorConfirmation:list']
+            path: 'ef-factor',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'ef factor' },
+            permissions: ['enterprise:dimension:view']
+          },
+          {
+            path: 'ef-electricity-factor',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'ef electricity factor' },
+            permissions: ['enterprise:dimension:view']
           },
           {
             path: 'ef-electricity-version',
@@ -72,36 +127,30 @@ describe('enterprise dynamic router guard', () => {
             permissions: ['enterprise:dimension:view']
           },
           {
-            path: 'factor-cache-record',
-            component: 'enterprise/factorCacheRecord/index',
-            meta: { title: 'factor cache record' },
-            permissions: ['enterprise:factorCacheRecord:list']
+            path: 'greenhouse-gas',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'greenhouse gas' },
+            permissions: ['enterprise:dimension:view']
           }
         ]
       },
       {
         path: 'activity-data',
         component: 'Layout',
-        meta: { title: 'activity data' },
+        meta: { title: '活动数据' },
         children: [
           {
             path: 'emission-activity-data',
             component: 'enterprise/activityData/index',
             meta: { title: 'activity data list' },
             permissions: ['enterprise:activityData:list']
-          },
-          {
-            path: 'emission-activity-entry',
-            component: 'enterprise/activityEntry/index',
-            meta: { title: 'activity data entry' },
-            permissions: ['enterprise:activityImportValidation:validate']
           }
         ]
       },
       {
         path: 'green-electricity',
         component: 'Layout',
-        meta: { title: 'green electricity' },
+        meta: { title: '绿电绿证' },
         children: [
           {
             path: 'green-electricity-data',
@@ -114,38 +163,31 @@ describe('enterprise dynamic router guard', () => {
       {
         path: 'intensity',
         component: 'Layout',
-        meta: { title: 'intensity' },
+        meta: { title: '强度管理' },
         children: [
           {
             path: 'intensity-target',
             component: 'enterprise/intensityMetric/index',
             meta: { title: 'intensity metric' },
             permissions: ['enterprise:intensityMetric:list']
-          }
-        ]
-      },
-      {
-        path: 'report-management',
-        component: 'Layout',
-        meta: { title: 'report management' },
-        children: [
-          {
-            path: 'data-validation',
-            component: 'enterprise/dataValidation/index',
-            meta: { title: 'data validation' },
-            permissions: ['enterprise:dataValidation:view']
           },
           {
-            path: 'report-template-download',
-            component: 'enterprise/reportTemplateFile/index',
-            meta: { title: 'report template file' },
-            permissions: ['enterprise:reportTemplateFile:list']
+            path: 'intensity-denominator',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'denominator' },
+            permissions: ['enterprise:dimension:view']
           },
           {
-            path: 'tool-gen',
-            component: 'tool/gen/index',
-            meta: { title: 'code generation' },
-            permissions: ['tool:gen:list']
+            path: 'intensity-tolerance',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'tolerance' },
+            permissions: ['enterprise:dimension:view']
+          },
+          {
+            path: 'denominator-fact',
+            component: 'enterprise/dimension/index',
+            meta: { title: 'fact' },
+            permissions: ['enterprise:dimension:view']
           }
         ]
       },
@@ -167,6 +209,20 @@ describe('enterprise dynamic router guard', () => {
             permissions: ['system:role:list']
           },
           {
+            path: 'role-auth/user/:roleId',
+            component: 'system/role/authUser',
+            hidden: true,
+            meta: { title: '分配用户', activeMenu: '/system/role' },
+            permissions: ['system:role:edit']
+          },
+          {
+            path: 'user-auth/role/:userId',
+            component: 'system/user/authRole',
+            hidden: true,
+            meta: { title: '分配角色', activeMenu: '/system/user' },
+            permissions: ['system:user:edit']
+          },
+          {
             path: 'menu',
             component: 'system/menu/index',
             meta: { title: '菜单管理' },
@@ -177,6 +233,12 @@ describe('enterprise dynamic router guard', () => {
             component: 'system/dept/index',
             meta: { title: '部门管理' },
             permissions: ['system:dept:list']
+          },
+          {
+            path: 'post',
+            component: 'system/post/index',
+            meta: { title: '岗位管理' },
+            permissions: ['system:post:list']
           },
           {
             path: 'log',
@@ -272,16 +334,15 @@ describe('enterprise dynamic router guard', () => {
         'enterprise/emissionSource/index',
         'enterprise/dimension/index',
         'enterprise/licenseImport/index',
-        'enterprise/factorConfirmation/index',
-        'enterprise/factorCacheRecord/index',
         'enterprise/activityData/index',
-        'enterprise/activityEntry/index',
         'enterprise/greenPowerCertificate/index',
         'enterprise/intensityMetric/index',
         'enterprise/dataValidation/index',
         'enterprise/reportTemplateFile/index',
         'system/user/index',
+        'system/user/authRole',
         'system/role/index',
+        'system/role/authUser',
         'system/menu/index',
         'monitor/operlog/index',
         'monitor/logininfor/index'
@@ -293,6 +354,7 @@ describe('enterprise dynamic router guard', () => {
         'vendor/templateScope/index',
         'system/tenant/index',
         'system/dept/index',
+        'system/post/index',
         'monitor/online/index',
         'system/license/index',
         'system/factorLibrary/index',
@@ -303,13 +365,13 @@ describe('enterprise dynamic router guard', () => {
     expect(emissionSourceConfig.children.map((route: any) => route.path)).toEqual(expect.arrayContaining(['admin-division']));
     const factorConfirm = filtered.find((route: any) => route.path === '/factor-confirm') as any;
     expect(factorConfirm.children.map((route: any) => route.path)).toEqual(
-      expect.arrayContaining(['ef-electricity-version', 'ef-electricity-scope', 'factor-cache-record'])
+      expect.arrayContaining(['ef-electricity-version', 'ef-electricity-scope'])
     );
     const reportManagement = filtered.find((route: any) => route.path === '/report-management') as any;
     expect(reportManagement.children.map((route: any) => route.path)).toEqual(expect.arrayContaining(['report-template-download']));
     expect(filtered.map((route: any) => route.path)).toEqual([
-      '/emission-source-config',
       '/system-auth',
+      '/emission-source-config',
       '/factor-confirm',
       '/activity-data',
       '/green-electricity',
@@ -318,6 +380,54 @@ describe('enterprise dynamic router guard', () => {
       '/system',
       '/log'
     ]);
+    expect(filtered.map((route: any) => route.meta?.title)).toEqual([
+      '系统授权',
+      '01 配置排放源',
+      '02 确认排放因子',
+      '03 活动数据',
+      '04 绿电绿证',
+      '05 强度管理',
+      '报表管理',
+      '系统管理',
+      '日志'
+    ]);
+    expect(visibleTitles(filtered)).toEqual([
+      '系统授权',
+      '授权管理',
+      '01 配置排放源',
+      '行政区划',
+      '公司表',
+      '排放源分类',
+      '排放源识别',
+      '基准年维度表',
+      '02 确认排放因子',
+      'EF排放因子维度表',
+      'EF电力因子维度表',
+      'EF电力因子版本对应',
+      'EF电力因子口径维度',
+      '温室气体维度',
+      '03 活动数据',
+      '排放活动数据',
+      '04 绿电绿证',
+      '绿电绿证数据',
+      '05 强度管理',
+      '碳排放强度分母维度表',
+      '强度目标表',
+      '分母事实表',
+      '碳排放强度容忍率参数表',
+      '报表管理',
+      'Content',
+      '数据验证',
+      '报表模板下载',
+      '系统管理',
+      '用户管理',
+      '角色管理',
+      '菜单管理',
+      '日志',
+      '操作日志',
+      '登录日志'
+    ]);
+    expect(visibleTitles(filtered)).not.toEqual(expect.arrayContaining(['活动数据录入', '因子确认记录', '因子缓存记录', '部门管理', '岗位管理']));
   });
 
   it('uses readable Chinese forbidden-title rules for the enterprise portal boundary', () => {
@@ -329,6 +439,7 @@ describe('enterprise dynamic router guard', () => {
     expect(isEnterpriseForbiddenMenuTitle('模板分发')).toBe(true);
     expect(isEnterpriseForbiddenMenuTitle('续费订单')).toBe(true);
     expect(isEnterpriseForbiddenMenuTitle('部门管理')).toBe(true);
+    expect(isEnterpriseForbiddenMenuTitle('岗位管理')).toBe(true);
     expect(isEnterpriseForbiddenMenuTitle('配置排放源')).toBe(false);
     expect(isEnterpriseForbiddenMenuTitle('企业本地业务')).toBe(true);
   });
@@ -340,4 +451,11 @@ describe('enterprise dynamic router guard', () => {
 
 function flattenComponents(routes: Array<{ component?: unknown; children?: any[] }>): string[] {
   return routes.flatMap((route) => [String(route.component ?? ''), ...flattenComponents(route.children ?? [])]).filter(Boolean);
+}
+
+function visibleTitles(routes: Array<{ hidden?: boolean; meta?: { title?: unknown }; children?: any[] }>): string[] {
+  return routes.flatMap((route) => {
+    const own = route.hidden ? [] : [String(route.meta?.title ?? '')].filter(Boolean);
+    return own.concat(visibleTitles(route.children ?? []));
+  });
 }

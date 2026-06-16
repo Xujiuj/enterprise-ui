@@ -83,13 +83,7 @@
         </el-table-column>
         <el-table-column prop="updateTime" label="更新时间" min-width="170" />
       </el-table>
-      <pagination
-        v-show="rowTotal > 0"
-        v-model:page="rowQuery.pageNum"
-        v-model:limit="rowQuery.pageSize"
-        :total="rowTotal"
-        @pagination="loadRows"
-      />
+      <pagination v-show="rowTotal > 0" v-model:page="rowQuery.pageNum" v-model:limit="rowQuery.pageSize" :total="rowTotal" @pagination="loadRows" />
     </el-drawer>
   </div>
 </template>

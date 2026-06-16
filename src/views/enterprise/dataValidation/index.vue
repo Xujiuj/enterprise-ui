@@ -221,7 +221,7 @@ const openIssue = (issue: ActivityDataValidationIssue) => {
     return;
   }
   router.push({
-    path: '/activity-data/emission-activity-entry',
+    path: '/activity-data/emission-activity-data',
     query: {
       activityPeriod: issue.activityPeriod,
       emissionSourceCode: issue.emissionSourceCode

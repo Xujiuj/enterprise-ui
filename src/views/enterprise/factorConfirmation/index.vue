@@ -1,14 +1,7 @@
 <template>
   <EnterpriseCrudPage :config="config" :api="api">
     <template #toolbar-actions="{ refresh }">
-      <el-button
-        type="success"
-        plain
-        icon="RefreshRight"
-        :loading="syncing"
-        @click="handleSync(refresh)"
-        v-hasPermi="['enterprise:factorSync:run']"
-      >
+      <el-button type="success" plain icon="RefreshRight" :loading="syncing" @click="handleSync(refresh)" v-hasPermi="['enterprise:factorSync:run']">
         同步厂商因子
       </el-button>
     </template>

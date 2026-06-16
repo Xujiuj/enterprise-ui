@@ -6,7 +6,7 @@
         <p>企业填报流程与本期数据验证概览。</p>
       </div>
       <div class="btns">
-        <button type="button" class="btn primary" @click="openBusiness('/activity-data/emission-activity-entry')">去录入</button>
+        <button type="button" class="btn primary" @click="openBusiness('/activity-data/emission-activity-data')">去录入</button>
         <button type="button" class="btn" @click="openBusiness('/report-management/report-template-download')">下载报表模板</button>
       </div>
     </section>
@@ -95,7 +95,9 @@
             <tr v-for="item in todoItems" :key="item.type + item.content">
               <td>{{ item.type }}</td>
               <td>{{ item.content || '--' }}</td>
-              <td><span class="tag" :class="item.tone">{{ item.status || '--' }}</span></td>
+              <td>
+                <span class="tag" :class="item.tone">{{ item.status || '--' }}</span>
+              </td>
               <td>
                 <button v-if="item.path" type="button" class="btn text" @click="openBusiness(item.path)">{{ item.action || '查看' }}</button>
                 <span v-else>--</span>
@@ -180,8 +182,8 @@ const scopeBars = computed(() =>
 
 const businessActions = [
   { step: '01', title: '配置排放源', detail: '建立排放源台账', path: '/emission-source-config/emission-source' },
-  { step: '02', title: '确认排放因子', detail: '同步厂商因子库', path: '/factor-confirm/factor-confirmation' },
-  { step: '03', title: '录入活动数据', detail: '上传并校验 656 表数据', path: '/activity-data/emission-activity-entry' },
+  { step: '02', title: '确认排放因子', detail: '同步厂商因子库', path: '/factor-confirm/ef-factor' },
+  { step: '03', title: '录入活动数据', detail: '上传并校验 656 表数据', path: '/activity-data/emission-activity-data' },
   { step: '04', title: '绿电绿证', detail: '登记抵扣记录', path: '/green-electricity/green-electricity-data' },
   { step: '05', title: '强度管理', detail: '分母录入与目标核算', path: '/intensity/intensity-target' }
 ];
@@ -192,7 +194,11 @@ const formatNumber = (value?: number | string) => {
   return Number.isFinite(numeric) ? numeric.toLocaleString('zh-CN') : String(value);
 };
 
-const plainText = (value: string) => value.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+const plainText = (value: string) =>
+  value
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
 
 const openBusiness = (path: string) => {
   router.push(path);
