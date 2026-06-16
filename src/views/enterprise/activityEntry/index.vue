@@ -1,197 +1,213 @@
 <template>
-  <div class="p-2 enterprise-activity-page">
-    <el-row :gutter="16">
-      <el-col :xs="24" :lg="14">
-        <el-card shadow="never" class="mb-4">
-          <template #header>
-            <div class="card-head">
-              <div>
-                <span>sheet_656 Excel 上传导入</span>
-                <p>上传 `.xlsx` 后先走服务端解析和校验，无强错误时再批量写入企业端活动数据。</p>
-              </div>
-              <el-button
-                v-hasPermi="['enterprise:activityImport:import']"
-                type="primary"
-                icon="Upload"
-                :loading="uploadImporting"
-                :disabled="!canImportUploadedRows"
-                @click="importUploadedRows"
-              >
-                导入上传文件
-              </el-button>
-            </div>
-          </template>
+  <div class="p-2 enterprise-activity-entry">
+    <el-card shadow="never" class="mb-3">
+      <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px">
+        <el-form-item label="排放源" prop="emissionSourceId">
+          <el-select v-model="queryParams.emissionSourceId" clearable filterable :loading="sourceLoading" class="query-source">
+            <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="活动期间" prop="activityPeriod">
+          <el-date-picker v-model="queryParams.activityPeriod" type="month" value-format="YYYY-MM" class="query-month" />
+        </el-form-item>
+        <el-form-item label="数据状态" prop="dataStatus">
+          <el-select v-model="queryParams.dataStatus" clearable class="query-status">
+            <el-option label="草稿" value="draft" />
+            <el-option label="已提交" value="submitted" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
 
-          <el-upload drag action="#" accept=".xlsx" :auto-upload="false" :show-file-list="false" :before-upload="parseUploadedFile">
-            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-            <div class="el-upload__text">拖拽 sheet_656 Excel 到此处，或点击选择 `.xlsx` 文件</div>
-          </el-upload>
-
-          <el-descriptions v-if="uploadFileName" class="mt-4" :column="3" border>
-            <el-descriptions-item label="文件名">{{ uploadFileName }}</el-descriptions-item>
-            <el-descriptions-item label="解析行数">{{ parsedUploadRowCount }}</el-descriptions-item>
-            <el-descriptions-item label="解析状态">
-              {{ uploadParsing ? '解析中' : uploadValidation ? (uploadValidation.blocking ? '存在强错误' : '可导入') : '待解析' }}
-            </el-descriptions-item>
-          </el-descriptions>
-
-          <el-alert v-if="uploadBlockingIssues.length" class="mt-4" type="error" show-icon :closable="false">
-            <template #title>上传文件存在 {{ uploadBlockingIssues.length }} 条强错误，不能导入。</template>
-          </el-alert>
-          <el-alert v-else-if="uploadWarningIssues.length" class="mt-4" type="warning" show-icon :closable="false">
-            <template #title>上传文件存在 {{ uploadWarningIssues.length }} 条弱警告，允许导入但需复核。</template>
-          </el-alert>
-          <el-alert v-else-if="uploadValidation && parsedUploadRowCount" class="mt-4" type="success" show-icon :closable="false">
-            <template #title>上传文件已通过服务端校验，可执行导入。</template>
-          </el-alert>
-          <el-alert v-else-if="uploadValidation" class="mt-4" type="info" show-icon :closable="false">
-            <template #title>文件解析成功，但没有可导入的数据行。</template>
-          </el-alert>
-
-          <el-table v-if="uploadIssues.length" class="mt-4" :data="uploadIssues" size="small" border max-height="260">
-            <el-table-column label="级别" width="82">
-              <template #default="scope">
-                <el-tag size="small" :type="isBlockingIssue(scope.row) ? 'danger' : 'warning'">
-                  {{ isBlockingIssue(scope.row) ? '强错误' : '弱警告' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="rowNumber" label="行号" width="72" />
-            <el-table-column prop="sourceColumnCode" label="字段" width="86" />
-            <el-table-column prop="message" label="说明" show-overflow-tooltip />
-          </el-table>
-        </el-card>
-
-        <el-card shadow="never">
-          <template #header>
-            <div class="card-head">
-              <div>
-                <span>sheet_656 手工活动录入</span>
-                <p>先走企业端校验接口，校验通过后再写入本地活动数据。</p>
-              </div>
-              <el-button
-                v-hasPermi="['enterprise:activityImportValidation:validate']"
-                type="primary"
-                icon="CircleCheck"
-                :loading="validating"
-                @click="handleValidate"
-              >
-                服务端校验
-              </el-button>
-            </div>
-          </template>
-
-          <el-alert v-if="manualBlockingIssues.length" class="mb-4" type="error" show-icon :closable="false">
-            <template #title>存在 {{ manualBlockingIssues.length }} 条强错误，不能保存。</template>
-          </el-alert>
-          <el-alert v-else-if="manualWarningIssues.length" class="mb-4" type="warning" show-icon :closable="false">
-            <template #title>存在 {{ manualWarningIssues.length }} 条弱警告，允许保存但需复核。</template>
-          </el-alert>
-          <el-alert v-else-if="manualValidation" class="mb-4" type="success" show-icon :closable="false">
-            <template #title>服务端校验通过。</template>
-          </el-alert>
-
-          <el-form ref="activityFormRef" :model="form" :rules="rules" label-width="150px">
-            <el-row :gutter="16">
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="排放源" prop="sourceCode">
-                  <el-select v-model="form.sourceCode" class="w-full" clearable filterable :loading="sourceLoading" placeholder="选择本地排放源">
-                    <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceCode" />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="年度" prop="year">
-                  <el-input-number v-model="form.year" :min="2000" :max="2100" controls-position="right" class="w-full" />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="月份" prop="month">
-                  <el-input-number v-model="form.month" :min="1" :max="12" controls-position="right" class="w-full" />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="日期" prop="date">
-                  <el-date-picker v-model="form.date" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" class="w-full" />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="活动数据" prop="activityValue">
-                  <el-input-number v-model="form.activityValue" :min="0" :precision="4" controls-position="right" class="w-full" />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="负责部门" prop="responsibleDept">
-                  <el-input v-model="form.responsibleDept" maxlength="64" clearable />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="f016 数据来源" prop="f016">
-                  <el-select v-model="form.f016" class="w-full" clearable filterable placeholder="选择数据来源">
-                    <el-option v-for="option in dataSourceOptions" :key="option.value" :label="option.label" :value="option.value" />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24">
-                <el-form-item label="备注">
-                  <el-input v-model="form.remark" type="textarea" :rows="3" maxlength="200" show-word-limit />
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-form>
-
-          <div class="action-row">
-            <el-button icon="Refresh" @click="resetForm">重置</el-button>
-            <el-button v-hasPermi="['enterprise:activity:save']" type="primary" icon="Upload" :loading="saving" @click="saveActivity"
-              >保存到本地活动数据</el-button
-            >
+    <el-card shadow="never">
+      <template #header>
+        <div class="table-head">
+          <span>活动数据录入</span>
+          <div class="head-actions">
+            <el-button v-hasPermi="['enterprise:activityImport:import']" icon="Upload" @click="openUploadDialog">Excel 上传</el-button>
+            <el-button v-hasPermi="['enterprise:activityImport:import']" type="primary" icon="Plus" @click="openCreateDrawer">新增</el-button>
           </div>
-        </el-card>
-      </el-col>
+        </div>
+      </template>
 
-      <el-col :xs="24" :lg="10">
-        <el-card shadow="never" class="mb-4">
-          <template #header>
-            <div class="card-head compact">
-              <span>最近活动数据</span>
-              <el-button link type="primary" icon="Refresh" :loading="listLoading" @click="loadRecentActivities">刷新</el-button>
-            </div>
+      <el-table v-loading="listLoading" :data="activityList" border>
+        <el-table-column label="排放源" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ activitySourceName(row) }}
           </template>
-          <el-table v-loading="listLoading" :data="recentActivities" size="small" height="230">
-            <el-table-column prop="activityPeriod" label="期间" width="90" />
-            <el-table-column prop="activityValue" label="活动数据" width="110" />
-            <el-table-column prop="activityUnit" label="单位" width="80" />
-            <el-table-column prop="remark" label="备注" show-overflow-tooltip />
-            <el-table-column label="状态" width="90">
-              <template #default="scope">
-                <el-tag size="small" :type="scope.row.dataStatus === 'submitted' ? 'success' : 'info'">
-                  {{ scope.row.dataStatus === 'submitted' ? '已提交' : '草稿' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
+        </el-table-column>
+        <el-table-column prop="activityPeriod" label="活动期间" width="120" />
+        <el-table-column prop="activityValue" label="活动数据" width="140" align="right" />
+        <el-table-column prop="activityUnit" label="单位" width="110" />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag size="small" :type="row.dataStatus === 'submitted' ? 'success' : 'info'">
+              {{ row.dataStatus === 'submitted' ? '已提交' : '草稿' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="calculatedEmission" label="计算排放量" width="140" align="right" />
+        <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="updateTime" label="更新时间" width="170" />
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" icon="View" @click="openDetailDrawer(row)">查看</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-        <el-card shadow="never">
-          <template #header>
-            <span>手工校验结果</span>
+      <pagination v-show="total > 0" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" :total="total" @pagination="loadActivities" />
+    </el-card>
+
+    <el-drawer v-model="formDrawer.open" :title="formDrawer.title" size="680px" append-to-body destroy-on-close>
+      <el-form ref="activityFormRef" :model="form" :rules="rules" label-width="112px">
+        <el-row :gutter="16">
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="排放源" prop="sourceCode">
+              <el-select v-model="form.sourceCode" class="w-full" clearable filterable :loading="sourceLoading" :disabled="formDrawer.readonly">
+                <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceCode" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="活动期间" prop="activityPeriod">
+              <el-date-picker v-model="form.activityPeriod" type="month" value-format="YYYY-MM" class="w-full" :disabled="formDrawer.readonly" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="日期" prop="date">
+              <el-date-picker v-model="form.date" type="date" value-format="YYYY-MM-DD" class="w-full" :disabled="formDrawer.readonly" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="活动数据" prop="activityValue">
+              <el-input-number
+                v-model="form.activityValue"
+                :min="0"
+                :precision="4"
+                controls-position="right"
+                class="w-full"
+                :disabled="formDrawer.readonly"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="活动单位">
+              <el-input v-model="derivedActivityUnit" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="负责部门" prop="responsibleDept">
+              <el-input v-model="form.responsibleDept" maxlength="64" clearable :disabled="formDrawer.readonly" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="数据来源" prop="dataSource">
+              <el-select v-model="form.dataSource" class="w-full" clearable filterable :disabled="formDrawer.readonly">
+                <el-option v-for="option in dataSourceOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24">
+            <el-form-item label="备注">
+              <el-input v-model="form.remark" type="textarea" :rows="3" maxlength="200" show-word-limit :disabled="formDrawer.readonly" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+
+      <el-alert v-if="manualBlockingIssues.length" class="mb-3" type="error" show-icon :closable="false">
+        <template #title>存在 {{ manualBlockingIssues.length }} 条错误，请修正后保存。</template>
+      </el-alert>
+      <el-alert v-else-if="manualWarningIssues.length" class="mb-3" type="warning" show-icon :closable="false">
+        <template #title>存在 {{ manualWarningIssues.length }} 条警告，保存后请复核。</template>
+      </el-alert>
+
+      <el-table v-if="manualIssues.length" :data="manualIssues" size="small" border class="mb-3" max-height="220">
+        <el-table-column label="级别" width="82">
+          <template #default="{ row }">
+            <el-tag size="small" :type="isBlockingIssue(row) ? 'danger' : 'warning'">
+              {{ isBlockingIssue(row) ? '错误' : '警告' }}
+            </el-tag>
           </template>
-          <el-empty v-if="!manualIssues.length" description="暂无错误或警告" />
-          <el-table v-else :data="manualIssues" size="small" border>
-            <el-table-column label="级别" width="82">
-              <template #default="scope">
-                <el-tag size="small" :type="isBlockingIssue(scope.row) ? 'danger' : 'warning'">
-                  {{ isBlockingIssue(scope.row) ? '强错误' : '弱警告' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="rowNumber" label="行号" width="72" />
-            <el-table-column prop="sourceColumnCode" label="字段" width="86" />
-            <el-table-column prop="message" label="说明" show-overflow-tooltip />
-          </el-table>
-        </el-card>
-      </el-col>
-    </el-row>
+        </el-table-column>
+        <el-table-column prop="sourceColumnName" label="字段" width="120" />
+        <el-table-column prop="message" label="说明" show-overflow-tooltip />
+      </el-table>
+
+      <template #footer>
+        <div class="drawer-footer">
+          <el-button @click="formDrawer.open = false">关闭</el-button>
+          <el-button v-if="!formDrawer.readonly" icon="CircleCheck" :loading="validating" @click="handleValidate">校验</el-button>
+          <el-button
+            v-if="!formDrawer.readonly"
+            v-hasPermi="['enterprise:activityImport:import']"
+            type="primary"
+            icon="Check"
+            :loading="saving"
+            @click="saveActivity"
+          >
+            保存
+          </el-button>
+        </div>
+      </template>
+    </el-drawer>
+
+    <el-dialog v-model="uploadDialog.open" title="Excel 上传" width="820px" append-to-body destroy-on-close>
+      <el-upload drag action="#" accept=".xlsx" :auto-upload="false" :show-file-list="false" :before-upload="parseUploadedFile">
+        <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+        <div class="el-upload__text">拖拽 Excel 文件到此处，或点击选择 `.xlsx` 文件</div>
+      </el-upload>
+
+      <el-descriptions v-if="uploadFileName" class="mt-4" :column="3" border>
+        <el-descriptions-item label="文件名">{{ uploadFileName }}</el-descriptions-item>
+        <el-descriptions-item label="解析行数">{{ parsedUploadRowCount }}</el-descriptions-item>
+        <el-descriptions-item label="校验状态">{{ uploadStatusText }}</el-descriptions-item>
+      </el-descriptions>
+
+      <el-alert v-if="uploadBlockingIssues.length" class="mt-4" type="error" show-icon :closable="false">
+        <template #title>上传文件存在 {{ uploadBlockingIssues.length }} 条错误，不能导入。</template>
+      </el-alert>
+      <el-alert v-else-if="uploadWarningIssues.length" class="mt-4" type="warning" show-icon :closable="false">
+        <template #title>上传文件存在 {{ uploadWarningIssues.length }} 条警告，允许导入但需复核。</template>
+      </el-alert>
+      <el-alert v-else-if="uploadValidation && parsedUploadRowCount" class="mt-4" type="success" show-icon :closable="false">
+        <template #title>上传文件已通过校验。</template>
+      </el-alert>
+
+      <el-table v-if="uploadIssues.length" class="mt-4" :data="uploadIssues" size="small" border max-height="280">
+        <el-table-column label="级别" width="82">
+          <template #default="{ row }">
+            <el-tag size="small" :type="isBlockingIssue(row) ? 'danger' : 'warning'">
+              {{ isBlockingIssue(row) ? '错误' : '警告' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="rowNumber" label="行号" width="72" />
+        <el-table-column prop="sourceColumnName" label="字段" width="120" />
+        <el-table-column prop="message" label="说明" show-overflow-tooltip />
+      </el-table>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="uploadDialog.open = false">关闭</el-button>
+          <el-button
+            v-hasPermi="['enterprise:activityImport:import']"
+            type="primary"
+            icon="Upload"
+            :loading="uploadImporting"
+            :disabled="!canImportUploadedRows"
+            @click="importUploadedRows"
+          >
+            导入
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -208,7 +224,7 @@ import {
   saveLocalSheet656Activity,
   validateLocalSheet656Activity
 } from '@/api/enterprise/activityEntry';
-import type { ActivityDataVO } from '@/api/enterprise/activityData/types';
+import type { ActivityDataQuery, ActivityDataVO } from '@/api/enterprise/activityData/types';
 import type { EmissionSourceVO } from '@/api/enterprise/emissionSource/types';
 import type {
   Sheet656FieldDescriptor,
@@ -220,12 +236,11 @@ import type {
 
 interface ActivityEntryForm {
   sourceCode?: string;
-  year?: number;
-  month?: number;
+  activityPeriod?: string;
   date?: string;
   activityValue?: number;
   responsibleDept?: string;
-  f016?: string;
+  dataSource?: string;
   remark?: string;
 }
 
@@ -234,14 +249,7 @@ type DerivedValueMap = Record<string, string>;
 const route = useRoute();
 
 const FIELD_DESCRIPTORS: Sheet656FieldDescriptor[] = [
-  {
-    fieldOrder: 1,
-    sourceColumnCode: 'f001',
-    sourceColumnName: 'PK_排放源识别编号',
-    sourceRequired: false,
-    rowValueRequired: true,
-    derivedField: false
-  },
+  { fieldOrder: 1, sourceColumnCode: 'f001', sourceColumnName: 'PK_排放源识别编号', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 2, sourceColumnCode: 'f002', sourceColumnName: 'FK_公司编号', sourceRequired: false, rowValueRequired: false, derivedField: true },
   { fieldOrder: 3, sourceColumnCode: 'f003', sourceColumnName: '公司名称', sourceRequired: false, rowValueRequired: false, derivedField: true },
   { fieldOrder: 4, sourceColumnCode: 'f004', sourceColumnName: '工厂', sourceRequired: false, rowValueRequired: false, derivedField: true },
@@ -261,29 +269,48 @@ const FIELD_DESCRIPTORS: Sheet656FieldDescriptor[] = [
   { fieldOrder: 18, sourceColumnCode: 'f018', sourceColumnName: 'FK_排放因子', sourceRequired: false, rowValueRequired: false, derivedField: true }
 ];
 
+const queryFormRef = ref<FormInstance>();
 const activityFormRef = ref<FormInstance>();
+const listLoading = ref(false);
+const sourceLoading = ref(false);
 const validating = ref(false);
 const saving = ref(false);
 const uploadParsing = ref(false);
 const uploadImporting = ref(false);
-const sourceLoading = ref(false);
-const listLoading = ref(false);
+const total = ref(0);
+const activityList = ref<ActivityDataVO[]>([]);
 const emissionSources = ref<EmissionSourceVO[]>([]);
-const recentActivities = ref<ActivityDataVO[]>([]);
 const manualValidation = ref<Sheet656ImportValidationResult>();
 const uploadValidation = ref<Sheet656ImportValidationResult>();
 const manualResolvedDerivedValues = ref<DerivedValueMap>({});
 const parsedUploadRequest = ref<Sheet656ImportValidationRequest>();
 const uploadFileName = ref('');
 
+const formDrawer = reactive({
+  open: false,
+  title: '新增活动数据',
+  readonly: false
+});
+
+const uploadDialog = reactive({
+  open: false
+});
+
+const queryParams = reactive<ActivityDataQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  emissionSourceId: undefined,
+  activityPeriod: undefined,
+  dataStatus: undefined
+});
+
 const form = reactive<ActivityEntryForm>({
   sourceCode: undefined,
-  year: new Date().getFullYear(),
-  month: new Date().getMonth() + 1,
+  activityPeriod: undefined,
   date: undefined,
   activityValue: undefined,
   responsibleDept: undefined,
-  f016: undefined,
+  dataSource: undefined,
   remark: undefined
 });
 
@@ -298,15 +325,19 @@ const dataSourceOptions = [
 
 const rules: FormRules<ActivityEntryForm> = {
   sourceCode: [{ required: true, message: '请选择排放源', trigger: 'change' }],
-  year: [{ required: true, message: '请输入年度', trigger: 'blur' }],
-  month: [{ required: true, message: '请输入月份', trigger: 'blur' }],
+  activityPeriod: [{ required: true, message: '请选择活动期间', trigger: 'change' }],
   date: [{ required: true, message: '请选择日期', trigger: 'change' }],
   activityValue: [{ required: true, message: '请输入活动数据', trigger: 'blur' }],
   responsibleDept: [{ required: true, message: '请输入负责部门', trigger: 'blur' }],
-  f016: [{ required: true, message: '请输入数据来源', trigger: 'blur' }]
+  dataSource: [{ required: true, message: '请选择数据来源', trigger: 'change' }]
 };
 
 const selectedSource = computed(() => emissionSources.value.find((source) => source.sourceCode === form.sourceCode));
+const sourceById = computed(() => {
+  const map = new Map<string, EmissionSourceVO>();
+  emissionSources.value.forEach((source) => map.set(String(source.id), source));
+  return map;
+});
 const manualIssues = computed(() => collectIssues(manualValidation.value));
 const manualBlockingIssues = computed(() => manualIssues.value.filter((issue) => isBlockingIssue(issue)));
 const manualWarningIssues = computed(() => manualIssues.value.filter((issue) => !isBlockingIssue(issue)));
@@ -315,30 +346,28 @@ const uploadBlockingIssues = computed(() => uploadIssues.value.filter((issue) =>
 const uploadWarningIssues = computed(() => uploadIssues.value.filter((issue) => !isBlockingIssue(issue)));
 const parsedUploadRowCount = computed(() => parsedUploadRequest.value?.rows?.length ?? 0);
 const canImportUploadedRows = computed(
-  () =>
-    parsedUploadRowCount.value > 0 && !!uploadValidation.value && !uploadValidation.value.blocking && !uploadParsing.value && !uploadImporting.value
+  () => parsedUploadRowCount.value > 0 && !!uploadValidation.value && !uploadValidation.value.blocking && !uploadParsing.value && !uploadImporting.value
 );
+const derivedActivityUnit = computed(() => manualResolvedDerivedValues.value.f010 ?? '');
+const uploadStatusText = computed(() => {
+  if (uploadParsing.value) return '解析中';
+  if (!uploadValidation.value) return '待解析';
+  if (uploadValidation.value.blocking) return '存在错误';
+  return parsedUploadRowCount.value > 0 ? '可导入' : '无可导入数据';
+});
 
-const sourceLabel = (source: EmissionSourceVO) => `${source.sourceCode} / ${source.sourceName}`;
+const sourceLabel = (source: EmissionSourceVO) => [source.sourceCode, source.sourceName].filter(Boolean).join(' / ');
 const isBlockingIssue = (issue: Sheet656ValidationIssue) => issue.severity === 'ERROR';
 const valueToString = (value?: string | number) => (value === undefined || value === null ? '' : String(value));
 const firstQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+const splitPeriod = (period?: string) => {
+  const [year, month] = (period ?? '').split('-');
+  return { year, month };
+};
 
-const applyRouteQuery = () => {
-  const sourceCode = firstQueryValue(route.query.emissionSourceCode);
-  if (typeof sourceCode === 'string' && sourceCode) {
-    form.sourceCode = sourceCode;
-  }
-  const activityPeriod = firstQueryValue(route.query.activityPeriod);
-  if (typeof activityPeriod === 'string') {
-    const [year, month] = activityPeriod.split('-').map((part) => Number(part));
-    if (Number.isInteger(year) && year > 0) {
-      form.year = year;
-    }
-    if (Number.isInteger(month) && month >= 1 && month <= 12) {
-      form.month = month;
-    }
-  }
+const activitySourceName = (row: ActivityDataVO) => {
+  const source = row.emissionSourceId ? sourceById.value.get(String(row.emissionSourceId)) : undefined;
+  return source ? sourceLabel(source) : row.emissionSourceId || '-';
 };
 
 const collectIssues = (result?: Sheet656ImportValidationResult): Sheet656ValidationIssue[] => [
@@ -359,14 +388,15 @@ const cloneImportValidationRequest = (request: Sheet656ImportValidationRequest):
 });
 
 const buildFieldValues = (): Sheet656FieldValue[] => {
+  const { year, month } = splitPeriod(form.activityPeriod);
   const values: DerivedValueMap = {
     f001: form.sourceCode ?? '',
-    f011: valueToString(form.year),
-    f012: valueToString(form.month),
+    f011: year,
+    f012: month,
     f013: form.date ?? '',
     f014: valueToString(form.activityValue),
     f015: form.responsibleDept ?? '',
-    f016: form.f016 ?? '',
+    f016: form.dataSource ?? '',
     f017: form.remark ?? '',
     ...manualResolvedDerivedValues.value
   };
@@ -388,28 +418,66 @@ const buildManualValidationRequest = (): Sheet656ImportValidationRequest => ({
   ]
 });
 
-watch(
-  () => [form.sourceCode, form.year, form.month, form.date, form.activityValue, form.responsibleDept, form.f016, form.remark],
-  () => {
-    manualValidation.value = undefined;
-    manualResolvedDerivedValues.value = {};
+const applyRouteQuery = () => {
+  const sourceCode = firstQueryValue(route.query.emissionSourceCode);
+  if (typeof sourceCode === 'string' && sourceCode) {
+    form.sourceCode = sourceCode;
   }
-);
+  const activityPeriod = firstQueryValue(route.query.activityPeriod);
+  if (typeof activityPeriod === 'string' && activityPeriod) {
+    form.activityPeriod = activityPeriod;
+    queryParams.activityPeriod = activityPeriod;
+  }
+};
 
-watch(
-  selectedSource,
-  (source) => {
-    if (!source || form.responsibleDept) {
-      return;
-    }
-    const derivedDept =
-      (source as EmissionSourceVO & { responsibleDept?: string; deptName?: string }).responsibleDept ||
-      (source as EmissionSourceVO & { deptName?: string }).deptName;
-    if (derivedDept) {
-      form.responsibleDept = derivedDept;
-    }
-  }
-);
+const clearManualValidation = () => {
+  manualValidation.value = undefined;
+  manualResolvedDerivedValues.value = {};
+};
+
+const resetForm = () => {
+  Object.assign(form, {
+    sourceCode: undefined,
+    activityPeriod: undefined,
+    date: undefined,
+    activityValue: undefined,
+    responsibleDept: undefined,
+    dataSource: undefined,
+    remark: undefined
+  });
+  clearManualValidation();
+  activityFormRef.value?.clearValidate();
+};
+
+const openCreateDrawer = () => {
+  resetForm();
+  applyRouteQuery();
+  formDrawer.title = '新增活动数据';
+  formDrawer.readonly = false;
+  formDrawer.open = true;
+};
+
+const openDetailDrawer = (row: ActivityDataVO) => {
+  const source = row.emissionSourceId ? sourceById.value.get(String(row.emissionSourceId)) : undefined;
+  resetForm();
+  Object.assign(form, {
+    sourceCode: source?.sourceCode,
+    activityPeriod: row.activityPeriod,
+    date: row.activityPeriod ? `${row.activityPeriod}-01` : undefined,
+    activityValue: row.activityValue,
+    remark: row.remark
+  });
+  manualResolvedDerivedValues.value = {
+    f010: row.activityUnit ?? ''
+  };
+  formDrawer.title = '查看活动数据';
+  formDrawer.readonly = true;
+  formDrawer.open = true;
+};
+
+const openUploadDialog = () => {
+  uploadDialog.open = true;
+};
 
 const applyManualResolvedDerivedValues = (result: Sheet656ImportValidationResult) => {
   const resolved = result.rowResults?.[0]?.resolvedDerivedFieldValues ?? [];
@@ -449,17 +517,17 @@ const handleValidate = async () => {
   if (!valid) return;
   const result = await runManualServerValidation(buildManualValidationRequest());
   if (result.blocking) {
-    ElMessage.error('服务端校验存在强错误');
+    ElMessage.error('校验存在错误');
     return;
   }
-  ElMessage.success(result.valid ? '服务端校验通过' : '校验完成，存在弱警告');
+  ElMessage.success(result.valid ? '校验通过' : '校验完成，存在警告');
 };
 
 const saveActivity = async () => {
   const valid = await validateFormFields();
   if (!valid) return;
   if (!selectedSource.value) {
-    ElMessage.warning('请选择有效的本地排放源');
+    ElMessage.warning('请选择有效的排放源');
     return;
   }
 
@@ -468,7 +536,7 @@ const saveActivity = async () => {
     const request = buildManualValidationRequest();
     const result = await runManualServerValidation(request);
     if (result.blocking) {
-      ElMessage.error('存在强错误，不能保存');
+      ElMessage.error('存在错误，不能保存');
       return;
     }
 
@@ -480,12 +548,13 @@ const saveActivity = async () => {
 
     const persisted = saveRes.data?.persisted === true || (saveRes.data?.persistedRowCount ?? 0) > 0;
     if (!persisted) {
-      ElMessage.warning('导入未持久化，请根据校验结果复核后重试');
+      ElMessage.warning('保存未持久化，请根据校验结果复核后重试');
       return;
     }
 
-    ElMessage.success(manualWarningIssues.value.length ? '已保存，存在弱警告请复核' : '保存成功');
-    await loadRecentActivities();
+    ElMessage.success(manualWarningIssues.value.length ? '已保存，存在警告请复核' : '保存成功');
+    formDrawer.open = false;
+    await loadActivities();
   } finally {
     saving.value = false;
   }
@@ -510,10 +579,10 @@ const parseUploadedFile = async (file: UploadRawFile) => {
       return false;
     }
     if (validation.blocking) {
-      ElMessage.error('上传文件校验存在强错误');
+      ElMessage.error('上传文件校验存在错误');
       return false;
     }
-    ElMessage.success(validation.valid ? '上传文件校验通过' : '文件校验完成，存在弱警告');
+    ElMessage.success(validation.valid ? '上传文件校验通过' : '文件校验完成，存在警告');
   } catch {
     parsedUploadRequest.value = undefined;
     uploadValidation.value = undefined;
@@ -534,7 +603,7 @@ const importUploadedRows = async () => {
     const request = cloneImportValidationRequest(parsedUploadRequest.value);
     const validation = await runUploadServerValidation(request);
     if (validation.blocking) {
-      ElMessage.error('上传文件存在强错误，不能导入');
+      ElMessage.error('上传文件存在错误，不能导入');
       return;
     }
 
@@ -549,17 +618,12 @@ const importUploadedRows = async () => {
       return;
     }
 
-    ElMessage.success(uploadWarningIssues.value.length ? '上传文件已导入，存在弱警告请复核' : '上传文件导入成功');
-    await loadRecentActivities();
+    ElMessage.success(uploadWarningIssues.value.length ? '上传文件已导入，存在警告请复核' : '上传文件导入成功');
+    uploadDialog.open = false;
+    await loadActivities();
   } finally {
     uploadImporting.value = false;
   }
-};
-
-const resetForm = () => {
-  activityFormRef.value?.resetFields();
-  manualValidation.value = undefined;
-  manualResolvedDerivedValues.value = {};
 };
 
 const loadEmissionSources = async () => {
@@ -572,46 +636,86 @@ const loadEmissionSources = async () => {
   }
 };
 
-const loadRecentActivities = async () => {
+const loadActivities = async () => {
   listLoading.value = true;
   try {
-    const res = await listLocalActivityData({ pageNum: 1, pageSize: 10 });
-    recentActivities.value = (res.rows ?? res.data ?? []) as ActivityDataVO[];
+    const res = await listLocalActivityData(queryParams);
+    activityList.value = (res.rows ?? res.data ?? []) as ActivityDataVO[];
+    total.value = res.total ?? activityList.value.length;
   } finally {
     listLoading.value = false;
   }
 };
 
-onMounted(() => {
+const handleQuery = () => {
+  queryParams.pageNum = 1;
+  loadActivities();
+};
+
+const resetQuery = () => {
+  queryFormRef.value?.resetFields();
+  queryParams.pageNum = 1;
+  loadActivities();
+};
+
+watch(
+  () => [form.sourceCode, form.activityPeriod, form.date, form.activityValue, form.responsibleDept, form.dataSource, form.remark],
+  () => {
+    if (!formDrawer.readonly) {
+      clearManualValidation();
+    }
+  }
+);
+
+watch(
+  selectedSource,
+  (source) => {
+    if (!source || form.responsibleDept || formDrawer.readonly) {
+      return;
+    }
+    const derivedDept =
+      (source as EmissionSourceVO & { responsibleDept?: string; deptName?: string }).responsibleDept ||
+      (source as EmissionSourceVO & { deptName?: string }).deptName;
+    if (derivedDept) {
+      form.responsibleDept = derivedDept;
+    }
+  }
+);
+
+onMounted(async () => {
   applyRouteQuery();
-  loadEmissionSources();
-  loadRecentActivities();
+  await loadEmissionSources();
+  await loadActivities();
 });
 </script>
 
 <style scoped lang="scss">
-.enterprise-activity-page {
-  .card-head {
+.enterprise-activity-entry {
+  .query-source {
+    width: 260px;
+  }
+
+  .query-month,
+  .query-status {
+    width: 160px;
+  }
+
+  .table-head,
+  .head-actions,
+  .drawer-footer,
+  .dialog-footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-
-    p {
-      margin: 4px 0 0;
-      color: var(--el-text-color-secondary);
-      font-size: 13px;
-    }
-  }
-
-  .compact {
-    min-height: 32px;
-  }
-
-  .action-row {
-    display: flex;
-    justify-content: flex-end;
     gap: 8px;
+  }
+
+  .table-head {
+    justify-content: space-between;
+  }
+
+  .drawer-footer,
+  .dialog-footer {
+    justify-content: flex-end;
   }
 }
 </style>
