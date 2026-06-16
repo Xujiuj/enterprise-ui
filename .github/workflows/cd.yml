@@ -64,7 +64,9 @@ jobs:
           sudo apt-get install -y sshpass
           cat > deploy-ui.sh <<'EOF'
           set -euo pipefail
+          echo "$SUDO_PASSWORD" | sudo -S rm -rf "$DEPLOY_PATH/www/$DEPLOY_SERVICE"
           echo "$SUDO_PASSWORD" | sudo -S mkdir -p "$DEPLOY_PATH/www/$DEPLOY_SERVICE"
+          echo "$SUDO_PASSWORD" | sudo -S chown -R "$USER:$USER" "$DEPLOY_PATH/www/$DEPLOY_SERVICE"
           tar -xzf "$DEPLOY_PATH/$DEPLOY_SERVICE-dist.tar.gz" -C "$DEPLOY_PATH/www/$DEPLOY_SERVICE"
           rm -f "$DEPLOY_PATH/$DEPLOY_SERVICE-dist.tar.gz"
           echo "$SUDO_PASSWORD" | sudo -S apt-get update
@@ -93,7 +95,7 @@ jobs:
           echo "$SUDO_PASSWORD" | sudo -S mv "/tmp/$DEPLOY_SERVICE.conf" "/etc/nginx/conf.d/$DEPLOY_SERVICE.conf"
           echo "$SUDO_PASSWORD" | sudo -S nginx -t
           echo "$SUDO_PASSWORD" | sudo -S systemctl enable --now nginx
-          echo "$SUDO_PASSWORD" | sudo -S systemctl reload nginx
+          echo "$SUDO_PASSWORD" | sudo -S systemctl restart nginx
           EOF
           sshpass -p "$DEPLOY_PASSWORD" ssh -p "$DEPLOY_PORT_SECRET" -o StrictHostKeyChecking=accept-new "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH'"
           sshpass -p "$DEPLOY_PASSWORD" scp -P "$DEPLOY_PORT_SECRET" -o StrictHostKeyChecking=accept-new enterprise-ui-dist.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/$DEPLOY_SERVICE-dist.tar.gz"
