@@ -38,8 +38,12 @@ const settingsStore = useSettingsStore();
 const permissionStore = usePermissionStore();
 const sidebarRouters = computed<RouteRecordRaw[]>(() => permissionStore.getSidebarRoutes());
 const showLogo = computed(() => settingsStore.sidebarLogo);
-const sideTheme = computed(() => settingsStore.sideTheme);
-const effectiveSideTheme = computed(() => (settingsStore.dark ? 'theme-dark' : sideTheme.value));
+const isDark = useDark({
+  storageKey: 'useDarkKey',
+  valueDark: 'dark',
+  valueLight: 'light'
+});
+const effectiveSideTheme = computed(() => (isDark.value ? 'theme-dark' : 'theme-light'));
 const theme = computed(() => settingsStore.theme);
 const isCollapse = computed(() => !appStore.sidebar.opened);
 
@@ -52,6 +56,6 @@ const activeMenu = computed(() => {
   return path;
 });
 
-const bgColor = computed(() => (effectiveSideTheme.value === 'theme-dark' ? variables.menuBackground : variables.menuLightBackground));
-const textColor = computed(() => (effectiveSideTheme.value === 'theme-dark' ? variables.menuColor : variables.menuLightColor));
+const bgColor = computed(() => (isDark.value ? variables.menuBackground : variables.menuLightBackground));
+const textColor = computed(() => (isDark.value ? variables.menuColor : variables.menuLightColor));
 </script>

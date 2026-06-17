@@ -33,25 +33,23 @@ defineProps({
 
 const title = import.meta.env.VITE_APP_LOGO_TITLE;
 const settingsStore = useSettingsStore();
-const sideTheme = computed(() => settingsStore.sideTheme);
-const effectiveSideTheme = computed(() => (settingsStore.dark ? 'theme-dark' : sideTheme.value));
+const isDark = useDark({
+  storageKey: 'useDarkKey',
+  valueDark: 'dark',
+  valueLight: 'light'
+});
+const effectiveSideTheme = computed(() => (isDark.value ? 'theme-dark' : 'theme-light'));
 
 // 获取Logo背景色
 const getLogoBackground = computed(() => {
-  if (settingsStore.isDark) {
-    return 'var(--sidebar-bg)';
-  }
   if (settingsStore.navType == NavTypeEnum.TOP) {
     return variables.menuLightBackground;
   }
-  return effectiveSideTheme.value === 'theme-dark' ? variables.menuBg : variables.menuLightBackground;
+  return effectiveSideTheme.value === 'theme-dark' ? variables.menuBackground : variables.menuLightBackground;
 });
 
 // 获取Logo文字颜色
 const getLogoTextColor = computed(() => {
-  if (settingsStore.isDark) {
-    return 'var(--sidebar-text)';
-  }
   if (settingsStore.navType == NavTypeEnum.TOP) {
     return variables.logoLightTitleColor;
   }
