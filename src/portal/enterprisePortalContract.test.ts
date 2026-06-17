@@ -361,14 +361,6 @@ describe('enterprise dynamic router guard', () => {
         'system/reportTemplate/index'
       ])
     );
-    const emissionSourceConfig = filtered.find((route: any) => route.path === '/emission-source-config') as any;
-    expect(emissionSourceConfig.children.map((route: any) => route.path)).toEqual(expect.arrayContaining(['admin-division']));
-    const factorConfirm = filtered.find((route: any) => route.path === '/factor-confirm') as any;
-    expect(factorConfirm.children.map((route: any) => route.path)).toEqual(
-      expect.arrayContaining(['ef-electricity-version', 'ef-electricity-scope'])
-    );
-    const reportManagement = filtered.find((route: any) => route.path === '/report-management') as any;
-    expect(reportManagement.children.map((route: any) => route.path)).toEqual(expect.arrayContaining(['report-template-download']));
     expect(filtered.map((route: any) => route.path)).toEqual([
       '/system-auth',
       '/emission-source-config',
@@ -380,6 +372,17 @@ describe('enterprise dynamic router guard', () => {
       '/system',
       '/log'
     ]);
+    expect(visibleChildPathsByTopLevel(filtered as any)).toEqual({
+      '/system-auth': ['license-import'],
+      '/emission-source-config': ['admin-division', 'company', 'emission-source-category', 'emission-source', 'base-year'],
+      '/factor-confirm': ['ef-factor', 'ef-electricity-factor', 'ef-electricity-version', 'ef-electricity-scope', 'greenhouse-gas'],
+      '/activity-data': ['emission-activity-data'],
+      '/green-electricity': ['green-electricity-data'],
+      '/intensity': ['intensity-denominator', 'intensity-target', 'denominator-fact', 'intensity-tolerance'],
+      '/report-management': ['content', 'data-validation', 'report-template-download'],
+      '/system': ['user', 'role', 'menu'],
+      '/log': ['operlog', 'logininfor']
+    });
     expect(filtered.map((route: any) => route.meta?.title)).toEqual([
       '系统授权',
       '01 配置排放源',
@@ -458,4 +461,13 @@ function visibleTitles(routes: Array<{ hidden?: boolean; meta?: { title?: unknow
     const own = route.hidden ? [] : [String(route.meta?.title ?? '')].filter(Boolean);
     return own.concat(visibleTitles(route.children ?? []));
   });
+}
+
+function visibleChildPathsByTopLevel(routes: Array<{ path?: unknown; hidden?: boolean; children?: any[] }>): Record<string, string[]> {
+  return Object.fromEntries(
+    routes.map((route) => [
+      String(route.path ?? ''),
+      (route.children ?? []).filter((child) => !child.hidden).map((child) => String(child.path ?? ''))
+    ])
+  );
 }
