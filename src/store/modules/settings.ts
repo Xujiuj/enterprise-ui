@@ -5,6 +5,8 @@ import { useStorage } from '@vueuse/core';
 import { ref } from 'vue';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 
+const LEGACY_DEFAULT_THEME = '#409EFF';
+
 export const useSettingsStore = defineStore('setting', () => {
   const storageSetting = useStorage<LayoutSetting>('layout-setting', {
     topNav: defaultSettings.topNav,
@@ -18,6 +20,10 @@ export const useSettingsStore = defineStore('setting', () => {
     navType: defaultSettings.navType,
     radiusBase: defaultSettings.radiusBase
   });
+  if (storageSetting.value.theme === LEGACY_DEFAULT_THEME) {
+    storageSetting.value.theme = defaultSettings.theme;
+  }
+
   const title = ref<string>(defaultSettings.title);
   const theme = ref<string>(storageSetting.value.theme);
   const sideTheme = ref<string>(storageSetting.value.sideTheme);
