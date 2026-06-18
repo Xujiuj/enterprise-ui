@@ -427,9 +427,7 @@ const dimensionPages: Record<string, PageConfig> = {
 const vendorOnlyDimensionCodes = new Set([
   'admin-division',
   'emission-source-category',
-  'base-year',
   'ef-electricity-factor',
-  'ef-electricity-version',
   'ef-electricity-scope',
   'greenhouse-gas',
   'report-template-download'
