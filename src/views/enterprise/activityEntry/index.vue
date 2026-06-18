@@ -1,6 +1,6 @@
 <template>
-  <div class="p-2 enterprise-activity-entry">
-    <el-card shadow="never" class="mb-3">
+  <div class="enterprise-activity-entry">
+    <section class="panel search-panel">
       <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px">
         <el-form-item label="排放源" prop="emissionSourceId">
           <el-select v-model="queryParams.emissionSourceId" clearable filterable :loading="sourceLoading" class="query-source">
@@ -16,23 +16,17 @@
             <el-option label="已提交" value="submitted" />
           </el-select>
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
       </el-form>
-    </el-card>
+    </section>
 
-    <el-card shadow="never">
-      <template #header>
-        <div class="table-head">
-          <span>活动数据录入</span>
-          <div class="head-actions">
-            <el-button v-hasPermi="['enterprise:activityImport:import']" icon="Upload" @click="openUploadDialog">Excel 上传</el-button>
-            <el-button v-hasPermi="['enterprise:activityImport:import']" type="primary" icon="Plus" @click="openCreateDrawer">新增</el-button>
-          </div>
+    <section class="panel">
+      <div class="toolbar">
+        <div class="head-actions">
+          <el-button v-hasPermi="['enterprise:activityImport:import']" icon="Upload" @click="openUploadDialog">Excel 上传</el-button>
+          <el-button v-hasPermi="['enterprise:activityImport:import']" type="primary" icon="Plus" @click="openCreateDrawer">新增</el-button>
+          <el-button icon="Refresh" :loading="listLoading" @click="loadActivities">刷新</el-button>
         </div>
-      </template>
+      </div>
 
       <el-table v-loading="listLoading" :data="activityList" border>
         <el-table-column label="排放源" min-width="220" show-overflow-tooltip>
@@ -67,7 +61,7 @@
         :total="total"
         @pagination="loadActivities"
       />
-    </el-card>
+    </section>
 
     <el-drawer v-model="formDrawer.open" :title="formDrawer.title" size="680px" append-to-body destroy-on-close>
       <el-form ref="activityFormRef" :model="form" :rules="rules" label-width="112px">
@@ -222,6 +216,7 @@ import { UploadFilled } from '@element-plus/icons-vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules, type UploadRawFile } from 'element-plus';
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 import {
   importLocalSheet656Activity,
   listLocalActivityData,
@@ -698,6 +693,8 @@ onMounted(async () => {
   await loadEmissionSources();
   await loadActivities();
 });
+
+useAutoQuery(queryParams, () => handleQuery());
 </script>
 
 <style scoped lang="scss">
@@ -711,17 +708,12 @@ onMounted(async () => {
     width: 160px;
   }
 
-  .table-head,
   .head-actions,
   .drawer-footer,
   .dialog-footer {
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-
-  .table-head {
-    justify-content: space-between;
   }
 
   .drawer-footer,

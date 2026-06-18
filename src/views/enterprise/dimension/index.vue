@@ -6,10 +6,6 @@
           <h1>{{ page.title }}</h1>
           <p>{{ page.stage }} / {{ page.owner }} / {{ page.mode }}</p>
         </div>
-        <div class="btns">
-          <el-button icon="Refresh" @click="getList">刷新</el-button>
-          <el-button v-if="!isVendorOnly" type="primary" icon="Plus" @click="handleAdd" v-hasPermi="['enterprise:dimension:add']">新增</el-button>
-        </div>
       </section>
 
       <section class="panel">
@@ -28,17 +24,10 @@
               <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
-          <div class="search-actions">
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            <el-button link type="primary" @click="showSearch = false">
-              <el-icon><ArrowUp /></el-icon>
-            </el-button>
-          </div>
         </div>
 
-        <div class="toolbar" v-show="!showSearch">
+        <div class="toolbar">
           <div class="btns">
-            <el-button type="primary" icon="Search" @click="showSearch = true">展开搜索</el-button>
             <el-button v-if="!isVendorOnly" type="primary" icon="Plus" @click="handleAdd" v-hasPermi="['enterprise:dimension:add']">新增</el-button>
             <el-button
               v-if="!isVendorOnly"
@@ -50,6 +39,7 @@
               v-hasPermi="['enterprise:dimension:remove']"
               >删除</el-button
             >
+            <el-button icon="Refresh" :loading="loading" @click="getList">刷新</el-button>
           </div>
           <span class="select-count" v-if="ids.length > 0">已选 {{ ids.length }} 项</span>
         </div>

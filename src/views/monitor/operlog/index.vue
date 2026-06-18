@@ -1,5 +1,12 @@
 <template>
   <div class="p-2">
+    <section class="page-head">
+      <div>
+        <h1>操作日志</h1>
+        <p>查看企业端后台操作记录、执行状态和请求明细。</p>
+      </div>
+    </section>
+
     <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
       <div v-show="showSearch" class="mb-[10px]">
         <el-card shadow="hover">
@@ -33,11 +40,6 @@
                 end-placeholder="结束日期"
                 :default-time="[new Date(2000, 1, 1, 0, 0, 0), new Date(2000, 1, 1, 23, 59, 59)]"
               ></el-date-picker>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
-
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-form>
         </el-card>

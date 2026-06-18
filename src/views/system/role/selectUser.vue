@@ -8,11 +8,6 @@
         <el-form-item label="手机号码" prop="phonenumber">
           <el-input v-model="queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="handleQuery" />
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
-
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
       </el-form>
       <el-row>
         <el-table ref="tableRef" border :data="userList" height="260px" @row-click="clickRow" @selection-change="handleSelectionChange">

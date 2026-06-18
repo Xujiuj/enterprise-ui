@@ -1,13 +1,22 @@
 <template>
-  <div class="enterprise-activity-data">
-    <el-tabs>
-      <el-tab-pane label="填报与上传">
+  <div class="p-2 enterprise-activity-data page-panel">
+    <section class="page-head">
+      <div>
+        <h1>排放活动数据</h1>
+        <p>填报、上传并校验企业排放活动原始明细数据，支持 Excel 批量导入和导入结果追踪。</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <el-tabs>
+        <el-tab-pane label="填报与上传">
         <EnterpriseActivityEntry />
-      </el-tab-pane>
-      <el-tab-pane label="导入结果">
+        </el-tab-pane>
+        <el-tab-pane label="导入结果">
         <EnterpriseImportResults />
-      </el-tab-pane>
-    </el-tabs>
+        </el-tab-pane>
+      </el-tabs>
+    </section>
   </div>
 </template>
 
@@ -18,6 +27,8 @@ import EnterpriseImportResults from '@/views/enterprise/importResults/index.vue'
 
 <style scoped lang="scss">
 .enterprise-activity-data {
-  padding: 8px;
+  :deep(.el-tabs__header) {
+    margin-bottom: 16px;
+  }
 }
 </style>

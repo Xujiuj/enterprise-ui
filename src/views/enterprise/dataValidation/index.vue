@@ -1,24 +1,19 @@
 <template>
-  <div class="p-2 enterprise-validation-page">
-    <el-card shadow="never" class="mb-4">
-      <div class="validation-head">
-        <div>
-          <h2>数据验证</h2>
-          <p>按核算期间汇总活动数据提交、缺失与准确性结果。</p>
-        </div>
-        <div class="validation-filter">
-          <el-date-picker
-            v-model="queryParams.activityPeriod"
-            type="month"
-            value-format="YYYY-MM"
-            placeholder="选择期间"
-            clearable
-            @change="loadDashboard"
-          />
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </div>
+  <div class="p-2 enterprise-validation-page page-panel">
+    <section class="page-head">
+      <div>
+        <h1>数据验证</h1>
+        <p>按核算期间汇总活动数据提交、缺失与准确性结果。</p>
       </div>
-    </el-card>
+    </section>
+
+    <section class="panel mb-4">
+      <el-form :model="queryParams" inline label-width="84px">
+        <el-form-item label="核算期间">
+          <el-date-picker v-model="queryParams.activityPeriod" type="month" value-format="YYYY-MM" placeholder="选择期间" clearable />
+        </el-form-item>
+      </el-form>
+    </section>
 
     <el-row :gutter="16" class="mb-4">
       <el-col v-for="metric in metrics" :key="metric.label" :xs="12" :md="6">
@@ -105,6 +100,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getActivityDataValidationDashboard } from '@/api/enterprise/activityData';
 import type { ActivityDataQuery, ActivityDataValidationDashboard, ActivityDataValidationIssue } from '@/api/enterprise/activityData/types';
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 
 const router = useRouter();
 const loading = ref(false);
@@ -232,6 +228,8 @@ const openIssue = (issue: ActivityDataValidationIssue) => {
 onMounted(() => {
   loadDashboard();
 });
+
+useAutoQuery(queryParams, () => loadDashboard());
 </script>
 
 <style scoped>
@@ -239,29 +237,11 @@ onMounted(() => {
   min-height: calc(100vh - 84px);
 }
 
-.validation-head,
 .card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-}
-
-.validation-head h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 650;
-}
-
-.validation-head p {
-  margin: 6px 0 0;
-  color: var(--el-text-color-secondary);
-}
-
-.validation-filter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .metric-card :deep(.el-card__body) {
@@ -296,14 +276,9 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .validation-head {
-    align-items: stretch;
+  .enterprise-validation-page :deep(.el-form) {
+    display: flex;
     flex-direction: column;
-  }
-
-  .validation-filter {
-    align-items: stretch;
-    flex-wrap: wrap;
   }
 }
 </style>

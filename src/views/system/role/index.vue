@@ -1,5 +1,12 @@
 <template>
   <div class="p-2">
+    <section class="page-head">
+      <div>
+        <h1>角色管理</h1>
+        <p>维护企业端角色权限、数据范围与菜单授权关系。</p>
+      </div>
+    </section>
+
     <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
       <div v-show="showSearch" class="mb-[10px]">
         <el-card shadow="hover">
@@ -27,11 +34,6 @@
               ></el-date-picker>
             </el-form-item>
 
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
-
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
           </el-form>
         </el-card>
       </div>

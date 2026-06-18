@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { enterpriseAllowedPermissionPrefixes, filterEnterprisePortalRoutes, isEnterpriseForbiddenMenuTitle } from './enterprisePortalContract';
 
+const enterpriseWorkbenchRoute = {
+  path: '',
+  children: [
+    {
+      path: '/index',
+      meta: { title: '工作台' }
+    }
+  ]
+};
+
 describe('enterprise dynamic router guard', () => {
   it('keeps backend returned enterprise menus and removes vendor menus', () => {
     const routes = [
@@ -371,6 +381,18 @@ describe('enterprise dynamic router guard', () => {
       '/report-management',
       '/system',
       '/log'
+    ]);
+    expect(filtered.every((route: any) => route.alwaysShow === true)).toBe(true);
+    expect(visibleTitles([enterpriseWorkbenchRoute].concat(filtered as any))).toEqual(
+      expect.arrayContaining(['工作台', '系统授权', '授权管理', '01 配置排放源', '行政区划'])
+    );
+    expect(visibleTitles([enterpriseWorkbenchRoute].concat(filtered as any)).slice(0, 6)).toEqual([
+      '工作台',
+      '系统授权',
+      '授权管理',
+      '01 配置排放源',
+      '行政区划',
+      '公司表'
     ]);
     expect(visibleChildPathsByTopLevel(filtered as any)).toEqual({
       '/system-auth': ['license-import'],

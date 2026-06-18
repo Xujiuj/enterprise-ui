@@ -1,5 +1,12 @@
 <template>
   <div class="p-2">
+    <section class="page-head">
+      <div>
+        <h1>分配用户</h1>
+        <p>维护当前角色下已授权用户及批量取消授权关系。</p>
+      </div>
+    </section>
+
     <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
       <div v-show="showSearch" class="search">
         <el-form ref="queryFormRef" :model="queryParams" :inline="true">
@@ -9,12 +16,7 @@
           <el-form-item label="手机号码" prop="phonenumber">
             <el-input v-model="queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
-
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-form>
+          </el-form>
       </div>
     </transition>
     <el-card shadow="never">

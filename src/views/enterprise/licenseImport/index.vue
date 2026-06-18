@@ -1,12 +1,15 @@
 <template>
-  <div class="p-2 license-import-page">
-    <div class="page-intro">
+  <div class="p-2 license-import-page page-panel">
+    <section class="page-head">
       <div>
-        <h2>License导入与运行状态</h2>
+        <h1>授权管理</h1>
         <p>用于导入企业本地授权文件，查看当前授权与访问网关状态。</p>
       </div>
+    </section>
+
+    <section class="panel status-toolbar">
       <el-button type="primary" plain icon="Refresh" :loading="statusLoading" @click="refreshStatus">刷新状态</el-button>
-    </div>
+    </section>
 
     <el-row :gutter="16">
       <el-col :xs="24" :lg="14">
@@ -378,29 +381,11 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .license-import-page {
-  .page-intro {
+  .status-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 16px 18px;
+    justify-content: flex-end;
     margin-bottom: 16px;
-    background: var(--el-bg-color);
-    border: 1px solid var(--el-border-color-light);
-    border-radius: 6px;
-
-    h2 {
-      margin: 0 0 6px;
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--el-text-color-primary);
-    }
-
-    p {
-      margin: 0;
-      font-size: 13px;
-      color: var(--el-text-color-regular);
-    }
   }
 
   .section-card {
@@ -426,7 +411,7 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .license-import-page {
-    .page-intro,
+    .status-toolbar,
     .import-actions {
       align-items: stretch;
       flex-direction: column;

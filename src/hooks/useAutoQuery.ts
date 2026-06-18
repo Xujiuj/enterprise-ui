@@ -41,7 +41,7 @@ export const useAutoQuery = (
 ) => {
   const resolvedOptions = typeof options === 'number' ? { delay: options, enabled: true } : options;
   const delay = resolvedOptions.delay ?? 320;
-  const enabled = resolvedOptions.enabled ?? false;
+  const enabled = resolvedOptions.enabled ?? true;
 
   if (!enabled) {
     return;

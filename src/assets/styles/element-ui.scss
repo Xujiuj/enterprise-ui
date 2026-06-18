@@ -273,22 +273,22 @@ html.dark {
   .el-button.is-link.el-button--primary,
   .el-button.is-text.el-button--primary,
   .el-button--text.el-button--primary {
-    color: #93c5fd;
+    color: #86efac;
   }
 
   .el-button.is-link:hover,
   .el-button.is-text:hover,
   .el-button--text:hover {
-    background: rgba(96, 165, 250, 0.14);
+    background: rgba(69, 212, 131, 0.14);
   }
 
   .el-table .el-table__cell.fixed-width .el-button--primary:not(.is-link):not(.is-text):not(.el-button--text),
   .el-table .el-table__cell.fixed-width .el-button--success:not(.is-link):not(.is-text):not(.el-button--text),
   .el-table .table-actions .el-button--primary:not(.is-link):not(.is-text):not(.el-button--text),
   .el-table .table-actions .el-button--success:not(.is-link):not(.is-text):not(.el-button--text) {
-    --el-button-hover-bg-color: rgba(96, 165, 250, 0.14);
-    --el-button-active-bg-color: rgba(96, 165, 250, 0.2);
-    color: #93c5fd;
+    --el-button-hover-bg-color: rgba(69, 212, 131, 0.14);
+    --el-button-active-bg-color: rgba(69, 212, 131, 0.2);
+    color: #86efac;
   }
 
   .el-drawer,

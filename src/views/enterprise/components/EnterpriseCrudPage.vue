@@ -1,22 +1,13 @@
 <template>
-  <div class="p-2 enterprise-crud-page">
-    <el-card shadow="never">
-      <template #header>
-        <div class="card-head">
-          <div>
-            <span>{{ config.title }}</span>
-            <p v-if="config.description">{{ config.description }}</p>
-          </div>
-          <div class="btns">
-            <slot name="toolbar-actions" :refresh="getList" :loading="loading" />
-            <el-button icon="Refresh" :loading="loading" @click="getList">刷新</el-button>
-            <el-button v-if="!config.readonly" type="primary" icon="Plus" @click="handleAdd" v-hasPermi="[`${config.permissionPrefix}:add`]"
-              >新增</el-button
-            >
-          </div>
-        </div>
-      </template>
+  <div class="p-2 enterprise-crud-page page-panel">
+    <section class="page-head">
+      <div>
+        <h1>{{ config.title }}</h1>
+        <p v-if="config.description">{{ config.description }}</p>
+      </div>
+    </section>
 
+    <section class="panel">
       <el-form v-show="showSearch" :model="queryParams" inline label-width="96px" class="crud-search">
         <el-form-item v-for="field in config.searchFields" :key="field.prop" :label="field.label">
           <component :is="controlComponent(field)" v-bind="controlProps(field)" v-model="queryParams[field.prop]" @keyup.enter="handleQuery">
@@ -24,10 +15,6 @@
               <el-option v-for="option in field.options ?? []" :key="String(option.value)" :label="option.label" :value="option.value" />
             </template>
           </component>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" :loading="loading" @click="handleQuery">查询</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
 
@@ -41,6 +28,9 @@
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="[`${config.permissionPrefix}:remove`]"
             >删除</el-button
           >
+        </el-col>
+        <el-col :span="1.5">
+          <slot name="toolbar-actions" :refresh="getList" :loading="loading" />
         </el-col>
         <right-toolbar v-model:showSearch="showSearch" @query-table="getList" />
       </el-row>
@@ -112,7 +102,7 @@
       </el-table>
 
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    </section>
 
     <el-drawer v-model="dialog.visible" :title="dialog.title" size="620px" append-to-body>
       <el-form ref="crudFormRef" :model="form" :rules="rules" label-width="132px">
@@ -169,6 +159,7 @@ import {
 } from 'element-plus';
 import { listExtensionFields, listExtensionFieldValues, saveExtensionFieldValuesBatch } from '@/api/enterprise/extensionField';
 import type { ExtensionFieldVO, ExtensionFieldValueForm, ExtensionFieldValueVO } from '@/api/enterprise/extensionField/types';
+import { useAutoQuery } from '@/hooks/useAutoQuery';
 
 type CrudValue = string | number | boolean | undefined | null;
 type CrudRecord = Record<string, any>;
@@ -675,30 +666,14 @@ onMounted(async () => {
   getList();
 });
 
+useAutoQuery(queryParams, () => handleQuery());
+
 defineExpose({
   refresh: getList
 });
 </script>
 
 <style scoped>
-.enterprise-crud-page :deep(.card-head) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.enterprise-crud-page :deep(.card-head span) {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.enterprise-crud-page :deep(.card-head p) {
-  margin: 4px 0 0;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-
 .crud-search {
   display: flex;
   flex-wrap: wrap;

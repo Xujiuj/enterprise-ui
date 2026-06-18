@@ -39,6 +39,7 @@ const enterpriseTopLevelOrder = [
 const enterpriseAllowedTopLevelPaths = new Set(enterpriseTopLevelOrder);
 
 const enterpriseAllowedTopLevelTitles = new Set([
+  '首页',
   '系统授权',
   '01 配置排放源',
   '02 确认排放因子',
@@ -60,6 +61,27 @@ const enterpriseCanonicalTopLevelTitles = new Map([
   ['report-management', '报表管理'],
   ['system', '系统管理'],
   ['log', '日志']
+]);
+
+const enterpriseTopLevelAliases = new Map([
+  ['首页', 'index'],
+  ['工作台', 'index'],
+  ['系统授权', 'system-auth'],
+  ['授权管理', 'system-auth'],
+  ['01 配置排放源', 'emission-source-config'],
+  ['配置排放源', 'emission-source-config'],
+  ['02 确认排放因子', 'factor-confirm'],
+  ['确认排放因子', 'factor-confirm'],
+  ['03 活动数据', 'activity-data'],
+  ['活动数据', 'activity-data'],
+  ['04 绿电绿证', 'green-electricity'],
+  ['绿电绿证', 'green-electricity'],
+  ['05 强度管理', 'intensity'],
+  ['强度管理', 'intensity'],
+  ['报表管理', 'report-management'],
+  ['系统管理', 'system'],
+  ['日志', 'log'],
+  ['日志管理', 'log']
 ]);
 
 const enterpriseAllowedVisibleChildPathsByScope = new Map<string, string[]>([
@@ -132,6 +154,13 @@ const enterpriseCanonicalChildTitlesByScope = new Map<string, Map<string, string
   ]
 ]);
 
+const enterpriseChildPathAliasesByScope = new Map<string, Map<string, string>>(
+  [...enterpriseCanonicalChildTitlesByScope.entries()].map(([scope, titleMap]) => [
+    scope,
+    new Map([...titleMap.entries()].flatMap(([path, title]) => [[path, path], [title, path]]))
+  ])
+);
+
 const enterpriseForbiddenRouteIdentifierPatterns = [
   /(^|\/)(vendor|customer|tenant|tenantpackage|tenant-package|client)(\/|$)/,
   /(^|\/)system\/(license|licensestate|license-state|tenant|tenantpackage|tenant-package|client)(\/|$)/,
@@ -173,7 +202,7 @@ function promoteLogRoute(routes: RouteRecordRaw[]): RouteRecordRaw[] {
   let logRoute: RouteRecordRaw | undefined;
 
   routes.forEach((route) => {
-    if (normalizeRouteIdentifier(route.path) !== 'system' || !route.children) {
+    if (resolveTopLevelRouteKey(route as PortalRoute) !== 'system' || !route.children) {
       promotedRoutes.push(route);
       return;
     }
@@ -186,6 +215,7 @@ function promoteLogRoute(routes: RouteRecordRaw[]): RouteRecordRaw[] {
           ...child,
           path: '/log',
           component: 'Layout',
+          alwaysShow: true,
           children: sortPortalRoutes((child.children ?? []) as RouteRecordRaw[], 'log'),
           meta: {
             ...(child.meta ?? {}),
@@ -206,13 +236,15 @@ function promoteLogRoute(routes: RouteRecordRaw[]): RouteRecordRaw[] {
 }
 
 function normalizePortalRoute(route: PortalRoute, scope: string, children?: RouteRecordRaw[]): RouteRecordRaw {
+  const routeKey = scope === 'root' ? resolveTopLevelRouteKey(route) : resolveChildRouteKey(route, scope);
   const normalizedRoute = {
     ...route,
-    ...(children ? { children: sortPortalRoutes(children, normalizeRouteIdentifier(route.path)) } : {})
+    ...(children ? { children: sortPortalRoutes(children, routeKey) } : {})
   } as RouteRecordRaw;
 
   if (scope === 'root') {
-    normalizedRoute.path = normalizeTopLevelPath(normalizedRoute.path);
+    normalizedRoute.path = normalizeTopLevelPath(resolveTopLevelRouteKey(normalizedRoute));
+    normalizedRoute.alwaysShow = true;
     normalizedRoute.meta = {
       ...(normalizedRoute.meta ?? {}),
       title: enterpriseCanonicalTopLevelTitles.get(normalizeRouteIdentifier(normalizedRoute.path)) ?? normalizedRoute.meta?.title
@@ -220,8 +252,9 @@ function normalizePortalRoute(route: PortalRoute, scope: string, children?: Rout
     return normalizedRoute;
   }
 
-  const canonicalChildTitle = enterpriseCanonicalChildTitlesByScope.get(scope)?.get(normalizeRouteIdentifier(normalizedRoute.path));
+  const canonicalChildTitle = enterpriseCanonicalChildTitlesByScope.get(scope)?.get(routeKey);
   if (canonicalChildTitle) {
+    normalizedRoute.path = routeKey;
     normalizedRoute.meta = {
       ...(normalizedRoute.meta ?? {}),
       title: canonicalChildTitle
@@ -240,7 +273,7 @@ function normalizeTopLevelPath(path: RouteRecordRaw['path']): string {
 }
 
 function getChildScope(route: PortalRoute, scope: string): string {
-  const normalizedPath = normalizeRouteIdentifier(route.path);
+  const normalizedPath = resolveTopLevelRouteKey(route);
   const title = String(route.meta?.title ?? '');
   if (normalizedPath === 'system' || title === '系统管理') {
     return 'system';
@@ -255,7 +288,7 @@ function getChildScope(route: PortalRoute, scope: string): string {
 }
 
 function isAllowedByEnterprisePortalContract(route: PortalRoute, scope: string): boolean {
-  const normalizedPath = normalizeRouteIdentifier(route.path);
+  const normalizedPath = scope === 'root' ? resolveTopLevelRouteKey(route) : resolveChildRouteKey(route, scope);
   const title = String(route.meta?.title ?? '');
 
   if (scope === 'root') {
@@ -333,9 +366,35 @@ function sortPortalRoutes(routes: RouteRecordRaw[], scope: string): RouteRecordR
 }
 
 function routeOrder(route: RouteRecordRaw, order: string[]): number {
-  const normalizedPath = normalizeRouteIdentifier(route.path);
+  const normalizedPath = routeOrderKey(route, order);
   const index = order.indexOf(normalizedPath);
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
+function routeOrderKey(route: RouteRecordRaw, order: string[]): string {
+  const topLevelKey = resolveTopLevelRouteKey(route as PortalRoute);
+  if (order.includes(topLevelKey)) {
+    return topLevelKey;
+  }
+  for (const scope of enterpriseAllowedVisibleChildPathsByScope.keys()) {
+    const childKey = resolveChildRouteKey(route as PortalRoute, scope);
+    if (order.includes(childKey)) {
+      return childKey;
+    }
+  }
+  return normalizeRouteIdentifier(route.path);
+}
+
+function resolveTopLevelRouteKey(route: PortalRoute): string {
+  const title = String(route.meta?.title ?? '');
+  return enterpriseTopLevelAliases.get(title) ?? normalizeRouteIdentifier(route.path);
+}
+
+function resolveChildRouteKey(route: PortalRoute, scope: string): string {
+  const pathKey = normalizeRouteIdentifier(route.path);
+  const title = String(route.meta?.title ?? '');
+  const aliases = enterpriseChildPathAliasesByScope.get(scope);
+  return aliases?.get(pathKey) ?? aliases?.get(title) ?? pathKey;
 }
 
 function isHiddenRoute(route: PortalRoute): boolean {

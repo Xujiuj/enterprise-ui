@@ -1,16 +1,6 @@
 <template>
-  <div class="p-2 enterprise-import-results">
-    <el-card shadow="never">
-      <template #header>
-        <div class="card-head">
-          <div>
-            <span>企业本地导入结果</span>
-            <p>读取企业端 capture batch / row 接口，不请求厂商服务。</p>
-          </div>
-          <el-button type="primary" icon="Refresh" :loading="loading" @click="loadBatches">刷新</el-button>
-        </div>
-      </template>
-
+  <div class="enterprise-import-results">
+    <section class="panel">
       <el-form :model="queryParams" inline>
         <el-form-item label="模板版本">
           <el-input v-model="queryParams.templateVersionId" clearable placeholder="templateVersionId" />
@@ -25,12 +15,11 @@
             <el-option label="警告" value="WARN" />
           </el-select>
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
-
-          <el-button icon="RefreshLeft" @click="resetQuery">重置</el-button>
-        </el-form-item>
       </el-form>
+
+      <div class="toolbar">
+        <el-button type="primary" plain icon="Refresh" :loading="loading" @click="loadBatches">刷新</el-button>
+      </div>
 
       <el-table v-loading="loading" :data="batchList" row-key="id">
         <el-table-column prop="id" label="批次ID" width="110" />
@@ -63,7 +52,7 @@
         :total="total"
         @pagination="loadBatches"
       />
-    </el-card>
+    </section>
 
     <el-drawer v-model="rowDrawer.visible" :title="rowDrawer.title" size="720px" append-to-body>
       <div class="row-drawer-toolbar">
@@ -185,19 +174,6 @@ useAutoQuery(queryParams, () => handleQuery());
 
 <style scoped lang="scss">
 .enterprise-import-results {
-  .card-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-
-    p {
-      margin: 4px 0 0;
-      color: var(--el-text-color-secondary);
-      font-size: 13px;
-    }
-  }
-
   .row-drawer-toolbar {
     display: flex;
     justify-content: flex-end;
