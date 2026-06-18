@@ -80,17 +80,6 @@
         <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
       </section>
 
-      <section v-if="showFactorWorkspace" class="panel factor-workspace">
-        <el-tabs>
-          <el-tab-pane label="因子确认记录">
-            <EnterpriseFactorConfirmation />
-          </el-tab-pane>
-          <el-tab-pane label="因子缓存记录">
-            <EnterpriseFactorCacheRecord />
-          </el-tab-pane>
-        </el-tabs>
-      </section>
-
       <el-drawer v-model="dialog.visible" :title="dialog.title" size="620px" append-to-body>
         <el-form ref="dimensionFormRef" :model="form" :rules="rules" label-width="120px">
           <el-form-item :label="page.codeLabel" prop="recordCode">
@@ -156,8 +145,6 @@ import {
 } from '@/api/enterprise/dimensionRecord';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { DimensionRecordForm, DimensionRecordQuery, DimensionRecordVO } from '@/api/enterprise/dimensionRecord/types';
-import EnterpriseFactorConfirmation from '@/views/enterprise/factorConfirmation/index.vue';
-import EnterpriseFactorCacheRecord from '@/views/enterprise/factorCacheRecord/index.vue';
 
 type FieldProp = 'field01' | 'field02' | 'field03' | 'field04' | 'field05' | 'field06';
 
@@ -441,7 +428,6 @@ const routeKey = computed(() => {
 });
 const page = computed(() => dimensionPages[routeKey.value]);
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
-const showFactorWorkspace = computed(() => routeKey.value === 'ef-factor');
 
 const recordList = ref<DimensionRecordVO[]>([]);
 const buttonLoading = ref(false);

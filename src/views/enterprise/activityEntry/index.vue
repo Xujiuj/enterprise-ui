@@ -22,6 +22,7 @@
     <section class="panel">
       <div class="toolbar">
         <div class="head-actions">
+          <el-button v-hasPermi="['enterprise:activityImport:import']" icon="Download" @click="downloadImportTemplate">下载模板</el-button>
           <el-button v-hasPermi="['enterprise:activityImport:import']" icon="Upload" @click="openUploadDialog">Excel 上传</el-button>
           <el-button v-hasPermi="['enterprise:activityImport:import']" type="primary" icon="Plus" @click="openCreateDrawer">新增</el-button>
           <el-button icon="Refresh" :loading="listLoading" @click="loadActivities">刷新</el-button>
@@ -217,6 +218,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules, type UploadRawFile } from 'element-plus';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
+import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 import {
   importLocalSheet656Activity,
   listLocalActivityData,
@@ -486,6 +488,14 @@ const openDetailDrawer = (row: ActivityDataVO) => {
 
 const openUploadDialog = () => {
   uploadDialog.open = true;
+};
+
+const downloadImportTemplate = () => {
+  downloadXlsxTemplate({
+    fileName: `sheet_656_activity_template_${new Date().getTime()}.xlsx`,
+    sheetName: 'sheet_656',
+    headers: FIELD_DESCRIPTORS.map((field) => field.sourceColumnName)
+  });
 };
 
 const applyManualResolvedDerivedValues = (result: Sheet656ImportValidationResult) => {
