@@ -16,7 +16,15 @@
             </template>
           </component>
         </el-form-item>
+        <div class="search-actions">
+          <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="getList" />
+        </div>
       </el-form>
+      <div v-show="!showSearch" class="search-bar search-bar-collapsed">
+        <div class="search-actions">
+          <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="getList" />
+        </div>
+      </div>
 
       <el-row :gutter="10" class="mb-3">
         <el-col :span="1.5">
@@ -32,7 +40,6 @@
         <el-col :span="1.5">
           <slot name="toolbar-actions" :refresh="getList" :loading="loading" />
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @query-table="getList" />
       </el-row>
 
       <el-table v-loading="loading" :data="rows" @selection-change="handleSelectionChange">

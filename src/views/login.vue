@@ -107,11 +107,11 @@ const loginForm = ref<LoginData>({
   uuid: ''
 } as LoginData);
 
-const loginRules: ElFormRules = {
+const loginRules = computed<ElFormRules>(() => ({
   username: [{ required: true, trigger: 'blur', message: t('login.rule.username.required') }],
   password: [{ required: true, trigger: 'blur', message: t('login.rule.password.required') }],
-  code: [{ required: true, trigger: 'change', message: t('login.rule.code.required') }]
-};
+  ...(captchaEnabled.value ? { code: [{ required: true, trigger: 'change', message: t('login.rule.code.required') }] } : {})
+}));
 
 const codeUrl = ref('');
 const loading = ref(false);
@@ -198,6 +198,9 @@ const syncLoginPreference = () => {
 };
 
 const handleLogin = () => {
+  if (!captchaEnabled.value) {
+    loginRef.value?.clearValidate('code');
+  }
   loginRef.value?.validate(async (valid: boolean, fields: any) => {
     if (!valid) {
       console.log('error submit!', fields);
@@ -236,6 +239,8 @@ const getCode = async () => {
   codeUrl.value = '';
   loginForm.value.code = '';
   loginForm.value.uuid = '';
+  await nextTick();
+  loginRef.value?.clearValidate('code');
   if (autoLogin.value && loginForm.value.username && loginForm.value.password && !autoLoginTriggered.value) {
     autoLoginTriggered.value = true;
     handleLogin();

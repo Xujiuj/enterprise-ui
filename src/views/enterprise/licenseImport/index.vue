@@ -8,7 +8,9 @@
     </section>
 
     <section class="panel status-toolbar">
-      <el-button type="primary" plain icon="Refresh" :loading="statusLoading" @click="refreshStatus">刷新状态</el-button>
+      <el-tooltip content="刷新状态" placement="top">
+        <el-button circle icon="Refresh" :loading="statusLoading" @click="refreshStatus" />
+      </el-tooltip>
     </section>
 
     <el-row :gutter="16">

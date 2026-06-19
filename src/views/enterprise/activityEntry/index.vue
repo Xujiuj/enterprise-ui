@@ -1,7 +1,7 @@
 <template>
   <div class="enterprise-activity-entry">
     <section class="panel search-panel">
-      <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px">
+      <el-form v-show="showSearch" ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="search-bar wide activity-search">
         <el-form-item label="排放源" prop="emissionSourceId">
           <el-select v-model="queryParams.emissionSourceId" clearable filterable :loading="sourceLoading" class="query-source">
             <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.id" />
@@ -16,7 +16,15 @@
             <el-option label="已提交" value="submitted" />
           </el-select>
         </el-form-item>
+          <div class="search-actions">
+            <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="loadActivities" />
+          </div>
       </el-form>
+      <div class="search-bar search-bar-collapsed" v-show="!showSearch">
+        <div class="search-actions">
+          <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="loadActivities" />
+        </div>
+      </div>
     </section>
 
     <section class="panel">
@@ -24,8 +32,8 @@
         <div class="head-actions">
           <el-button v-hasPermi="['enterprise:activityImport:import']" icon="Download" @click="downloadImportTemplate">下载模板</el-button>
           <el-button v-hasPermi="['enterprise:activityImport:import']" icon="Upload" @click="openUploadDialog">Excel 上传</el-button>
+          <el-button v-hasPermi="['enterprise:activityImport:import']" icon="Grid" @click="openSheetDrawer">在线填报</el-button>
           <el-button v-hasPermi="['enterprise:activityImport:import']" type="primary" icon="Plus" @click="openCreateDrawer">新增</el-button>
-          <el-button icon="Refresh" :loading="listLoading" @click="loadActivities">刷新</el-button>
         </div>
       </div>
 
@@ -209,6 +217,18 @@
         </div>
       </template>
     </el-dialog>
+
+    <el-drawer v-model="sheetDrawer.open" title="排放活动数据在线填报" size="94%" append-to-body destroy-on-close>
+      <SpreadsheetEditor
+        title="sheet_656"
+        :columns="sheetColumns"
+        :rows="sheetRows"
+        :empty-row="sheetEmptyRow"
+        :saving="sheetSaving"
+        hint="字段名称严格保持 sheet_656 原始表头。维度字段通过排放源下拉选择，保存前会调用服务端校验并自动带出公司、分类、单位和因子。"
+        @save="saveSheetRows"
+      />
+    </el-drawer>
   </div>
 </template>
 
@@ -219,6 +239,8 @@ import { useRoute } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules, type UploadRawFile } from 'element-plus';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
+import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
+import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
 import {
   importLocalSheet656Activity,
   listLocalActivityData,
@@ -282,6 +304,7 @@ const FIELD_DESCRIPTORS: Sheet656FieldDescriptor[] = [
 const queryFormRef = ref<FormInstance>();
 const activityFormRef = ref<FormInstance>();
 const listLoading = ref(false);
+const showSearch = ref(true);
 const sourceLoading = ref(false);
 const validating = ref(false);
 const saving = ref(false);
@@ -305,6 +328,10 @@ const formDrawer = reactive({
 const uploadDialog = reactive({
   open: false
 });
+const sheetDrawer = reactive({
+  open: false
+});
+const sheetSaving = ref(false);
 
 const queryParams = reactive<ActivityDataQuery>({
   pageNum: 1,
@@ -332,6 +359,76 @@ const dataSourceOptions = [
   { label: '供应商证明', value: 'supplier_evidence' },
   { label: '其他原始凭证', value: 'other_evidence' }
 ];
+const sheetColumns = computed<SpreadsheetColumn[]>(() =>
+  FIELD_DESCRIPTORS.map((field) => {
+    if (field.sourceColumnCode === 'f001') {
+      return {
+        prop: field.sourceColumnCode,
+        label: field.sourceColumnName,
+        type: 'select',
+        required: true,
+        width: 230,
+        options: emissionSources.value.map((source) => ({ label: sourceLabel(source), value: source.sourceCode }))
+      };
+    }
+    if (field.sourceColumnCode === 'f011' || field.sourceColumnCode === 'f012' || field.sourceColumnCode === 'f014') {
+      return {
+        prop: field.sourceColumnCode,
+        label: field.sourceColumnName,
+        type: 'number',
+        required: field.rowValueRequired,
+        precision: field.sourceColumnCode === 'f014' ? 4 : 0,
+        width: 140
+      };
+    }
+    if (field.sourceColumnCode === 'f013') {
+      return {
+        prop: field.sourceColumnCode,
+        label: field.sourceColumnName,
+        type: 'date',
+        required: field.rowValueRequired,
+        width: 150
+      };
+    }
+    if (field.sourceColumnCode === 'f016') {
+      return {
+        prop: field.sourceColumnCode,
+        label: field.sourceColumnName,
+        type: 'select',
+        required: true,
+        width: 170,
+        options: dataSourceOptions
+      };
+    }
+    return {
+      prop: field.sourceColumnCode,
+      label: field.sourceColumnName,
+      required: field.rowValueRequired,
+      width: field.derivedField ? 170 : 160
+    };
+  })
+);
+const sheetRows = computed(() =>
+  activityList.value.map((row) => {
+    const source = row.emissionSourceId ? sourceById.value.get(String(row.emissionSourceId)) : undefined;
+    const { year, month } = splitPeriod(row.activityPeriod);
+    return {
+      f001: source?.sourceCode,
+      f010: row.activityUnit,
+      f011: year ? Number(year) : undefined,
+      f012: month ? Number(month) : undefined,
+      f013: row.activityPeriod ? `${row.activityPeriod}-01` : undefined,
+      f014: row.activityValue,
+      f017: row.remark
+    };
+  })
+);
+const sheetEmptyRow = computed(() =>
+  FIELD_DESCRIPTORS.reduce<Record<string, string | number | undefined>>((row, field) => {
+    row[field.sourceColumnCode] = undefined;
+    return row;
+  }, {})
+);
 
 const rules: FormRules<ActivityEntryForm> = {
   sourceCode: [{ required: true, message: '请选择排放源', trigger: 'change' }],
@@ -490,6 +587,10 @@ const openUploadDialog = () => {
   uploadDialog.open = true;
 };
 
+const openSheetDrawer = () => {
+  sheetDrawer.open = true;
+};
+
 const downloadImportTemplate = () => {
   downloadXlsxTemplate({
     fileName: `sheet_656_activity_template_${new Date().getTime()}.xlsx`,
@@ -645,6 +746,42 @@ const importUploadedRows = async () => {
   }
 };
 
+const buildSheetRowRequest = (rows: Record<string, any>[]): Sheet656ImportValidationRequest => ({
+  headerFields: cloneFieldDescriptors(FIELD_DESCRIPTORS),
+  rows: rows.map((row, index) => ({
+    rowNumber: index + 2,
+    fieldValues: FIELD_DESCRIPTORS.map((field) => ({
+      sourceColumnCode: field.sourceColumnCode,
+      sourceColumnName: field.sourceColumnName,
+      value: valueToString(row[field.sourceColumnCode])
+    }))
+  }))
+});
+
+const saveSheetRows = async (rows: Record<string, any>[]) => {
+  sheetSaving.value = true;
+  try {
+    const request = buildSheetRowRequest(rows);
+    const validation = await validateLocalSheet656Activity(request);
+    if (validation.data?.blocking) {
+      ElMessage.error('在线填报存在错误，不能保存');
+      return;
+    }
+    for (const row of request.rows) {
+      const saveRes = await saveLocalSheet656Activity(row);
+      if (saveRes.data?.validationResult?.blocking) {
+        ElMessage.error(`第 ${row.rowNumber} 行保存失败，请按校验结果修正`);
+        return;
+      }
+    }
+    ElMessage.success('在线填报已保存');
+    sheetDrawer.open = false;
+    await loadActivities();
+  } finally {
+    sheetSaving.value = false;
+  }
+};
+
 const loadEmissionSources = async () => {
   sourceLoading.value = true;
   try {
@@ -715,7 +852,7 @@ useAutoQuery(queryParams, () => handleQuery());
 
   .query-month,
   .query-status {
-    width: 160px;
+    width: 220px;
   }
 
   .head-actions,

@@ -6,7 +6,9 @@
           <template #header>
             <div class="card-head compact">
               <span>报表授权状态</span>
-              <el-button link type="primary" icon="Refresh" :loading="loading" @click="loadGate">刷新</el-button>
+              <el-tooltip content="刷新" placement="top">
+                <el-button circle icon="Refresh" :loading="loading" @click="loadGate" />
+              </el-tooltip>
             </div>
           </template>
           <el-skeleton v-if="loading && !gateStatus" :rows="5" animated />
@@ -27,7 +29,9 @@
           <template #header>
             <div class="card-head compact">
               <span>企业本地报表入口</span>
-              <el-button link type="primary" icon="Refresh" :loading="templateLoading" @click="loadTemplates">刷新模板</el-button>
+              <el-tooltip content="刷新模板" placement="top">
+                <el-button circle icon="Refresh" :loading="templateLoading" @click="loadTemplates" />
+              </el-tooltip>
             </div>
           </template>
           <el-alert type="info" show-icon :closable="false" class="mb-4">

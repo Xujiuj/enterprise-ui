@@ -1,7 +1,7 @@
 <template>
   <div class="enterprise-import-results">
     <section class="panel">
-      <el-form :model="queryParams" inline>
+      <el-form v-show="showSearch" :model="queryParams" inline class="search-bar wide import-results-search">
         <el-form-item label="模板版本">
           <el-input v-model="queryParams.templateVersionId" clearable placeholder="templateVersionId" />
         </el-form-item>
@@ -15,10 +15,14 @@
             <el-option label="警告" value="WARN" />
           </el-select>
         </el-form-item>
+          <div class="search-actions">
+            <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="loadBatches" />
+          </div>
       </el-form>
-
-      <div class="toolbar">
-        <el-button type="primary" plain icon="Refresh" :loading="loading" @click="loadBatches">刷新</el-button>
+      <div class="search-bar search-bar-collapsed" v-show="!showSearch">
+        <div class="search-actions">
+          <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="loadBatches" />
+        </div>
       </div>
 
       <el-table v-loading="loading" :data="batchList" row-key="id">
@@ -86,6 +90,7 @@ import type { CaptureRowQuery, CaptureRowVO } from '@/api/enterprise/captureRow/
 
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 const loading = ref(false);
+const showSearch = ref(true);
 const rowLoading = ref(false);
 const batchList = ref<CaptureBatchVO[]>([]);
 const rowList = ref<CaptureRowVO[]>([]);

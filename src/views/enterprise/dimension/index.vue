@@ -24,11 +24,20 @@
               <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
+          <div class="search-actions">
+            <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="getList" />
+          </div>
+        </div>
+        <div class="search-bar search-bar-collapsed" v-show="!showSearch">
+          <div class="search-actions">
+            <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="getList" />
+          </div>
         </div>
 
         <div class="toolbar">
           <div class="btns">
             <el-button v-if="!isVendorOnly" type="primary" icon="Plus" @click="handleAdd" v-hasPermi="['enterprise:dimension:add']">新增</el-button>
+            <el-button v-if="!isVendorOnly" icon="Grid" @click="openSheetDrawer" v-hasPermi="['enterprise:dimension:edit']">在线填报</el-button>
             <el-button
               v-if="!isVendorOnly"
               type="danger"
@@ -39,7 +48,6 @@
               v-hasPermi="['enterprise:dimension:remove']"
               >删除</el-button
             >
-            <el-button icon="Refresh" :loading="loading" @click="getList">刷新</el-button>
           </div>
           <span class="select-count" v-if="ids.length > 0">已选 {{ ids.length }} 项</span>
         </div>
@@ -124,6 +132,18 @@
           <el-button @click="cancel">取 消</el-button>
         </template>
       </el-drawer>
+
+      <el-drawer v-model="sheetDrawer.visible" :title="`${page.title}在线填报`" size="92%" append-to-body destroy-on-close>
+        <SpreadsheetEditor
+          :title="page.title"
+          :columns="sheetColumns"
+          :rows="sheetRows"
+          :empty-row="sheetEmptyRow"
+          :saving="sheetSaving"
+          hint="支持从 Excel 复制多行粘贴。编码、名称和状态必填；带下拉的维度字段必须选择已有选项。"
+          @save="saveSheetRows"
+        />
+      </el-drawer>
     </template>
 
     <el-result v-else icon="error" title="未配置合法维度" :sub-title="routeKey">
@@ -145,6 +165,8 @@ import {
 } from '@/api/enterprise/dimensionRecord';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { DimensionRecordForm, DimensionRecordQuery, DimensionRecordVO } from '@/api/enterprise/dimensionRecord/types';
+import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
+import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
 
 type FieldProp = 'field01' | 'field02' | 'field03' | 'field04' | 'field05' | 'field06';
 
@@ -428,6 +450,39 @@ const routeKey = computed(() => {
 });
 const page = computed(() => dimensionPages[routeKey.value]);
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
+const sheetColumns = computed<SpreadsheetColumn[]>(() => {
+  if (!page.value) return [];
+  const columns: SpreadsheetColumn[] = [
+    { prop: 'recordCode', label: page.value.codeLabel, required: true, width: 170 },
+    { prop: 'recordName', label: page.value.nameLabel, required: true, width: 190 }
+  ];
+  if (page.value.showParent) {
+    columns.push({ prop: 'parentCode', label: '上级编码', width: 150 });
+  }
+  page.value.fields.forEach((field) => {
+    columns.push({
+      prop: field.prop,
+      label: field.label,
+      type: field.options ? 'select' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text',
+      options: field.options?.map((option) => ({ label: option, value: option })),
+      width: field.width ?? 150,
+      precision: field.type === 'number' ? 2 : undefined
+    });
+  });
+  columns.push(
+    {
+      prop: 'status',
+      label: '状态',
+      type: 'select',
+      required: true,
+      width: 120,
+      options: statusOptions
+    },
+    { prop: 'sortOrder', label: '排序', type: 'number', width: 110, min: 0, precision: 0 },
+    { prop: 'remark', label: '备注', width: 220 }
+  );
+  return columns;
+});
 
 const recordList = ref<DimensionRecordVO[]>([]);
 const buttonLoading = ref(false);
@@ -442,6 +497,45 @@ const dialog = reactive<DialogOption>({
   visible: false,
   title: ''
 });
+const sheetDrawer = reactive({
+  visible: false
+});
+const sheetSaving = ref(false);
+
+const sheetRows = computed(() =>
+  recordList.value.map((row) => ({
+    id: row.id,
+    dimensionCode: routeKey.value,
+    recordCode: row.recordCode,
+    recordName: row.recordName,
+    parentCode: row.parentCode,
+    field01: row.field01,
+    field02: row.field02,
+    field03: row.field03,
+    field04: row.field04,
+    field05: row.field05,
+    field06: row.field06,
+    status: row.status || '0',
+    sortOrder: row.sortOrder ?? 0,
+    remark: row.remark
+  }))
+);
+
+const sheetEmptyRow = computed(() => ({
+  dimensionCode: routeKey.value,
+  recordCode: undefined,
+  recordName: undefined,
+  parentCode: undefined,
+  field01: undefined,
+  field02: undefined,
+  field03: undefined,
+  field04: undefined,
+  field05: undefined,
+  field06: undefined,
+  status: '0',
+  sortOrder: 0,
+  remark: undefined
+}));
 
 const initFormData: DimensionRecordForm = {
   id: undefined,
@@ -541,6 +635,11 @@ const handleAdd = () => {
   dialog.title = `新增${page.value?.title ?? ''}`;
 };
 
+const openSheetDrawer = () => {
+  if (isVendorOnly.value) return;
+  sheetDrawer.visible = true;
+};
+
 const handleUpdate = async (row?: DimensionRecordVO) => {
   if (isVendorOnly.value) return;
   reset();
@@ -570,6 +669,31 @@ const submitForm = () => {
       buttonLoading.value = false;
     }
   });
+};
+
+const saveSheetRows = async (rows: Record<string, any>[]) => {
+  if (isVendorOnly.value) return;
+  sheetSaving.value = true;
+  try {
+    for (const row of rows) {
+      const payload: DimensionRecordForm = {
+        ...sheetEmptyRow.value,
+        ...row,
+        dimensionCode: routeKey.value,
+        sortOrder: Number(row.sortOrder ?? 0)
+      };
+      if (payload.id) {
+        await updateDimensionRecord(payload);
+      } else {
+        await addDimensionRecord(payload);
+      }
+    }
+    proxy?.$modal.msgSuccess('在线填报已保存');
+    sheetDrawer.visible = false;
+    await getList();
+  } finally {
+    sheetSaving.value = false;
+  }
 };
 
 const handleDelete = async (row?: DimensionRecordVO) => {

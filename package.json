@@ -23,6 +23,7 @@
   "dependencies": {
     "@element-plus/icons-vue": "2.3.2",
     "@highlightjs/vue-plugin": "2.1.2",
+    "@univerjs/preset-sheets-core": "0.25.0",
     "@vueup/vue-quill": "1.2.0",
     "@vueuse/core": "14.2.1",
     "animate.css": "4.1.1",
