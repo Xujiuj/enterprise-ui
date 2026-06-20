@@ -29,6 +29,7 @@ import { useSettingsStore } from '@/store/modules/settings';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 import { initWebSocket } from '@/utils/websocket';
 import { initSSE } from '@/utils/sse';
+import { useWindowSize } from '@/utils/vueuse-lite';
 
 const settingsStore = useSettingsStore();
 const theme = computed(() => settingsStore.theme);

@@ -28,6 +28,7 @@ import variables from '@/assets/styles/variables.module.scss';
 import { useAppStore } from '@/store/modules/app';
 import { useSettingsStore } from '@/store/modules/settings';
 import { usePermissionStore } from '@/store/modules/permission';
+import { useDark } from '@/utils/vueuse-lite';
 import { RouteRecordRaw } from 'vue-router';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;

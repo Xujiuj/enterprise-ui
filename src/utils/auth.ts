@@ -1,5 +1,7 @@
 const TokenKey = 'Admin-Token';
 
+import { useStorage } from '@/utils/vueuse-lite';
+
 const tokenStorage = useStorage<null | string>(TokenKey, null);
 
 export const getToken = () => tokenStorage.value;

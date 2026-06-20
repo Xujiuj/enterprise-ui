@@ -7,7 +7,7 @@ export default (path: any) => {
     resolvers: [
       // 自动导入 Element Plus 组件
       ElementPlusResolver({
-        importStyle: false
+        importStyle: 'css'
       }),
       // 自动注册图标组件
       IconsResolver({

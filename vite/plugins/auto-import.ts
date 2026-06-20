@@ -4,7 +4,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 export default (path: any) => {
   return AutoImport({
     // 自动导入 Vue 相关函数
-    imports: ['vue', 'vue-router', '@vueuse/core', 'pinia'],
+    imports: ['vue', 'vue-router', 'pinia'],
     eslintrc: {
       enabled: true,
       filepath: './.eslintrc-auto-import.json',
@@ -13,7 +13,7 @@ export default (path: any) => {
     resolvers: [
       // 自动导入 Element Plus 相关函数ElMessage, ElMessageBox... (带样式)
       ElementPlusResolver({
-        importStyle: false
+        importStyle: 'css'
       })
     ],
     vueTemplate: true, // 是否在 vue 模板中自动导入

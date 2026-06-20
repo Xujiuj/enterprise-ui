@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import defaultSettings from '@/settings';
 import { useDynamicTitle } from '@/utils/dynamicTitle';
-import { useStorage } from '@vueuse/core';
+import { useStorage } from '@/utils/vueuse-lite';
 import { ref } from 'vue';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 

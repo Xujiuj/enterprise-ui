@@ -105,7 +105,7 @@
           <el-link v-copyText="value" v-copyText:callback="copyTextSuccess" :underline="false" icon="DocumentCopy" style="float: right">
             &nbsp;复制
           </el-link>
-          <highlightjs :code="value" />
+          <HighlightCode :code="value" />
         </el-tab-pane>
       </el-tabs>
     </el-dialog>
@@ -118,10 +118,14 @@ import { delTable, genCode, getDataNames, listTable, previewTable, synchDb } fro
 import { TableQuery, TableVO } from '@/api/tool/gen/types';
 import router from '@/router';
 import ImportTable from './importTable.vue';
+import 'highlight.js/styles/atom-one-dark.css';
+import 'highlight.js/lib/common';
+import HighLight from '@highlightjs/vue-plugin';
 
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 const route = useRoute();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const HighlightCode = HighLight.component;
 
 const tableList = ref<TableVO[]>([]);
 const loading = ref(true);

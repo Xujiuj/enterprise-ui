@@ -137,6 +137,7 @@ import { handleThemeStyle } from '@/utils/theme';
 import { SideThemeEnum } from '@/enums/SideThemeEnum';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 import defaultSettings from '@/settings';
+import { useDark, useStorage, useToggle } from '@/utils/vueuse-lite';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const appStore = useAppStore();

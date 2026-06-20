@@ -17,9 +17,6 @@ import plugins from './plugins/index'; // plugins
 
 // 高亮组件
 // import 'highlight.js/styles/a11y-light.css';
-import 'highlight.js/styles/atom-one-dark.css';
-import 'highlight.js/lib/common';
-import HighLight from '@highlightjs/vue-plugin';
 
 // svg图标
 import 'virtual:svg-icons-register';
@@ -31,21 +28,12 @@ import './permission';
 // 国际化
 import i18n from '@/lang/index';
 
-// vxeTable
-import VXETable from 'vxe-table';
-import 'vxe-table/lib/style.css';
-VXETable.setConfig({
-  zIndex: 999999
-});
-
 const app = createApp(App);
 
-app.use(HighLight);
 app.use(ElementIcons);
 app.use(router);
 app.use(store);
 app.use(i18n);
-app.use(VXETable);
 app.use(plugins);
 // 自定义指令
 directive(app);

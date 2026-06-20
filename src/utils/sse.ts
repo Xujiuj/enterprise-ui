@@ -1,6 +1,7 @@
 import { getToken } from '@/utils/auth';
 import { ElNotification } from 'element-plus';
 import { useNoticeStore } from '@/store/modules/notice';
+import { useEventSource } from '@/utils/vueuse-lite';
 
 // 初始化
 export const initSSE = (url: any) => {

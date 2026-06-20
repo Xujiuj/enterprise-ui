@@ -30,7 +30,6 @@
 </template>
 
 <script setup lang="ts">
-import '@univerjs/preset-sheets-core/lib/index.css';
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import type { SpreadsheetColumn, SpreadsheetValue } from './types';
@@ -180,7 +179,7 @@ const initWorkbook = async () => {
   disposeWorkbook();
   await nextTick();
   const [{ Univer, LocaleType }, { FUniver }, { UniverSheetsCorePreset }, zhCN] = await Promise.all([
-    import('@univerjs/core'),
+    import('@univerjs/preset-sheets-core/lib/index.css').then(() => import('@univerjs/core')),
     import('@univerjs/core/facade'),
     import('@univerjs/preset-sheets-core'),
     import('@univerjs/preset-sheets-core/locales/zh-CN')

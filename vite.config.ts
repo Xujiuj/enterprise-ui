@@ -27,17 +27,11 @@ export default defineConfig(({ mode, command }) => {
             if (!id.includes('node_modules')) {
               return undefined;
             }
-            if (id.includes('element-plus') || id.includes('@element-plus')) {
-              return 'vendor-element-plus';
-            }
             if (id.includes('vxe-table')) {
               return 'vendor-vxe-table';
             }
             if (id.includes('echarts')) {
               return 'vendor-echarts';
-            }
-            if (id.includes('@vueup/vue-quill') || id.includes('quill') || id.includes('highlight.js')) {
-              return 'vendor-editor';
             }
             return undefined;
           }
@@ -86,7 +80,6 @@ export default defineConfig(({ mode, command }) => {
         'vue-router',
         'pinia',
         'axios',
-        '@vueuse/core',
         'echarts',
         'vue-i18n',
         '@vueup/vue-quill',

@@ -21,6 +21,7 @@
 import variables from '@/assets/styles/variables.module.scss';
 import logo from '@/assets/logo/logo.png';
 import { useSettingsStore } from '@/store/modules/settings';
+import { useDark } from '@/utils/vueuse-lite';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 
