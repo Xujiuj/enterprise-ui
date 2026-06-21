@@ -82,29 +82,19 @@
         <div class="toolbar">
           <b>待办事项</b>
         </div>
-        <table v-if="todoItems.length">
-          <thead>
-            <tr>
-              <th>类型</th>
-              <th>内容</th>
-              <th>状态</th>
-              <th class="w100">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in todoItems" :key="item.type + item.content">
-              <td>{{ item.type }}</td>
-              <td>{{ item.content || '--' }}</td>
-              <td>
-                <span class="tag" :class="item.tone">{{ item.status || '--' }}</span>
-              </td>
-              <td>
-                <button v-if="item.path" type="button" class="btn text" @click="openBusiness(item.path)">{{ item.action || '查看' }}</button>
-                <span v-else>--</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-if="todoItems.length" class="todo-list" role="list">
+          <article v-for="item in todoItems" :key="item.type + item.content" class="todo-card" role="listitem">
+            <div class="todo-copy">
+              <span class="todo-type">{{ item.type || '--' }}</span>
+              <b>{{ item.content || '--' }}</b>
+            </div>
+            <div class="todo-side">
+              <span class="tag" :class="item.tone">{{ item.status || '--' }}</span>
+              <button v-if="item.path" type="button" class="btn text" @click="openBusiness(item.path)">{{ item.action || '查看' }}</button>
+              <span v-else class="todo-empty-action">--</span>
+            </div>
+          </article>
+        </div>
         <el-empty v-else description="暂无待办事项" :image-size="72" />
       </div>
 
@@ -523,6 +513,67 @@ onMounted(() => {
   gap: 20px;
 }
 
+.todo-list {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.todo-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  min-height: 72px;
+  padding: 14px 16px;
+  border: 1px solid var(--carbon-soft-line);
+  border-radius: 8px;
+  background: var(--carbon-panel-soft);
+}
+
+.todo-copy {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.todo-copy b {
+  overflow-wrap: anywhere;
+  color: var(--carbon-ink);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.todo-type {
+  width: fit-content;
+  min-width: 48px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border: 1px solid rgba(31, 143, 106, 0.24);
+  border-radius: 6px;
+  background: var(--carbon-green-soft);
+  color: var(--carbon-brand);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.todo-side {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.todo-empty-action {
+  color: var(--carbon-muted);
+  font-size: 13px;
+}
+
 .timeline {
   display: grid;
   gap: 16px;
@@ -572,6 +623,7 @@ onMounted(() => {
   .step-card,
   .dash-stat,
   .cycle-stage,
+  .todo-card,
   .workbench-main,
   .notice-panel,
   .dash-row .panel {
@@ -645,6 +697,15 @@ onMounted(() => {
 
   .scope-bars em {
     text-align: left;
+  }
+
+  .todo-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .todo-side {
+    justify-content: space-between;
   }
 }
 </style>

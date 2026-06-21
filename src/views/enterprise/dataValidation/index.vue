@@ -15,15 +15,13 @@
       </el-form>
     </section>
 
-    <el-row :gutter="16" class="mb-4">
-      <el-col v-for="metric in metrics" :key="metric.label" :xs="12" :md="6">
-        <el-card shadow="never" class="metric-card">
-          <span>{{ metric.label }}</span>
-          <strong :class="metric.className">{{ metric.value }}</strong>
-          <small>{{ metric.sub }}</small>
-        </el-card>
-      </el-col>
-    </el-row>
+    <section class="validation-metrics mb-4" aria-label="本期校验概览">
+      <article v-for="metric in metrics" :key="metric.label" class="metric-card">
+        <div class="metric-label">{{ metric.label }}</div>
+        <strong :class="metric.className">{{ metric.value }}</strong>
+        <small>{{ metric.sub }}</small>
+      </article>
+    </section>
 
     <el-card shadow="never" class="mb-4">
       <template #header>
@@ -244,16 +242,33 @@ useAutoQuery(queryParams, () => loadDashboard());
   gap: 16px;
 }
 
-.metric-card :deep(.el-card__body) {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 108px;
+.validation-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
 }
 
-.metric-card span,
+.metric-card {
+  display: grid;
+  gap: 10px;
+  min-height: 128px;
+  padding: 20px 22px;
+  border: 1px solid var(--carbon-soft-line);
+  border-left: 4px solid var(--carbon-brand);
+  border-radius: 8px;
+  background: var(--carbon-panel);
+  box-shadow: var(--carbon-shadow);
+}
+
+.metric-label,
 .metric-card small {
   color: var(--el-text-color-secondary);
+}
+
+.metric-label {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .metric-card strong {
@@ -279,6 +294,16 @@ useAutoQuery(queryParams, () => loadDashboard());
   .enterprise-validation-page :deep(.el-form) {
     display: flex;
     flex-direction: column;
+  }
+
+  .validation-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  .validation-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>
