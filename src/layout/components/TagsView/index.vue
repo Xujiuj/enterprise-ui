@@ -36,6 +36,7 @@ import { getNormalPath } from '@/utils/ruoyi';
 import { useSettingsStore } from '@/store/modules/settings';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useTagsViewStore } from '@/store/modules/tagsView';
+import { Back, Right } from '@element-plus/icons-vue';
 import { RouteRecordRaw, RouteLocationNormalized } from 'vue-router';
 
 const visible = ref(false);

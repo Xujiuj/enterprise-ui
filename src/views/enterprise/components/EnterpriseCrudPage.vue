@@ -210,7 +210,7 @@ interface RowActionConfig {
 
 interface ExtensionConfig {
   moduleCode: 'activity_data' | 'green_electricity' | 'intensity_denominator';
-  ownerTableCode: 'ce_activity_data' | 'ce_green_power_certificate' | 'ce_intensity_metric';
+  ownerTableCode: 'ce_activity_data' | 'ce_green_power_certificate' | 'ce_intensity_denominator_fact';
 }
 
 interface CrudConfig {

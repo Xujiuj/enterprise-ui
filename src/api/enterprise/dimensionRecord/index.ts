@@ -10,10 +10,11 @@ export const listDimensionRecord = (query?: DimensionRecordQuery): AxiosPromise<
   });
 };
 
-export const getDimensionRecord = (id: string | number): AxiosPromise<DimensionRecordVO> => {
+export const getDimensionRecord = (id: string | number, dimensionCode: string): AxiosPromise<DimensionRecordVO> => {
   return request({
     url: `/enterprise/dimension-record/${id}`,
-    method: 'get'
+    method: 'get',
+    params: { dimensionCode }
   });
 };
 
@@ -33,9 +34,10 @@ export const updateDimensionRecord = (data: DimensionRecordForm) => {
   });
 };
 
-export const delDimensionRecord = (id: string | number | Array<string | number>) => {
+export const delDimensionRecord = (id: string | number | Array<string | number>, dimensionCode: string) => {
   return request({
     url: `/enterprise/dimension-record/${id}`,
-    method: 'delete'
+    method: 'delete',
+    params: { dimensionCode }
   });
 };

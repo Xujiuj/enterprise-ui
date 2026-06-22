@@ -41,10 +41,15 @@ const enterpriseAllowedTopLevelPaths = new Set(enterpriseTopLevelOrder);
 const enterpriseAllowedTopLevelTitles = new Set([
   '首页',
   '系统授权',
+  '1 配置排放源',
   '01 配置排放源',
+  '2 确认排放因子',
   '02 确认排放因子',
+  '3 活动数据',
   '03 活动数据',
+  '4 绿电绿证',
   '04 绿电绿证',
+  '5 强度管理',
   '05 强度管理',
   '报表管理',
   '系统管理',
@@ -53,11 +58,11 @@ const enterpriseAllowedTopLevelTitles = new Set([
 
 const enterpriseCanonicalTopLevelTitles = new Map([
   ['system-auth', '系统授权'],
-  ['emission-source-config', '01 配置排放源'],
-  ['factor-confirm', '02 确认排放因子'],
-  ['activity-data', '03 活动数据'],
-  ['green-electricity', '04 绿电绿证'],
-  ['intensity', '05 强度管理'],
+  ['emission-source-config', '1 配置排放源'],
+  ['factor-confirm', '2 确认排放因子'],
+  ['activity-data', '3 活动数据'],
+  ['green-electricity', '4 绿电绿证'],
+  ['intensity', '5 强度管理'],
   ['report-management', '报表管理'],
   ['system', '系统管理'],
   ['log', '日志']
@@ -68,14 +73,19 @@ const enterpriseTopLevelAliases = new Map([
   ['工作台', 'index'],
   ['系统授权', 'system-auth'],
   ['授权管理', 'system-auth'],
+  ['1 配置排放源', 'emission-source-config'],
   ['01 配置排放源', 'emission-source-config'],
   ['配置排放源', 'emission-source-config'],
+  ['2 确认排放因子', 'factor-confirm'],
   ['02 确认排放因子', 'factor-confirm'],
   ['确认排放因子', 'factor-confirm'],
+  ['3 活动数据', 'activity-data'],
   ['03 活动数据', 'activity-data'],
   ['活动数据', 'activity-data'],
+  ['4 绿电绿证', 'green-electricity'],
   ['04 绿电绿证', 'green-electricity'],
   ['绿电绿证', 'green-electricity'],
+  ['5 强度管理', 'intensity'],
   ['05 强度管理', 'intensity'],
   ['强度管理', 'intensity'],
   ['报表管理', 'report-management'],
@@ -101,32 +111,32 @@ const enterpriseCanonicalChildTitlesByScope = new Map<string, Map<string, string
   [
     'emission-source-config',
     new Map([
-      ['admin-division', '行政区划'],
-      ['company', '公司表'],
-      ['emission-source-category', '排放源分类'],
-      ['emission-source', '排放源识别'],
-      ['base-year', '基准年维度表']
+      ['admin-division', '101 行政区划'],
+      ['company', '102 公司表'],
+      ['emission-source-category', '103 排放源分类'],
+      ['emission-source', '104 排放源识别'],
+      ['base-year', '106 基准年维度表']
     ])
   ],
   [
     'factor-confirm',
     new Map([
-      ['ef-factor', 'EF排放因子维度表'],
-      ['ef-electricity-factor', 'EF电力因子维度表'],
-      ['ef-electricity-version', 'EF电力因子版本对应'],
-      ['ef-electricity-scope', 'EF电力因子口径维度'],
-      ['greenhouse-gas', '温室气体维度']
+      ['ef-factor', '201 EF排放因子维度表'],
+      ['ef-electricity-factor', '202 EF电力因子维度表'],
+      ['ef-electricity-version', '203 EF电力因子版本对应'],
+      ['ef-electricity-scope', '205 EF电力因子口径维度'],
+      ['greenhouse-gas', '206 温室气体维度']
     ])
   ],
   ['activity-data', new Map([['emission-activity-data', '排放活动数据']])],
-  ['green-electricity', new Map([['green-electricity-data', '绿电绿证数据']])],
+  ['green-electricity', new Map([['green-electricity-data', '401 绿电绿证数据']])],
   [
     'intensity',
     new Map([
-      ['intensity-denominator', '碳排放强度分母维度表'],
-      ['intensity-target', '强度目标表'],
-      ['denominator-fact', '分母事实表'],
-      ['intensity-tolerance', '碳排放强度容忍率参数表']
+      ['intensity-denominator', '501 碳排放强度分母维度表'],
+      ['intensity-target', '502 强度目标表'],
+      ['denominator-fact', '503 分母事实表'],
+      ['intensity-tolerance', '504 碳排放强度容忍率参数表']
     ])
   ],
   [
@@ -154,10 +164,49 @@ const enterpriseCanonicalChildTitlesByScope = new Map<string, Map<string, string
   ]
 ]);
 
+const enterpriseLegacyChildTitleAliasesByScope = new Map<string, Map<string, string>>([
+  [
+    'emission-source-config',
+    new Map([
+      ['行政区划', 'admin-division'],
+      ['公司表', 'company'],
+      ['排放源分类', 'emission-source-category'],
+      ['排放源识别', 'emission-source'],
+      ['基准年维度表', 'base-year']
+    ])
+  ],
+  [
+    'factor-confirm',
+    new Map([
+      ['EF排放因子维度表', 'ef-factor'],
+      ['EF电力因子维度表', 'ef-electricity-factor'],
+      ['EF电力因子版本对应', 'ef-electricity-version'],
+      ['EF电力因子口径维度', 'ef-electricity-scope'],
+      ['温室气体维度', 'greenhouse-gas']
+    ])
+  ],
+  ['green-electricity', new Map([['绿电绿证数据', 'green-electricity-data']])],
+  [
+    'intensity',
+    new Map([
+      ['碳排放强度分母维度表', 'intensity-denominator'],
+      ['强度目标表', 'intensity-target'],
+      ['分母事实表', 'denominator-fact'],
+      ['碳排放强度容忍率参数表', 'intensity-tolerance']
+    ])
+  ]
+]);
+
 const enterpriseChildPathAliasesByScope = new Map<string, Map<string, string>>(
   [...enterpriseCanonicalChildTitlesByScope.entries()].map(([scope, titleMap]) => [
     scope,
-    new Map([...titleMap.entries()].flatMap(([path, title]) => [[path, path], [title, path]]))
+    new Map([
+      ...[...titleMap.entries()].flatMap<[string, string]>(([path, title]) => [
+        [path, path],
+        [title, path]
+      ]),
+      ...(enterpriseLegacyChildTitleAliasesByScope.get(scope)?.entries() ?? [])
+    ])
   ])
 );
 
@@ -177,7 +226,12 @@ const enterpriseForbiddenPermissionPatterns = [
 ];
 
 export function isEnterpriseForbiddenMenuTitle(title: string): boolean {
-  if (title === 'EF电力因子版本对应' || title === 'EF电力因子口径维度') {
+  if (
+    title === 'EF电力因子版本对应' ||
+    title === '203 EF电力因子版本对应' ||
+    title === 'EF电力因子口径维度' ||
+    title === '205 EF电力因子口径维度'
+  ) {
     return false;
   }
   return enterpriseForbiddenMenuTitlePatterns.some((pattern) => pattern.test(title));

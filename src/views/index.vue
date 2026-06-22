@@ -14,7 +14,7 @@
     <section v-loading="loading" class="dash-stats">
       <div v-for="item in statusCards" :key="item.label" class="dash-stat">
         <div class="label">{{ item.label }}</div>
-        <div class="value" :class="item.valueClass">{{ item.value || '--' }}</div>
+        <div class="value" :class="item.valueClass">{{ displayValue(item.value) }}</div>
         <div class="sub">
           {{ item.note || '--' }}
           <span v-if="item.badge" class="kpi-mini" :class="item.badgeTone">{{ item.badge }}</span>
@@ -41,7 +41,7 @@
         </div>
         <div v-if="cycleStages.length || scopeEmissions.length" class="carbon-cycle-chart">
           <div v-for="stage in cycleStages" :key="stage.label" class="cycle-stage" :class="stage.tone">
-            <strong>{{ stage.value || '--' }}</strong>
+            <strong>{{ displayValue(stage.value) }}</strong>
             <span>{{ stage.label }}</span>
             <em>{{ stage.detail || '--' }}</em>
           </div>
@@ -150,6 +150,8 @@ const emptyCards: WorkbenchMetricCard[] = [
   { label: '碳排放总量', value: '--', note: '--' },
   { label: '因子库版本', value: '--', note: '--' }
 ];
+
+const displayValue = (value?: number | string) => (value === undefined || value === null || value === '' ? '--' : value);
 
 const statusCards = computed<WorkbenchMetricCard[]>(() => {
   const cards = overview.value.statusCards || [];

@@ -19,8 +19,12 @@
             <b>系统授权已到期</b>
             <p>当前授权已过期，请续费后继续使用。</p>
             <div class="pay-btns">
-              <button type="button" class="btn-alipay" @click="openSupportLink('alipay')">支付宝支付</button>
-              <button type="button" class="btn-wechat" @click="openSupportLink('wechat')">微信支付</button>
+              <button type="button" class="btn-alipay" :disabled="!!paymentOpening" @click="openSupportLink('alipay')">
+                {{ paymentOpening === 'ALIPAY' ? '打开中' : '支付宝支付' }}
+              </button>
+              <button type="button" class="btn-wechat" :disabled="!!paymentOpening" @click="openSupportLink('wechat')">
+                {{ paymentOpening === 'WECHAT' ? '打开中' : '微信支付' }}
+              </button>
             </div>
           </div>
         </div>
@@ -93,6 +97,8 @@ import { useUserStore } from '@/store/modules/user';
 import { LoginData } from '@/api/types';
 import { to } from 'await-to-js';
 import { useI18n } from 'vue-i18n';
+import { buildVendorCashierFallbackUrl, createOnlinePurchaseOrder } from '@/api/enterprise/onlinePurchase';
+import type { OnlinePurchasePayChannel } from '@/api/enterprise/onlinePurchase/types';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -121,6 +127,7 @@ const loginRef = ref<ElFormInstance>();
 const selectedLicenseFileName = ref('');
 const autoLogin = ref(false);
 const autoLoginTriggered = ref(false);
+const paymentOpening = ref<OnlinePurchasePayChannel>();
 const LOGIN_STORAGE_KEYS = {
   tenantId: 'enterpriseLoginTenantId',
   username: 'enterpriseLoginUsername',
@@ -135,9 +142,7 @@ const showExpiryNotice = computed(() => {
 const supportLinks = {
   website: 'https://www.carbondata.com',
   privacy: 'https://www.carbondata.com/privacy',
-  terms: 'https://www.carbondata.com/terms',
-  alipay: 'https://www.carbondata.com/pay/alipay',
-  wechat: 'https://www.carbondata.com/pay/wechat'
+  terms: 'https://www.carbondata.com/terms'
 };
 
 watch(
@@ -252,8 +257,39 @@ const handleLicenseFileChange = (event: Event) => {
   selectedLicenseFileName.value = input.files?.[0]?.name || '';
 };
 
-const openSupportLink = (type: 'alipay' | 'wechat') => {
-  window.open(supportLinks[type], '_blank', 'noopener,noreferrer');
+const openSupportLink = async (type: 'alipay' | 'wechat') => {
+  const payChannel: OnlinePurchasePayChannel = type === 'wechat' ? 'WECHAT' : 'ALIPAY';
+  const query = router.currentRoute.value.query;
+  const packageId = String(query.packageId || import.meta.env.VITE_DEFAULT_PURCHASE_PACKAGE_ID || '1001');
+  const returnUrl = window.location.href;
+  paymentOpening.value = payChannel;
+
+  try {
+    const response = await createOnlinePurchaseOrder({
+      packageId,
+      payChannel,
+      customerName: String(query.customerName || loginForm.value.username || '企业客户'),
+      customerCode: String(query.customerCode || ''),
+      licenseId: String(query.licenseId || ''),
+      installId: String(query.installId || ''),
+      returnUrl
+    });
+    const order = response.data;
+    window.open(order.payUrl || buildVendorCashierFallbackUrl(payChannel, { packageId, returnUrl }), '_blank', 'noopener,noreferrer');
+  } catch {
+    window.open(
+      buildVendorCashierFallbackUrl(payChannel, {
+        packageId,
+        licenseId: String(query.licenseId || ''),
+        installId: String(query.installId || ''),
+        returnUrl
+      }),
+      '_blank',
+      'noopener,noreferrer'
+    );
+  } finally {
+    paymentOpening.value = undefined;
+  }
 };
 
 onMounted(() => {
@@ -454,6 +490,12 @@ html.dark .auth-page {
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.btn-alipay:disabled,
+.btn-wechat:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .btn-alipay {

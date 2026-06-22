@@ -1,11 +1,25 @@
 export interface ActivityDataVO {
   id: string | number;
   batchId?: string | number;
-  emissionSourceId?: string | number;
-  activityPeriod?: string;
-  activityValue?: number;
+  sourceSheetCode?: string;
+  sourceIdentificationCode?: string;
+  companyCode?: string;
+  companyName?: string;
+  factoryName?: string;
+  sourceCategoryKey?: string;
+  scopeName?: string;
+  scopeSubcategory?: string;
+  sourceIdentificationName?: string;
+  emissionSourceName?: string;
   activityUnit?: string;
-  factorConfirmationId?: string | number;
+  activityYear?: number;
+  activityMonth?: number;
+  activityDate?: string;
+  activityValue?: number;
+  responsibleDept?: string;
+  dataSource?: string;
+  sourceRemark?: string;
+  factorKey?: string;
   calculatedEmission?: number;
   dataStatus?: string;
   createTime?: string;
@@ -16,11 +30,25 @@ export interface ActivityDataVO {
 export interface ActivityDataForm extends BaseEntity {
   id?: string | number;
   batchId?: string | number;
-  emissionSourceId?: string | number;
-  activityPeriod?: string;
-  activityValue?: number;
+  sourceSheetCode?: string;
+  sourceIdentificationCode?: string;
+  companyCode?: string;
+  companyName?: string;
+  factoryName?: string;
+  sourceCategoryKey?: string;
+  scopeName?: string;
+  scopeSubcategory?: string;
+  sourceIdentificationName?: string;
+  emissionSourceName?: string;
   activityUnit?: string;
-  factorConfirmationId?: string | number;
+  activityYear?: number;
+  activityMonth?: number;
+  activityDate?: string;
+  activityValue?: number;
+  responsibleDept?: string;
+  dataSource?: string;
+  sourceRemark?: string;
+  factorKey?: string;
   calculatedEmission?: number;
   dataStatus?: string;
   remark?: string;
@@ -28,10 +56,16 @@ export interface ActivityDataForm extends BaseEntity {
 
 export interface ActivityDataQuery extends PageQuery {
   batchId?: string | number;
-  emissionSourceId?: string | number;
-  activityPeriod?: string;
+  sourceSheetCode?: string;
+  sourceIdentificationCode?: string;
+  companyCode?: string;
+  companyName?: string;
+  factoryName?: string;
+  sourceCategoryKey?: string;
+  scopeName?: string;
   activityUnit?: string;
-  factorConfirmationId?: string | number;
+  activityYear?: number;
+  activityMonth?: number;
   dataStatus?: string;
   params?: any;
 }
@@ -39,16 +73,17 @@ export interface ActivityDataQuery extends PageQuery {
 export interface ActivityDataValidationSubmission {
   department?: string;
   responsiblePerson?: string;
-  facilityName?: string;
+  factoryName?: string;
   moduleName?: string;
   expectedCount?: number;
   submittedCount?: number;
   missingCount?: number;
   warningCount?: number;
-  emissionSourceId?: string | number;
-  emissionSourceCode?: string;
+  sourceIdentificationCode?: string;
+  sourceIdentificationName?: string;
   emissionSourceName?: string;
-  activityPeriod?: string;
+  activityYear?: number;
+  activityMonth?: number;
   dueDate?: string;
   submissionStatus?: string;
   submittedTime?: string;
@@ -59,17 +94,19 @@ export interface ActivityDataValidationIssue {
   ruleCode?: string;
   ruleName?: string;
   severity?: 'ERROR' | 'WARNING' | string;
-  emissionSourceId?: string | number;
-  emissionSourceCode?: string;
+  sourceIdentificationCode?: string;
+  sourceIdentificationName?: string;
   objectName?: string;
-  activityPeriod?: string;
+  activityYear?: number;
+  activityMonth?: number;
   description?: string;
   suggestion?: string;
   issueStatus?: string;
 }
 
 export interface ActivityDataValidationDashboard {
-  activityPeriod?: string;
+  activityYear?: number;
+  activityMonth?: number;
   dueDate?: string;
   expectedItems?: number;
   validatedRecordCount?: number;

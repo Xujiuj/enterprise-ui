@@ -127,13 +127,13 @@ describe('enterprise dynamic router guard', () => {
           {
             path: 'ef-electricity-version',
             component: 'enterprise/dimension/index',
-            meta: { title: 'EF电力因子版本对应' },
+            meta: { title: '203 EF电力因子版本对应' },
             permissions: ['enterprise:dimension:view']
           },
           {
             path: 'ef-electricity-scope',
             component: 'enterprise/dimension/index',
-            meta: { title: 'EF电力因子口径维度' },
+            meta: { title: '205 EF电力因子口径维度' },
             permissions: ['enterprise:dimension:view']
           },
           {
@@ -384,15 +384,15 @@ describe('enterprise dynamic router guard', () => {
     ]);
     expect(filtered.every((route: any) => route.alwaysShow === true)).toBe(true);
     expect(visibleTitles([enterpriseWorkbenchRoute].concat(filtered as any))).toEqual(
-      expect.arrayContaining(['工作台', '系统授权', '授权管理', '01 配置排放源', '行政区划'])
+      expect.arrayContaining(['工作台', '系统授权', '授权管理', '1 配置排放源', '101 行政区划'])
     );
     expect(visibleTitles([enterpriseWorkbenchRoute].concat(filtered as any)).slice(0, 6)).toEqual([
       '工作台',
       '系统授权',
       '授权管理',
-      '01 配置排放源',
-      '行政区划',
-      '公司表'
+      '1 配置排放源',
+      '101 行政区划',
+      '102 公司表'
     ]);
     expect(visibleChildPathsByTopLevel(filtered as any)).toEqual({
       '/system-auth': ['license-import'],
@@ -407,11 +407,11 @@ describe('enterprise dynamic router guard', () => {
     });
     expect(filtered.map((route: any) => route.meta?.title)).toEqual([
       '系统授权',
-      '01 配置排放源',
-      '02 确认排放因子',
-      '03 活动数据',
-      '04 绿电绿证',
-      '05 强度管理',
+      '1 配置排放源',
+      '2 确认排放因子',
+      '3 活动数据',
+      '4 绿电绿证',
+      '5 强度管理',
       '报表管理',
       '系统管理',
       '日志'
@@ -419,27 +419,27 @@ describe('enterprise dynamic router guard', () => {
     expect(visibleTitles(filtered)).toEqual([
       '系统授权',
       '授权管理',
-      '01 配置排放源',
-      '行政区划',
-      '公司表',
-      '排放源分类',
-      '排放源识别',
-      '基准年维度表',
-      '02 确认排放因子',
-      'EF排放因子维度表',
-      'EF电力因子维度表',
-      'EF电力因子版本对应',
-      'EF电力因子口径维度',
-      '温室气体维度',
-      '03 活动数据',
+      '1 配置排放源',
+      '101 行政区划',
+      '102 公司表',
+      '103 排放源分类',
+      '104 排放源识别',
+      '106 基准年维度表',
+      '2 确认排放因子',
+      '201 EF排放因子维度表',
+      '202 EF电力因子维度表',
+      '203 EF电力因子版本对应',
+      '205 EF电力因子口径维度',
+      '206 温室气体维度',
+      '3 活动数据',
       '排放活动数据',
-      '04 绿电绿证',
-      '绿电绿证数据',
-      '05 强度管理',
-      '碳排放强度分母维度表',
-      '强度目标表',
-      '分母事实表',
-      '碳排放强度容忍率参数表',
+      '4 绿电绿证',
+      '401 绿电绿证数据',
+      '5 强度管理',
+      '501 碳排放强度分母维度表',
+      '502 强度目标表',
+      '503 分母事实表',
+      '504 碳排放强度容忍率参数表',
       '报表管理',
       'Content',
       '数据验证',

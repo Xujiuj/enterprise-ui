@@ -12,12 +12,8 @@ import {
   updateGreenPowerCertificate
 } from '@/api/enterprise/greenPowerCertificate';
 
-const certificateTypeOptions = [
-  { label: '绿电', value: 'green_power' },
-  { label: '绿证', value: 'green_certificate' }
-];
-
 const proofStatusOptions = [
+  { label: '草稿', value: 'draft' },
   { label: '待核验', value: 'pending' },
   { label: '已核验', value: 'verified' },
   { label: '已作废', value: 'voided' }
@@ -25,60 +21,73 @@ const proofStatusOptions = [
 
 const config = {
   title: '绿电绿证数据',
-  description: '维护企业本地绿电绿证台账，供抵扣来源和报表视图引用。',
+  description: '维护客户样例口径的绿电绿证活动数据，供抵扣来源和报表视图引用。',
   permissionPrefix: 'enterprise:greenPowerCertificate',
   extension: {
     moduleCode: 'green_electricity',
     ownerTableCode: 'ce_green_power_certificate'
   },
   columns: [
+    { prop: 'rowNo', label: '行号', width: 90 },
+    { prop: 'factoryCode', label: '工厂编号', minWidth: 140 },
+    { prop: 'factoryName', label: '工厂名称', minWidth: 160 },
+    { prop: 'activityYear', label: '年度', width: 90 },
+    { prop: 'activityMonth', label: '月份', width: 90 },
+    { prop: 'sourceCategoryKey', label: '排放源分类', minWidth: 150 },
+    { prop: 'scopeName', label: '范围', width: 110 },
+    { prop: 'scopeSubcategory', label: '范围子分类', minWidth: 160 },
+    { prop: 'electricityType', label: '电力类型', minWidth: 140 },
+    { prop: 'electricityTypeDesc', label: '电力类型说明', minWidth: 180 },
+    { prop: 'quantityKwh', label: '数量(kWh)', width: 130 },
     { prop: 'certificateCode', label: '凭证编码', minWidth: 160 },
-    {
-      prop: 'certificateType',
-      label: '类型',
-      type: 'tag',
-      width: 100,
-      valueMap: { green_power: '绿电', green_certificate: '绿证' },
-      tagMap: { green_power: 'success', green_certificate: 'primary' }
-    },
-    { prop: 'energyPeriod', label: '电量期间', width: 120 },
-    { prop: 'energyAmount', label: '电量', width: 110 },
-    { prop: 'energyUnit', label: '单位', width: 90 },
     { prop: 'issuingOrg', label: '签发机构', minWidth: 150 },
-    { prop: 'offsetSourceCode', label: '抵扣来源', minWidth: 140 },
+    { prop: 'powerGridRegion', label: '电网区域', minWidth: 150 },
+    { prop: 'offsetPowerSource', label: '抵扣电源', minWidth: 150 },
     {
       prop: 'proofStatus',
       label: '核验状态',
       type: 'tag',
       width: 110,
-      valueMap: { pending: '待核验', verified: '已核验', voided: '已作废' },
-      tagMap: { pending: 'warning', verified: 'success', voided: 'danger' }
+      valueMap: { draft: '草稿', pending: '待核验', verified: '已核验', voided: '已作废' },
+      tagMap: { draft: 'info', pending: 'warning', verified: 'success', voided: 'danger' }
     },
     { prop: 'remark', label: '备注', minWidth: 180 }
   ],
   searchFields: [
+    { prop: 'factoryCode', label: '工厂编号' },
+    { prop: 'factoryName', label: '工厂名称' },
+    { prop: 'activityYear', label: '年度', type: 'number', precision: 0 },
+    { prop: 'activityMonth', label: '月份', type: 'number', precision: 0 },
     { prop: 'certificateCode', label: '凭证编码' },
-    { prop: 'certificateType', label: '类型', type: 'select', options: certificateTypeOptions },
-    { prop: 'energyPeriod', label: '电量期间' },
     { prop: 'proofStatus', label: '核验状态', type: 'select', options: proofStatusOptions }
   ],
   formFields: [
-    { prop: 'certificateCode', label: '凭证编码', required: true },
-    { prop: 'certificateType', label: '类型', type: 'select', options: certificateTypeOptions, required: true },
-    { prop: 'energyPeriod', label: '电量期间', required: true },
-    { prop: 'energyAmount', label: '电量', type: 'number', required: true, precision: 4 },
-    { prop: 'energyUnit', label: '单位', required: true },
+    { prop: 'rowNo', label: '行号', type: 'number', precision: 0 },
+    { prop: 'factoryCode', label: '工厂编号', required: true },
+    { prop: 'factoryName', label: '工厂名称' },
+    { prop: 'activityYear', label: '年度', type: 'number', precision: 0 },
+    { prop: 'activityMonth', label: '月份', type: 'number', precision: 0 },
+    { prop: 'sourceCategoryKey', label: '排放源分类' },
+    { prop: 'scopeName', label: '范围' },
+    { prop: 'scopeSubcategory', label: '范围子分类' },
+    { prop: 'electricityType', label: '电力类型' },
+    { prop: 'electricityTypeDesc', label: '电力类型说明' },
+    { prop: 'quantityKwh', label: '数量(kWh)', type: 'number', precision: 4 },
+    { prop: 'certificateCode', label: '凭证编码' },
     { prop: 'issuingOrg', label: '签发机构' },
     { prop: 'purchaseDate', label: '购买日期', type: 'date' },
     { prop: 'expiryDate', label: '到期日期', type: 'date' },
-    { prop: 'offsetSourceCode', label: '抵扣来源' },
+    { prop: 'powerGridRegion', label: '电网区域' },
+    { prop: 'offsetPowerSource', label: '抵扣电源' },
+    { prop: 'dataSource', label: '数据来源' },
+    { prop: 'sourceRemark', label: '来源备注', type: 'textarea' },
+    { prop: 'emissionSourceName', label: '排放源' },
+    { prop: 'factorKey', label: '排放因子' },
     { prop: 'proofStatus', label: '核验状态', type: 'select', options: proofStatusOptions, required: true },
     { prop: 'remark', label: '备注', type: 'textarea' }
   ],
   emptyForm: {
-    certificateType: 'green_certificate',
-    proofStatus: 'pending',
-    energyUnit: 'MWh'
+    proofStatus: 'draft'
   }
 };
 

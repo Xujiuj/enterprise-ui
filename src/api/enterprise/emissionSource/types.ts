@@ -1,11 +1,18 @@
 export interface EmissionSourceVO {
   id: string | number;
-  sourceCode?: string;
-  sourceName?: string;
-  sourceCategoryCode?: string;
-  sourceCategoryName?: string;
-  facilityName?: string;
-  boundaryScope?: string;
+  rowNo?: number;
+  companyCode?: string;
+  companyName?: string;
+  factoryName?: string;
+  sourceCategoryKey?: string;
+  scopeName?: string;
+  scopeSubcategory?: string;
+  sourceIdentificationCode?: string;
+  sourceIdentificationName?: string;
+  emissionSourceName?: string;
+  responsibleDept?: string;
+  dataSource?: string;
+  factorKey?: string;
   enabledFlag?: boolean;
   createTime?: string;
   updateTime?: string;
@@ -14,23 +21,37 @@ export interface EmissionSourceVO {
 
 export interface EmissionSourceForm extends BaseEntity {
   id?: string | number;
-  sourceCode?: string;
-  sourceName?: string;
-  sourceCategoryCode?: string;
-  sourceCategoryName?: string;
-  facilityName?: string;
-  boundaryScope?: string;
+  rowNo?: number;
+  companyCode?: string;
+  companyName?: string;
+  factoryName?: string;
+  sourceCategoryKey?: string;
+  scopeName?: string;
+  scopeSubcategory?: string;
+  sourceIdentificationCode?: string;
+  sourceIdentificationName?: string;
+  emissionSourceName?: string;
+  responsibleDept?: string;
+  dataSource?: string;
+  factorKey?: string;
   enabledFlag?: boolean;
   remark?: string;
 }
 
 export interface EmissionSourceQuery extends PageQuery {
-  sourceCode?: string;
-  sourceName?: string;
-  sourceCategoryCode?: string;
-  sourceCategoryName?: string;
-  facilityName?: string;
-  boundaryScope?: string;
+  rowNo?: number;
+  companyCode?: string;
+  companyName?: string;
+  factoryName?: string;
+  sourceCategoryKey?: string;
+  scopeName?: string;
+  scopeSubcategory?: string;
+  sourceIdentificationCode?: string;
+  sourceIdentificationName?: string;
+  emissionSourceName?: string;
+  responsibleDept?: string;
+  dataSource?: string;
+  factorKey?: string;
   enabledFlag?: boolean;
   params?: any;
 }

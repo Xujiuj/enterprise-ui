@@ -10,7 +10,7 @@
     <section class="panel mb-4">
       <el-form :model="queryParams" inline label-width="84px">
         <el-form-item label="核算期间">
-          <el-date-picker v-model="queryParams.activityPeriod" type="month" value-format="YYYY-MM" placeholder="选择期间" clearable />
+          <el-date-picker v-model="selectedPeriod" type="month" value-format="YYYY-MM" placeholder="选择期间" clearable @change="handlePeriodChange" />
         </el-form-item>
       </el-form>
     </section>
@@ -33,12 +33,14 @@
       <el-table v-loading="loading" :data="submissions" border>
         <el-table-column prop="department" label="部门" width="130" />
         <el-table-column prop="responsiblePerson" label="负责人" width="110" />
-        <el-table-column prop="facilityName" label="工厂/设施" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="factoryName" label="工厂" min-width="150" show-overflow-tooltip />
         <el-table-column prop="expectedCount" label="应提交项" width="100" />
         <el-table-column prop="submittedCount" label="已提交" width="90" />
         <el-table-column prop="missingCount" label="缺失项" width="90" />
         <el-table-column prop="warningCount" label="待复核" width="90" />
-        <el-table-column prop="activityPeriod" label="应提交期间" width="115" />
+        <el-table-column label="应提交期间" width="115">
+          <template #default="scope">{{ formatPeriod(scope.row.activityYear, scope.row.activityMonth) }}</template>
+        </el-table-column>
         <el-table-column prop="dueDate" label="截止日" width="115" />
         <el-table-column label="提交状态" width="105">
           <template #default="scope">
@@ -73,7 +75,9 @@
         </el-table-column>
         <el-table-column prop="ruleName" label="规则" width="130" />
         <el-table-column prop="objectName" label="对象" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="activityPeriod" label="期间" width="100" />
+        <el-table-column label="期间" width="100">
+          <template #default="scope">{{ formatPeriod(scope.row.activityYear, scope.row.activityMonth) }}</template>
+        </el-table-column>
         <el-table-column prop="description" label="问题描述" min-width="220" show-overflow-tooltip />
         <el-table-column prop="suggestion" label="建议" min-width="170" show-overflow-tooltip />
         <el-table-column label="状态" width="105">
@@ -103,13 +107,13 @@ import { useAutoQuery } from '@/hooks/useAutoQuery';
 const router = useRouter();
 const loading = ref(false);
 const dashboard = ref<ActivityDataValidationDashboard>({});
+const selectedPeriod = ref('');
 const currentLocalMonth = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
-const queryParams = reactive<ActivityDataQuery>({
-  activityPeriod: currentLocalMonth()
-});
+const queryParams = reactive<ActivityDataQuery>({});
+selectedPeriod.value = currentLocalMonth();
 
 const submissions = computed(() => dashboard.value.submissions ?? []);
 const issues = computed(() => dashboard.value.issues ?? []);
@@ -144,10 +148,12 @@ const metrics = computed(() => [
 const loadDashboard = async () => {
   loading.value = true;
   try {
+    applyPeriodToQuery(selectedPeriod.value);
     const res = await getActivityDataValidationDashboard(queryParams);
     dashboard.value = res.data ?? {};
-    if (!queryParams.activityPeriod && dashboard.value.activityPeriod) {
-      queryParams.activityPeriod = dashboard.value.activityPeriod;
+    if (!selectedPeriod.value && dashboard.value.activityYear && dashboard.value.activityMonth) {
+      selectedPeriod.value = formatPeriod(dashboard.value.activityYear, dashboard.value.activityMonth);
+      applyPeriodToQuery(selectedPeriod.value);
     }
   } finally {
     loading.value = false;
@@ -155,7 +161,8 @@ const loadDashboard = async () => {
 };
 
 const resetQuery = () => {
-  queryParams.activityPeriod = currentLocalMonth();
+  selectedPeriod.value = currentLocalMonth();
+  applyPeriodToQuery(selectedPeriod.value);
   loadDashboard();
 };
 
@@ -197,6 +204,29 @@ const issueTag = (status?: string) => {
 
 const formatRate = (value?: number) => (value === undefined || value === null ? '--' : `${Number(value).toFixed(1)}%`);
 
+const splitPeriod = (period?: string) => {
+  const [year, month] = (period ?? '').split('-');
+  return { year, month };
+};
+
+const formatPeriod = (year?: number, month?: number) => {
+  if (!year || !month) {
+    return '--';
+  }
+  return `${year}-${String(month).padStart(2, '0')}`;
+};
+
+const applyPeriodToQuery = (period?: string) => {
+  const { year, month } = splitPeriod(period);
+  queryParams.activityYear = year ? Number(year) : undefined;
+  queryParams.activityMonth = month ? Number(month) : undefined;
+};
+
+const handlePeriodChange = (period?: string) => {
+  applyPeriodToQuery(period);
+  loadDashboard();
+};
+
 const formatDateTime = (value?: string) => {
   if (!value) return '--';
   const date = new Date(value);
@@ -217,8 +247,8 @@ const openIssue = (issue: ActivityDataValidationIssue) => {
   router.push({
     path: '/activity-data/emission-activity-data',
     query: {
-      activityPeriod: issue.activityPeriod,
-      emissionSourceCode: issue.emissionSourceCode
+      selectedPeriod: formatPeriod(issue.activityYear, issue.activityMonth),
+      sourceIdentificationCode: issue.sourceIdentificationCode
     }
   });
 };

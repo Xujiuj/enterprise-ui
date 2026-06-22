@@ -2,13 +2,13 @@
   <div class="enterprise-activity-entry">
     <section class="panel search-panel">
       <el-form v-show="showSearch" ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="search-bar wide activity-search">
-        <el-form-item label="排放源" prop="emissionSourceId">
-          <el-select v-model="queryParams.emissionSourceId" clearable filterable :loading="sourceLoading" class="query-source">
-            <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.id" />
+        <el-form-item label="排放源" prop="sourceIdentificationCode">
+          <el-select v-model="queryParams.sourceIdentificationCode" clearable filterable :loading="sourceLoading" class="query-source">
+            <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceIdentificationCode" />
           </el-select>
         </el-form-item>
-        <el-form-item label="活动期间" prop="activityPeriod">
-          <el-date-picker v-model="queryParams.activityPeriod" type="month" value-format="YYYY-MM" class="query-month" />
+        <el-form-item label="活动期间">
+          <el-date-picker v-model="selectedQueryPeriod" type="month" value-format="YYYY-MM" class="query-month" @change="handleQueryPeriodChange" />
         </el-form-item>
         <el-form-item label="数据状态" prop="dataStatus">
           <el-select v-model="queryParams.dataStatus" clearable class="query-status">
@@ -43,7 +43,11 @@
             {{ activitySourceName(row) }}
           </template>
         </el-table-column>
-        <el-table-column prop="activityPeriod" label="活动期间" width="120" />
+        <el-table-column label="活动期间" width="120">
+          <template #default="{ row }">
+            {{ formatActivityPeriod(row) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="activityValue" label="活动数据" width="140" align="right" />
         <el-table-column prop="activityUnit" label="单位" width="110" />
         <el-table-column label="状态" width="100">
@@ -76,15 +80,15 @@
       <el-form ref="activityFormRef" :model="form" :rules="rules" label-width="112px">
         <el-row :gutter="16">
           <el-col :xs="24" :sm="12">
-            <el-form-item label="排放源" prop="sourceCode">
-              <el-select v-model="form.sourceCode" class="w-full" clearable filterable :loading="sourceLoading" :disabled="formDrawer.readonly">
-                <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceCode" />
+            <el-form-item label="排放源" prop="sourceIdentificationCode">
+              <el-select v-model="form.sourceIdentificationCode" class="w-full" clearable filterable :loading="sourceLoading" :disabled="formDrawer.readonly">
+                <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceIdentificationCode" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="活动期间" prop="activityPeriod">
-              <el-date-picker v-model="form.activityPeriod" type="month" value-format="YYYY-MM" class="w-full" :disabled="formDrawer.readonly" />
+            <el-form-item label="活动期间" prop="selectedPeriod">
+              <el-date-picker v-model="form.selectedPeriod" type="month" value-format="YYYY-MM" class="w-full" :disabled="formDrawer.readonly" />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -260,8 +264,8 @@ import type {
 } from '@/api/enterprise/sheet656ActivityValidation/types';
 
 interface ActivityEntryForm {
-  sourceCode?: string;
-  activityPeriod?: string;
+  sourceIdentificationCode?: string;
+  selectedPeriod?: string;
   date?: string;
   activityValue?: number;
   responsibleDept?: string;
@@ -318,6 +322,7 @@ const uploadValidation = ref<Sheet656ImportValidationResult>();
 const manualResolvedDerivedValues = ref<DerivedValueMap>({});
 const parsedUploadRequest = ref<Sheet656ImportValidationRequest>();
 const uploadFileName = ref('');
+const selectedQueryPeriod = ref('');
 
 const formDrawer = reactive({
   open: false,
@@ -336,14 +341,15 @@ const sheetSaving = ref(false);
 const queryParams = reactive<ActivityDataQuery>({
   pageNum: 1,
   pageSize: 10,
-  emissionSourceId: undefined,
-  activityPeriod: undefined,
+  sourceIdentificationCode: undefined,
+  activityYear: undefined,
+  activityMonth: undefined,
   dataStatus: undefined
 });
 
 const form = reactive<ActivityEntryForm>({
-  sourceCode: undefined,
-  activityPeriod: undefined,
+  sourceIdentificationCode: undefined,
+  selectedPeriod: undefined,
   date: undefined,
   activityValue: undefined,
   responsibleDept: undefined,
@@ -368,7 +374,7 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         type: 'select',
         required: true,
         width: 230,
-        options: emissionSources.value.map((source) => ({ label: sourceLabel(source), value: source.sourceCode }))
+        options: emissionSources.value.map((source) => ({ label: sourceLabel(source), value: source.sourceIdentificationCode }))
       };
     }
     if (field.sourceColumnCode === 'f011' || field.sourceColumnCode === 'f012' || field.sourceColumnCode === 'f014') {
@@ -410,16 +416,18 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
 );
 const sheetRows = computed(() =>
   activityList.value.map((row) => {
-    const source = row.emissionSourceId ? sourceById.value.get(String(row.emissionSourceId)) : undefined;
-    const { year, month } = splitPeriod(row.activityPeriod);
+    const source = row.sourceIdentificationCode ? sourceByCode.value.get(row.sourceIdentificationCode) : undefined;
     return {
-      f001: source?.sourceCode,
+      f001: row.sourceIdentificationCode ?? source?.sourceIdentificationCode,
       f010: row.activityUnit,
-      f011: year ? Number(year) : undefined,
-      f012: month ? Number(month) : undefined,
-      f013: row.activityPeriod ? `${row.activityPeriod}-01` : undefined,
+      f011: row.activityYear,
+      f012: row.activityMonth,
+      f013: row.activityDate,
       f014: row.activityValue,
-      f017: row.remark
+      f015: row.responsibleDept,
+      f016: row.dataSource,
+      f017: row.sourceRemark ?? row.remark,
+      f018: row.factorKey
     };
   })
 );
@@ -431,18 +439,22 @@ const sheetEmptyRow = computed(() =>
 );
 
 const rules: FormRules<ActivityEntryForm> = {
-  sourceCode: [{ required: true, message: '请选择排放源', trigger: 'change' }],
-  activityPeriod: [{ required: true, message: '请选择活动期间', trigger: 'change' }],
+  sourceIdentificationCode: [{ required: true, message: '请选择排放源', trigger: 'change' }],
+  selectedPeriod: [{ required: true, message: '请选择活动期间', trigger: 'change' }],
   date: [{ required: true, message: '请选择日期', trigger: 'change' }],
   activityValue: [{ required: true, message: '请输入活动数据', trigger: 'blur' }],
   responsibleDept: [{ required: true, message: '请输入负责部门', trigger: 'blur' }],
   dataSource: [{ required: true, message: '请选择数据来源', trigger: 'change' }]
 };
 
-const selectedSource = computed(() => emissionSources.value.find((source) => source.sourceCode === form.sourceCode));
-const sourceById = computed(() => {
+const selectedSource = computed(() => emissionSources.value.find((source) => source.sourceIdentificationCode === form.sourceIdentificationCode));
+const sourceByCode = computed(() => {
   const map = new Map<string, EmissionSourceVO>();
-  emissionSources.value.forEach((source) => map.set(String(source.id), source));
+  emissionSources.value.forEach((source) => {
+    if (source.sourceIdentificationCode) {
+      map.set(source.sourceIdentificationCode, source);
+    }
+  });
   return map;
 });
 const manualIssues = computed(() => collectIssues(manualValidation.value));
@@ -464,7 +476,8 @@ const uploadStatusText = computed(() => {
   return parsedUploadRowCount.value > 0 ? '可导入' : '无可导入数据';
 });
 
-const sourceLabel = (source: EmissionSourceVO) => [source.sourceCode, source.sourceName].filter(Boolean).join(' / ');
+const sourceLabel = (source: EmissionSourceVO) =>
+  [source.sourceIdentificationCode, source.emissionSourceName ?? source.sourceIdentificationName].filter(Boolean).join(' / ');
 const isBlockingIssue = (issue: Sheet656ValidationIssue) => issue.severity === 'ERROR';
 const valueToString = (value?: string | number) => (value === undefined || value === null ? '' : String(value));
 const firstQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
@@ -473,10 +486,30 @@ const splitPeriod = (period?: string) => {
   return { year, month };
 };
 
-const activitySourceName = (row: ActivityDataVO) => {
-  const source = row.emissionSourceId ? sourceById.value.get(String(row.emissionSourceId)) : undefined;
-  return source ? sourceLabel(source) : row.emissionSourceId || '-';
+const joinPeriod = (year?: number, month?: number) => {
+  if (!year || !month) {
+    return '';
+  }
+  return `${year}-${String(month).padStart(2, '0')}`;
 };
+
+const applyPeriodToQuery = (period?: string) => {
+  const { year, month } = splitPeriod(period);
+  queryParams.activityYear = year ? Number(year) : undefined;
+  queryParams.activityMonth = month ? Number(month) : undefined;
+};
+
+const handleQueryPeriodChange = (period?: string) => {
+  applyPeriodToQuery(period);
+  handleQuery();
+};
+
+const activitySourceName = (row: ActivityDataVO) => {
+  const source = row.sourceIdentificationCode ? sourceByCode.value.get(row.sourceIdentificationCode) : undefined;
+  return source ? sourceLabel(source) : row.emissionSourceName || row.sourceIdentificationCode || '-';
+};
+
+const formatActivityPeriod = (row: ActivityDataVO) => joinPeriod(row.activityYear, row.activityMonth) || '-';
 
 const collectIssues = (result?: Sheet656ImportValidationResult): Sheet656ValidationIssue[] => [
   ...(result?.headerIssues ?? []),
@@ -496,9 +529,9 @@ const cloneImportValidationRequest = (request: Sheet656ImportValidationRequest):
 });
 
 const buildFieldValues = (): Sheet656FieldValue[] => {
-  const { year, month } = splitPeriod(form.activityPeriod);
+  const { year, month } = splitPeriod(form.selectedPeriod);
   const values: DerivedValueMap = {
-    f001: form.sourceCode ?? '',
+    f001: form.sourceIdentificationCode ?? '',
     f011: year,
     f012: month,
     f013: form.date ?? '',
@@ -527,14 +560,16 @@ const buildManualValidationRequest = (): Sheet656ImportValidationRequest => ({
 });
 
 const applyRouteQuery = () => {
-  const sourceCode = firstQueryValue(route.query.emissionSourceCode);
-  if (typeof sourceCode === 'string' && sourceCode) {
-    form.sourceCode = sourceCode;
+  const sourceIdentificationCode = firstQueryValue(route.query.sourceIdentificationCode);
+  if (typeof sourceIdentificationCode === 'string' && sourceIdentificationCode) {
+    form.sourceIdentificationCode = sourceIdentificationCode;
+    queryParams.sourceIdentificationCode = sourceIdentificationCode;
   }
-  const activityPeriod = firstQueryValue(route.query.activityPeriod);
-  if (typeof activityPeriod === 'string' && activityPeriod) {
-    form.activityPeriod = activityPeriod;
-    queryParams.activityPeriod = activityPeriod;
+  const selectedPeriod = firstQueryValue(route.query.selectedPeriod);
+  if (typeof selectedPeriod === 'string' && selectedPeriod) {
+    form.selectedPeriod = selectedPeriod;
+    selectedQueryPeriod.value = selectedPeriod;
+    applyPeriodToQuery(selectedPeriod);
   }
 };
 
@@ -545,8 +580,8 @@ const clearManualValidation = () => {
 
 const resetForm = () => {
   Object.assign(form, {
-    sourceCode: undefined,
-    activityPeriod: undefined,
+    sourceIdentificationCode: undefined,
+    selectedPeriod: undefined,
     date: undefined,
     activityValue: undefined,
     responsibleDept: undefined,
@@ -566,14 +601,15 @@ const openCreateDrawer = () => {
 };
 
 const openDetailDrawer = (row: ActivityDataVO) => {
-  const source = row.emissionSourceId ? sourceById.value.get(String(row.emissionSourceId)) : undefined;
   resetForm();
   Object.assign(form, {
-    sourceCode: source?.sourceCode,
-    activityPeriod: row.activityPeriod,
-    date: row.activityPeriod ? `${row.activityPeriod}-01` : undefined,
+    sourceIdentificationCode: row.sourceIdentificationCode,
+    selectedPeriod: joinPeriod(row.activityYear, row.activityMonth),
+    date: row.activityDate,
     activityValue: row.activityValue,
-    remark: row.remark
+    responsibleDept: row.responsibleDept,
+    dataSource: row.dataSource,
+    remark: row.sourceRemark ?? row.remark
   });
   manualResolvedDerivedValues.value = {
     f010: row.activityUnit ?? ''
@@ -810,12 +846,14 @@ const handleQuery = () => {
 
 const resetQuery = () => {
   queryFormRef.value?.resetFields();
+  selectedQueryPeriod.value = '';
+  applyPeriodToQuery(undefined);
   queryParams.pageNum = 1;
   loadActivities();
 };
 
 watch(
-  () => [form.sourceCode, form.activityPeriod, form.date, form.activityValue, form.responsibleDept, form.dataSource, form.remark],
+  () => [form.sourceIdentificationCode, form.selectedPeriod, form.date, form.activityValue, form.responsibleDept, form.dataSource, form.remark],
   () => {
     if (!formDrawer.readonly) {
       clearManualValidation();

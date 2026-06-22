@@ -24,11 +24,19 @@ const config = {
   readonly: true,
   columns: [
     { prop: 'cacheVersionId', label: '缓存版本ID', width: 120 },
+    { prop: 'factorTableCode', label: '因子表类型', minWidth: 150 },
+    { prop: 'factorKey', label: '样例主键', minWidth: 150 },
     { prop: 'factorCode', label: '因子编码', minWidth: 150 },
     { prop: 'factorName', label: '因子名称', minWidth: 180 },
+    { prop: 'emissionSourceName', label: '排放源', minWidth: 170 },
+    { prop: 'emissionSourceNameEn', label: '排放源_EN', minWidth: 170 },
+    { prop: 'fuelMaterialCategory', label: '燃料/物质类别', minWidth: 170 },
     { prop: 'factorCategory', label: '因子分类', minWidth: 140 },
     { prop: 'factorValue', label: '因子值', width: 120 },
     { prop: 'factorUnit', label: '单位', width: 120 },
+    { prop: 'factorGwp', label: '因子GWP', width: 120 },
+    { prop: 'provinceFactor', label: '省级因子', width: 120 },
+    { prop: 'convertedFactor', label: '因子（转换）', width: 130 },
     {
       prop: 'enabledFlag',
       label: '状态',
@@ -42,6 +50,7 @@ const config = {
   ],
   searchFields: [
     { prop: 'cacheVersionId', label: '缓存版本ID' },
+    { prop: 'factorTableCode', label: '因子表类型' },
     { prop: 'factorCode', label: '因子编码' },
     { prop: 'factorName', label: '因子名称' },
     { prop: 'factorCategory', label: '因子分类' },

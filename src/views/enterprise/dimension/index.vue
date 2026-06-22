@@ -36,10 +36,12 @@
 
         <div class="toolbar">
           <div class="btns">
-            <el-button v-if="!isVendorOnly" type="primary" icon="Plus" @click="handleAdd" v-hasPermi="['enterprise:dimension:add']">新增</el-button>
-            <el-button v-if="!isVendorOnly" icon="Grid" @click="openSheetDrawer" v-hasPermi="['enterprise:dimension:edit']">在线填报</el-button>
+            <el-button v-if="isEditable" type="primary" icon="Plus" @click="handleAdd" v-hasPermi="['enterprise:dimension:add']">新增</el-button>
+            <el-button v-if="isEditable" icon="Grid" @click="openSheetDrawer" v-hasPermi="['enterprise:dimension:edit']">在线填报</el-button>
+            <el-button v-if="isEditable" icon="Download" @click="downloadDimensionTemplate" v-hasPermi="['enterprise:dimension:edit']">下载模板</el-button>
+            <el-button v-if="isEditable" icon="Upload" @click="openUploadDialog" v-hasPermi="['enterprise:dimension:edit']">Excel 上传</el-button>
             <el-button
-              v-if="!isVendorOnly"
+              v-if="isEditable"
               type="danger"
               plain
               icon="Delete"
@@ -53,7 +55,7 @@
         </div>
 
         <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange">
-          <el-table-column v-if="!isVendorOnly" type="selection" width="42" align="center" />
+          <el-table-column v-if="isEditable" type="selection" width="42" align="center" />
           <el-table-column :label="page.codeLabel" align="center" prop="recordCode" min-width="150" />
           <el-table-column :label="page.nameLabel" align="center" prop="recordName" min-width="180" :show-overflow-tooltip="true" />
           <el-table-column v-if="page.showParent" label="上级编码" align="center" prop="parentCode" min-width="140" />
@@ -75,7 +77,7 @@
           </el-table-column>
           <el-table-column label="排序" align="center" prop="sortOrder" width="80" />
           <el-table-column label="备注" align="center" prop="remark" min-width="180" :show-overflow-tooltip="true" />
-          <el-table-column v-if="!isVendorOnly" label="操作" align="center" width="150" fixed="right">
+          <el-table-column v-if="isEditable" label="操作" align="center" width="150" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['enterprise:dimension:edit']">编辑</el-button>
               <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['enterprise:dimension:remove']"
@@ -144,6 +146,19 @@
           @save="saveSheetRows"
         />
       </el-drawer>
+
+      <el-dialog v-model="uploadDialog.visible" :title="`${page.title} Excel 上传`" width="720px" append-to-body destroy-on-close v-loading="uploadParsing">
+        <el-upload drag action="#" accept=".xlsx" :auto-upload="false" :show-file-list="false" :before-upload="parseDimensionUploadFile">
+          <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+          <div class="el-upload__text">拖拽 Excel 文件到此处，或点击选择 `.xlsx` 文件</div>
+        </el-upload>
+        <el-alert class="mt-4" type="info" show-icon :closable="false">
+          <template #title>请使用“下载模板”生成的表头上传；编码、名称和状态必填。</template>
+        </el-alert>
+        <template #footer>
+          <el-button @click="uploadDialog.visible = false">关闭</el-button>
+        </template>
+      </el-dialog>
     </template>
 
     <el-result v-else icon="error" title="未配置合法维度" :sub-title="routeKey">
@@ -155,20 +170,39 @@
 </template>
 
 <script setup name="EnterpriseDimension" lang="ts">
+import { UploadFilled } from '@element-plus/icons-vue';
+import { ElMessage, type UploadRawFile } from 'element-plus';
 import { computed, reactive, watch } from 'vue';
-import {
-  addDimensionRecord,
-  delDimensionRecord,
-  getDimensionRecord,
-  listDimensionRecord,
-  updateDimensionRecord
-} from '@/api/enterprise/dimensionRecord';
+import { addDimensionRecord, delDimensionRecord, getDimensionRecord, listDimensionRecord, updateDimensionRecord } from '@/api/enterprise/dimensionRecord';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { DimensionRecordForm, DimensionRecordQuery, DimensionRecordVO } from '@/api/enterprise/dimensionRecord/types';
+import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
 import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
 
-type FieldProp = 'field01' | 'field02' | 'field03' | 'field04' | 'field05' | 'field06';
+type FieldProp =
+  | 'field01'
+  | 'field02'
+  | 'field03'
+  | 'field04'
+  | 'field05'
+  | 'field06'
+  | 'field07'
+  | 'field08'
+  | 'field09'
+  | 'field10'
+  | 'field11'
+  | 'field12'
+  | 'field13'
+  | 'field14'
+  | 'field15'
+  | 'field16'
+  | 'field17'
+  | 'field18'
+  | 'field19'
+  | 'field20'
+  | 'field21'
+  | 'field22';
 
 interface FieldConfig {
   prop: FieldProp;
@@ -187,6 +221,12 @@ interface PageConfig {
   nameLabel: string;
   showParent?: boolean;
   fields: FieldConfig[];
+}
+
+interface ZipEntry {
+  path: string;
+  method: number;
+  compressed: Uint8Array;
 }
 
 const route = useRoute();
@@ -217,12 +257,25 @@ const dimensionPages: Record<string, PageConfig> = {
     owner: '企业',
     mode: '企业维护',
     codeLabel: '公司编号',
-    nameLabel: '公司名称',
+    nameLabel: '公司',
     showParent: true,
     fields: [
-      { prop: 'field01', label: '组织边界', options: ['法人主体', '工厂', '园区', '部门'] },
-      { prop: 'field02', label: '行政区划代码' },
-      { prop: 'field03', label: '统一社会信用代码' }
+      { prop: 'field01', label: 'SK_公司' },
+      { prop: 'field02', label: '工厂' },
+      { prop: 'field03', label: '省份编码' },
+      { prop: 'field04', label: '所在省份' },
+      { prop: 'field05', label: '工厂类型' },
+      { prop: 'field06', label: '行业门类代码' },
+      { prop: 'field07', label: '行业门类名称' },
+      { prop: 'field08', label: '行业大类代码' },
+      { prop: 'field09', label: '行业大类名称' },
+      { prop: 'field10', label: '行业中类代码' },
+      { prop: 'field11', label: '行业中类名称' },
+      { prop: 'field12', label: '行业小类代码' },
+      { prop: 'field13', label: '行业小类名称' },
+      { prop: 'field14', label: '生效日期', type: 'date' },
+      { prop: 'field15', label: '失效日期', type: 'date' },
+      { prop: 'field16', label: '是否有效', options: ['Y', 'N'] }
     ]
   },
   'emission-source-category': {
@@ -258,12 +311,11 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '配置排放源',
     owner: '企业',
     mode: '企业确认',
-    codeLabel: '基准年编码',
-    nameLabel: '基准年名称',
+    codeLabel: '工厂编号',
+    nameLabel: '工厂名称',
     fields: [
-      { prop: 'field01', label: '年度', type: 'number' },
-      { prop: 'field02', label: '适用组织' },
-      { prop: 'field03', label: '适用指标' }
+      { prop: 'field01', label: '基准年', type: 'number' },
+      { prop: 'field02', label: '是否当前基准', options: ['Y', 'N'] }
     ]
   },
   'ef-factor': {
@@ -271,13 +323,29 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '确认排放因子',
     owner: '企业',
     mode: '确认引用',
-    codeLabel: '因子编码',
-    nameLabel: '因子名称',
+    codeLabel: 'SK_排放因子',
+    nameLabel: '排放源名称',
     fields: [
-      { prop: 'field01', label: '因子单位' },
-      { prop: 'field02', label: '因子来源' },
-      { prop: 'field03', label: '适用排放源' },
-      { prop: 'field04', label: '版本号' }
+      { prop: 'field01', label: '排放源英文名' },
+      { prop: 'field02', label: '燃料/物料类别' },
+      { prop: 'field03', label: '源单位' },
+      { prop: 'field04', label: 'CO2', type: 'number' },
+      { prop: 'field05', label: 'CH4', type: 'number' },
+      { prop: 'field06', label: 'N2O', type: 'number' },
+      { prop: 'field07', label: 'HFCs', type: 'number' },
+      { prop: 'field08', label: 'PFCs', type: 'number' },
+      { prop: 'field09', label: 'SF6', type: 'number' },
+      { prop: 'field10', label: 'NF3', type: 'number' },
+      { prop: 'field11', label: '适用范围' },
+      { prop: 'field12', label: '因子来源' },
+      { prop: 'field13', label: 'GWP_CH4', type: 'number' },
+      { prop: 'field14', label: 'GWP_N2O', type: 'number' },
+      { prop: 'field15', label: 'GWP_HFCs', type: 'number' },
+      { prop: 'field16', label: 'GWP_PFCs', type: 'number' },
+      { prop: 'field17', label: 'GWP_SF6', type: 'number' },
+      { prop: 'field18', label: 'GWP_NF3', type: 'number' },
+      { prop: 'field19', label: '因子GWP', type: 'number' },
+      { prop: 'field20', label: '因子单位' }
     ]
   },
   'ef-electricity-factor': {
@@ -299,12 +367,10 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '确认排放因子',
     owner: '企业',
     mode: '企业确认',
-    codeLabel: '对应编码',
-    nameLabel: '对应名称',
+    codeLabel: '因子版本',
+    nameLabel: '版本说明',
     fields: [
-      { prop: 'field01', label: '核算期间' },
-      { prop: 'field02', label: '因子版本' },
-      { prop: 'field03', label: '适用区域' }
+      { prop: 'field02', label: '生效年份', type: 'number' }
     ]
   },
   'ef-electricity-scope': {
@@ -367,12 +433,13 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '强度管理',
     owner: '企业',
     mode: '企业维护',
-    codeLabel: '分母编码',
-    nameLabel: '分母名称',
+    codeLabel: '分母规则Key',
+    nameLabel: '分母度量名称',
+    showParent: true,
     fields: [
-      { prop: 'field01', label: '分母类型', options: ['营收', '产量', '面积', '发电量'] },
-      { prop: 'field02', label: '单位' },
-      { prop: 'field03', label: '适用组织' }
+      { prop: 'field01', label: '工厂类型' },
+      { prop: 'field02', label: '分母类型' },
+      { prop: 'field03', label: '强度单位展示' }
     ]
   },
   'intensity-target': {
@@ -380,13 +447,12 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '强度管理',
     owner: '企业',
     mode: '企业维护',
-    codeLabel: '目标编码',
+    codeLabel: '工厂类型',
     nameLabel: '目标名称',
     fields: [
-      { prop: 'field01', label: '目标期间' },
-      { prop: 'field02', label: '强度指标' },
+      { prop: 'field02', label: '目标年份', type: 'number' },
       { prop: 'field03', label: '目标值', type: 'number' },
-      { prop: 'field04', label: '基准年' }
+      { prop: 'field04', label: '单位' }
     ]
   },
   'denominator-fact': {
@@ -394,13 +460,17 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '强度管理',
     owner: '企业',
     mode: '企业填报',
-    codeLabel: '事实编码',
-    nameLabel: '事实名称',
+    codeLabel: '工厂编号',
+    nameLabel: '分母度量名称',
     fields: [
-      { prop: 'field01', label: '期间' },
-      { prop: 'field02', label: '分母编码' },
-      { prop: 'field03', label: '分母值', type: 'number' },
-      { prop: 'field04', label: '数据来源部门' }
+      { prop: 'field01', label: '工厂名称' },
+      { prop: 'field02', label: '工厂类型' },
+      { prop: 'field03', label: '年份', type: 'number' },
+      { prop: 'field04', label: '月份', type: 'number' },
+      { prop: 'field05', label: '分母类型' },
+      { prop: 'field07', label: '分母值', type: 'number' },
+      { prop: 'field08', label: '单位' },
+      { prop: 'field09', label: '数据来源' }
     ]
   },
   'intensity-tolerance': {
@@ -408,13 +478,10 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '强度管理',
     owner: '企业',
     mode: '企业维护',
-    codeLabel: '容忍率编码',
-    nameLabel: '容忍率名称',
+    codeLabel: '容忍率Key',
+    nameLabel: '行业门类',
     fields: [
-      { prop: 'field01', label: '强度指标' },
-      { prop: 'field02', label: '容忍率(%)', type: 'number' },
-      { prop: 'field03', label: '起始期间' },
-      { prop: 'field04', label: '结束期间' }
+      { prop: 'field02', label: '容忍率', type: 'number' }
     ]
   },
   'report-template-download': {
@@ -442,6 +509,17 @@ const vendorOnlyDimensionCodes = new Set([
   'report-template-download'
 ]);
 
+const editableDimensionCodes = new Set([
+  'company',
+  'base-year',
+  'ef-factor',
+  'ef-electricity-version',
+  'intensity-denominator',
+  'intensity-target',
+  'denominator-fact',
+  'intensity-tolerance'
+]);
+
 const routeKey = computed(() => {
   const queryCode = typeof route.query.code === 'string' ? route.query.code : '';
   const pathParts = route.path.split('/').filter(Boolean);
@@ -450,6 +528,8 @@ const routeKey = computed(() => {
 });
 const page = computed(() => dimensionPages[routeKey.value]);
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
+const isEditable = computed(() => editableDimensionCodes.has(routeKey.value));
+const readOnlyMessage = '旧维度表已拆分为具体业务表，请到对应页面维护。';
 const sheetColumns = computed<SpreadsheetColumn[]>(() => {
   if (!page.value) return [];
   const columns: SpreadsheetColumn[] = [
@@ -500,7 +580,11 @@ const dialog = reactive<DialogOption>({
 const sheetDrawer = reactive({
   visible: false
 });
+const uploadDialog = reactive({
+  visible: false
+});
 const sheetSaving = ref(false);
+const uploadParsing = ref(false);
 
 const sheetRows = computed(() =>
   recordList.value.map((row) => ({
@@ -515,6 +599,22 @@ const sheetRows = computed(() =>
     field04: row.field04,
     field05: row.field05,
     field06: row.field06,
+    field07: row.field07,
+    field08: row.field08,
+    field09: row.field09,
+    field10: row.field10,
+    field11: row.field11,
+    field12: row.field12,
+    field13: row.field13,
+    field14: row.field14,
+    field15: row.field15,
+    field16: row.field16,
+    field17: row.field17,
+    field18: row.field18,
+    field19: row.field19,
+    field20: row.field20,
+    field21: row.field21,
+    field22: row.field22,
     status: row.status || '0',
     sortOrder: row.sortOrder ?? 0,
     remark: row.remark
@@ -532,6 +632,22 @@ const sheetEmptyRow = computed(() => ({
   field04: undefined,
   field05: undefined,
   field06: undefined,
+  field07: undefined,
+  field08: undefined,
+  field09: undefined,
+  field10: undefined,
+  field11: undefined,
+  field12: undefined,
+  field13: undefined,
+  field14: undefined,
+  field15: undefined,
+  field16: undefined,
+  field17: undefined,
+  field18: undefined,
+  field19: undefined,
+  field20: undefined,
+  field21: undefined,
+  field22: undefined,
   status: '0',
   sortOrder: 0,
   remark: undefined
@@ -549,6 +665,22 @@ const initFormData: DimensionRecordForm = {
   field04: undefined,
   field05: undefined,
   field06: undefined,
+  field07: undefined,
+  field08: undefined,
+  field09: undefined,
+  field10: undefined,
+  field11: undefined,
+  field12: undefined,
+  field13: undefined,
+  field14: undefined,
+  field15: undefined,
+  field16: undefined,
+  field17: undefined,
+  field18: undefined,
+  field19: undefined,
+  field20: undefined,
+  field21: undefined,
+  field22: undefined,
   sortOrder: 0,
   status: '0',
   remark: undefined
@@ -574,6 +706,146 @@ const data = reactive<PageData<DimensionRecordForm, DimensionRecordQuery>>({
 const { queryParams, form, rules } = toRefs(data);
 
 const statusLabel = (value?: string) => statusOptions.find((item) => item.value === value)?.label ?? value ?? '-';
+
+const textDecoder = new TextDecoder('utf-8');
+
+const readUint16 = (bytes: Uint8Array, offset: number) => bytes[offset] | (bytes[offset + 1] << 8);
+const readUint32 = (bytes: Uint8Array, offset: number) =>
+  bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24);
+
+const inflateRaw = async (bytes: Uint8Array) => {
+  const streamCtor = (globalThis as typeof globalThis & { DecompressionStream?: new (format: string) => DecompressionStream }).DecompressionStream;
+  if (!streamCtor) {
+    throw new Error('当前浏览器不支持解析压缩 Excel，请使用系统模板直接上传');
+  }
+  const stream = new Blob([bytes]).stream().pipeThrough(new streamCtor('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+};
+
+const readZipEntries = async (file: Blob) => {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const entries: ZipEntry[] = [];
+  let offset = 0;
+  while (offset + 30 < bytes.length) {
+    if (readUint32(bytes, offset) !== 0x04034b50) break;
+    const flags = readUint16(bytes, offset + 6);
+    const method = readUint16(bytes, offset + 8);
+    const compressedSize = readUint32(bytes, offset + 18);
+    const nameLength = readUint16(bytes, offset + 26);
+    const extraLength = readUint16(bytes, offset + 28);
+    if (flags & 0x08) {
+      throw new Error('暂不支持带数据描述符的 Excel 文件，请使用下载模板填写后上传');
+    }
+    const nameStart = offset + 30;
+    const dataStart = nameStart + nameLength + extraLength;
+    const path = textDecoder.decode(bytes.slice(nameStart, nameStart + nameLength));
+    entries.push({
+      path,
+      method,
+      compressed: bytes.slice(dataStart, dataStart + compressedSize)
+    });
+    offset = dataStart + compressedSize;
+  }
+  return entries;
+};
+
+const unzipTextEntry = async (entries: ZipEntry[], path: string) => {
+  const entry = entries.find((item) => item.path === path);
+  if (!entry) return '';
+  if (entry.method === 0) {
+    return textDecoder.decode(entry.compressed);
+  }
+  if (entry.method === 8) {
+    return textDecoder.decode(await inflateRaw(entry.compressed));
+  }
+  throw new Error('暂不支持该 Excel 压缩格式');
+};
+
+const parseXml = (xml: string) => new DOMParser().parseFromString(xml, 'application/xml');
+
+const columnIndexFromRef = (ref: string) => {
+  const letters = ref.replace(/[^A-Z]/gi, '').toUpperCase();
+  return letters.split('').reduce((acc, letter) => acc * 26 + letter.charCodeAt(0) - 64, 0) - 1;
+};
+
+const excelSerialDateToText = (serial: number) => {
+  const utc = Date.UTC(1899, 11, 30) + serial * 86400000;
+  return new Date(utc).toISOString().slice(0, 10);
+};
+
+const normalizeUploadValue = (column: SpreadsheetColumn, value: string) => {
+  const text = value.trim();
+  if (!text) return undefined;
+  if (column.prop === 'status') {
+    return statusOptions.find((option) => option.label === text || option.value === text)?.value ?? text;
+  }
+  if (column.type === 'number') {
+    const numberValue = Number(text);
+    return Number.isNaN(numberValue) ? text : numberValue;
+  }
+  if (column.type === 'date') {
+    const serial = Number(text);
+    return Number.isFinite(serial) && serial > 20000 ? excelSerialDateToText(serial) : text;
+  }
+  return text;
+};
+
+const parseXlsxRows = async (file: Blob) => {
+  const entries = await readZipEntries(file);
+  const sharedStringsXml = await unzipTextEntry(entries, 'xl/sharedStrings.xml');
+  const sharedStrings = sharedStringsXml
+    ? Array.from(parseXml(sharedStringsXml).getElementsByTagName('si')).map((item) =>
+        Array.from(item.getElementsByTagName('t'))
+          .map((node) => node.textContent ?? '')
+          .join('')
+      )
+    : [];
+  const worksheetPath = entries.find((entry) => /^xl\/worksheets\/sheet\d+\.xml$/.test(entry.path))?.path;
+  if (!worksheetPath) {
+    throw new Error('未找到 Excel 工作表');
+  }
+  const worksheetXml = await unzipTextEntry(entries, worksheetPath);
+  const rows = Array.from(parseXml(worksheetXml).getElementsByTagName('row')).map((row) => {
+    const values: string[] = [];
+    Array.from(row.getElementsByTagName('c')).forEach((cell) => {
+      const ref = cell.getAttribute('r') ?? '';
+      const type = cell.getAttribute('t');
+      const index = columnIndexFromRef(ref);
+      const rawValue =
+        type === 'inlineStr'
+          ? Array.from(cell.getElementsByTagName('t'))
+              .map((node) => node.textContent ?? '')
+              .join('')
+          : cell.getElementsByTagName('v')[0]?.textContent ?? '';
+      values[index] = type === 's' ? sharedStrings[Number(rawValue)] ?? '' : rawValue;
+    });
+    return values;
+  });
+  const headerRow = rows.find((row) => row.some(Boolean));
+  if (!headerRow) return [];
+  const columnByLabel = new Map(sheetColumns.value.map((column) => [column.label, column]));
+  const uploadColumns = headerRow.map((label) => columnByLabel.get(label?.trim?.() ?? ''));
+  const parsedRows = rows
+    .slice(rows.indexOf(headerRow) + 1)
+    .map((row, rowIndex) => {
+      const item: Record<string, any> = {};
+      uploadColumns.forEach((column, index) => {
+        if (!column) return;
+        item[column.prop] = normalizeUploadValue(column, row[index] ?? '');
+      });
+      if (!item.status) item.status = '0';
+      const line = rowIndex + 2;
+      if (!item.recordCode || !item.recordName) {
+        const hasAnyValue = Object.values(item).some((value) => value !== undefined && value !== '');
+        if (hasAnyValue) {
+          throw new Error(`第 ${line} 行缺少编码或名称`);
+        }
+      }
+      return item;
+    })
+    .filter((row) => row.recordCode && row.recordName);
+  return parsedRows;
+};
 
 const getList = async () => {
   if (!page.value) {
@@ -629,29 +901,43 @@ const handleSelectionChange = (selection: DimensionRecordVO[]) => {
 };
 
 const handleAdd = () => {
-  if (isVendorOnly.value) return;
+  if (!isEditable.value) return;
   reset();
   dialog.visible = true;
   dialog.title = `新增${page.value?.title ?? ''}`;
 };
 
 const openSheetDrawer = () => {
-  if (isVendorOnly.value) return;
+  if (!isEditable.value) return;
   sheetDrawer.visible = true;
 };
 
+const openUploadDialog = () => {
+  if (!isEditable.value) return;
+  uploadDialog.visible = true;
+};
+
+const downloadDimensionTemplate = () => {
+  if (!isEditable.value || !page.value) return;
+  downloadXlsxTemplate({
+    fileName: `${routeKey.value}_dimension_template_${new Date().getTime()}.xlsx`,
+    sheetName: page.value.title,
+    headers: sheetColumns.value.map((column) => column.label)
+  });
+};
+
 const handleUpdate = async (row?: DimensionRecordVO) => {
-  if (isVendorOnly.value) return;
+  if (!isEditable.value) return;
   reset();
   const id = row?.id || ids.value[0];
-  const res = await getDimensionRecord(id);
+  const res = await getDimensionRecord(id, routeKey.value);
   Object.assign(form.value, res.data);
   dialog.visible = true;
   dialog.title = `修改${page.value?.title ?? ''}`;
 };
 
 const submitForm = () => {
-  if (isVendorOnly.value) return;
+  if (!isEditable.value) return;
   dimensionFormRef.value?.validate(async (valid: boolean) => {
     if (!valid) return;
     buttonLoading.value = true;
@@ -671,8 +957,8 @@ const submitForm = () => {
   });
 };
 
-const saveSheetRows = async (rows: Record<string, any>[]) => {
-  if (isVendorOnly.value) return;
+const persistDimensionRows = async (rows: Record<string, any>[], successMessage: string) => {
+  if (!isEditable.value) return;
   sheetSaving.value = true;
   try {
     for (const row of rows) {
@@ -688,19 +974,46 @@ const saveSheetRows = async (rows: Record<string, any>[]) => {
         await addDimensionRecord(payload);
       }
     }
-    proxy?.$modal.msgSuccess('在线填报已保存');
-    sheetDrawer.visible = false;
+    proxy?.$modal.msgSuccess(successMessage);
     await getList();
   } finally {
     sheetSaving.value = false;
   }
 };
 
+const saveSheetRows = async (rows: Record<string, any>[]) => {
+  await persistDimensionRows(rows, '在线填报已保存');
+  sheetDrawer.visible = false;
+};
+
+const parseDimensionUploadFile = async (file: UploadRawFile) => {
+  if (!isEditable.value) return false;
+  if (!file.name.toLowerCase().endsWith('.xlsx')) {
+    ElMessage.warning('请选择 .xlsx 文件');
+    return false;
+  }
+  uploadParsing.value = true;
+  try {
+    const rows = await parseXlsxRows(file);
+    if (!rows.length) {
+      ElMessage.warning('文件解析完成，但没有可导入的数据行');
+      return false;
+    }
+    await persistDimensionRows(rows, 'Excel 上传已导入');
+    uploadDialog.visible = false;
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'Excel 文件解析失败');
+  } finally {
+    uploadParsing.value = false;
+  }
+  return false;
+};
+
 const handleDelete = async (row?: DimensionRecordVO) => {
-  if (isVendorOnly.value) return;
+  if (!isEditable.value) return;
   const targetIds = row?.id || ids.value;
   await proxy?.$modal.confirm(`是否确认删除编号为 "${targetIds}" 的数据项？`);
-  await delDimensionRecord(targetIds);
+  await delDimensionRecord(targetIds, routeKey.value);
   proxy?.$modal.msgSuccess('删除成功');
   await getList();
 };
