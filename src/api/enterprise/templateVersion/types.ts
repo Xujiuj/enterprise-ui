@@ -1,14 +1,11 @@
 export interface TemplateVersionVO {
   id: string | number;
-  versionCode?: string;
-  versionName?: string;
-  sourceDir?: string;
-  workbookCount?: number;
-  sheetCount?: number;
-  fieldCount?: number;
+  templateId?: string | number;
+  templateCode?: string;
+  templateName?: string;
+  version?: string;
+  versionNo?: string;
   status?: string;
-  importedBy?: string;
-  importedTime?: string;
   remark?: string;
   createTime?: string;
   updateTime?: string;
@@ -16,8 +13,11 @@ export interface TemplateVersionVO {
 }
 
 export interface TemplateVersionQuery extends PageQuery {
-  versionCode?: string;
-  versionName?: string;
+  templateId?: string | number;
+  templateCode?: string;
+  templateName?: string;
+  version?: string;
+  versionNo?: string;
   status?: string;
   params?: any;
 }
