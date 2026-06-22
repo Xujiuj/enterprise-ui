@@ -4,7 +4,7 @@
       <section class="page-head">
         <div>
           <h1>{{ page.title }}</h1>
-          <p>{{ page.stage }} / {{ page.owner }} / {{ page.mode }}</p>
+          <p>{{ page.stage }} / {{ page.owner }} / {{ page.mode }} / {{ dimensionTemplateSourceText }}</p>
         </div>
       </section>
 
@@ -58,7 +58,7 @@
           <el-table-column :label="page.nameLabel" align="center" prop="recordName" min-width="180" :show-overflow-tooltip="true" />
           <el-table-column v-if="page.showParent" label="上级编码" align="center" prop="parentCode" min-width="140" />
           <el-table-column
-            v-for="field in page.fields"
+            v-for="field in effectiveFields"
             :key="field.prop"
             :label="field.label"
             align="center"
@@ -99,7 +99,7 @@
           <el-form-item v-if="page.showParent" label="上级编码" prop="parentCode">
             <el-input v-model="form.parentCode" placeholder="请输入上级编码" />
           </el-form-item>
-          <el-form-item v-for="field in page.fields" :key="field.prop" :label="field.label" :prop="field.prop">
+          <el-form-item v-for="field in effectiveFields" :key="field.prop" :label="field.label" :prop="field.prop">
             <el-select v-if="field.options" v-model="form[field.prop]" :placeholder="`请选择${field.label}`" clearable class="w-full">
               <el-option v-for="item in field.options" :key="item" :label="item" :value="item" />
             </el-select>
@@ -167,6 +167,10 @@ import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { DimensionRecordForm, DimensionRecordQuery, DimensionRecordVO } from '@/api/enterprise/dimensionRecord/types';
 import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
 import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
+import { listTemplateField } from '@/api/enterprise/templateField';
+import type { TemplateFieldVO } from '@/api/enterprise/templateField/types';
+import { listTemplateSheet } from '@/api/enterprise/templateSheet';
+import type { TemplateSheetVO } from '@/api/enterprise/templateSheet/types';
 
 type FieldProp = 'field01' | 'field02' | 'field03' | 'field04' | 'field05' | 'field06';
 
@@ -450,6 +454,39 @@ const routeKey = computed(() => {
 });
 const page = computed(() => dimensionPages[routeKey.value]);
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
+const selectedDimensionSheet = ref<TemplateSheetVO>();
+const dimensionTemplateFields = ref<TemplateFieldVO[]>([]);
+const dimensionSheetMatchers: Record<string, (sheet: TemplateSheetVO) => boolean> = {
+  'admin-division': (sheet) => sheet.targetTableCode === '101',
+  company: (sheet) => sheet.targetTableCode === '102',
+  'emission-source-category': (sheet) => sheet.targetTableCode === '103',
+  'emission-source': (sheet) => String(sheet.targetTableCode ?? '').startsWith('104_'),
+  'base-year': (sheet) => sheet.targetTableCode === '106',
+  'ef-factor': (sheet) => sheet.targetTableCode === '201ef',
+  'green-electricity-data': (sheet) => String(sheet.targetTableCode ?? '').startsWith('401'),
+  'intensity-denominator': (sheet) => sheet.targetTableCode === '501',
+  'denominator-fact': (sheet) => String(sheet.targetTableCode ?? '').startsWith('503_')
+};
+const dimensionTemplateSourceText = computed(() => {
+  const sheet = selectedDimensionSheet.value;
+  return sheet ? `字段来源 ${sheet.sheetName ?? sheet.targetTableCode}` : '字段来源 固定业务字段';
+});
+const effectiveFields = computed<FieldConfig[]>(() => {
+  const baseFields = page.value?.fields ?? [];
+  if (!dimensionTemplateFields.value.length) {
+    return baseFields;
+  }
+  const labels = dimensionTemplateFields.value
+    .slice()
+    .sort((a, b) => Number(a.fieldOrder ?? 0) - Number(b.fieldOrder ?? 0))
+    .slice(2, 8)
+    .map((field) => field.originalFieldName)
+    .filter((label): label is string => Boolean(label));
+  return baseFields.map((field, index) => ({
+    ...field,
+    label: labels[index] ?? field.label
+  }));
+});
 const sheetColumns = computed<SpreadsheetColumn[]>(() => {
   if (!page.value) return [];
   const columns: SpreadsheetColumn[] = [
@@ -459,7 +496,7 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
   if (page.value.showParent) {
     columns.push({ prop: 'parentCode', label: '上级编码', width: 150 });
   }
-  page.value.fields.forEach((field) => {
+  effectiveFields.value.forEach((field) => {
     columns.push({
       prop: field.prop,
       label: field.label,
@@ -623,6 +660,24 @@ const resetQuery = () => {
   getList();
 };
 
+const loadDimensionTemplateFields = async () => {
+  selectedDimensionSheet.value = undefined;
+  dimensionTemplateFields.value = [];
+  const matcher = dimensionSheetMatchers[routeKey.value];
+  if (!matcher) {
+    return;
+  }
+  const sheetRes = await listTemplateSheet({ templateVersionId: 1 });
+  const sheets = ((sheetRes as any).rows ?? sheetRes.data ?? []) as TemplateSheetVO[];
+  const sheet = sheets.find(matcher);
+  selectedDimensionSheet.value = sheet;
+  if (!sheet?.id) {
+    return;
+  }
+  const fieldRes = await listTemplateField({ sheetId: sheet.id });
+  dimensionTemplateFields.value = ((fieldRes as any).rows ?? fieldRes.data ?? []) as TemplateFieldVO[];
+};
+
 const handleSelectionChange = (selection: DimensionRecordVO[]) => {
   ids.value = selection.map((item) => item.id);
   multiple.value = !selection.length;
@@ -709,6 +764,7 @@ watch(
   () => routeKey.value,
   () => {
     resetQuery();
+    void loadDimensionTemplateFields();
   },
   { immediate: true }
 );

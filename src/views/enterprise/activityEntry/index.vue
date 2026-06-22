@@ -116,9 +116,7 @@
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="数据来源" prop="dataSource">
-              <el-select v-model="form.dataSource" class="w-full" clearable filterable :disabled="formDrawer.readonly">
-                <el-option v-for="option in dataSourceOptions" :key="option.value" :label="option.label" :value="option.value" />
-              </el-select>
+              <el-input v-model="form.dataSource" maxlength="64" clearable :disabled="formDrawer.readonly" />
             </el-form-item>
           </el-col>
           <el-col :xs="24">
@@ -219,13 +217,34 @@
     </el-dialog>
 
     <el-drawer v-model="sheetDrawer.open" title="排放活动数据在线填报" size="94%" append-to-body destroy-on-close>
+      <div class="sheet-source-panel">
+        <div class="sheet-source-copy">
+          <strong>{{ selectedActivitySheet?.sheetName ?? '未加载客户模板' }}</strong>
+          <span>{{ activitySheetSourceText }}</span>
+        </div>
+        <el-select
+          v-model="selectedSheetId"
+          class="sheet-source-select"
+          filterable
+          :loading="templateFieldLoading"
+          placeholder="选择客户活动数据表"
+          @change="handleActivitySheetChange"
+        >
+          <el-option
+            v-for="sheet in activityTemplateSheets"
+            :key="String(sheet.id)"
+            :label="activitySheetOptionLabel(sheet)"
+            :value="sheet.id"
+          />
+        </el-select>
+      </div>
       <SpreadsheetEditor
-        title="sheet_656"
+        :title="selectedActivitySheet?.sheetName ?? '排放活动数据'"
         :columns="sheetColumns"
         :rows="sheetRows"
         :empty-row="sheetEmptyRow"
         :saving="sheetSaving"
-        hint="字段名称严格保持 sheet_656 原始表头。维度字段通过排放源下拉选择，保存前会调用服务端校验并自动带出公司、分类、单位和因子。"
+        :hint="activitySheetHint"
         @save="saveSheetRows"
       />
     </el-drawer>
@@ -241,6 +260,10 @@ import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
 import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
+import { listTemplateField } from '@/api/enterprise/templateField';
+import type { TemplateFieldVO } from '@/api/enterprise/templateField/types';
+import { listTemplateSheet } from '@/api/enterprise/templateSheet';
+import type { TemplateSheetVO } from '@/api/enterprise/templateSheet/types';
 import {
   importLocalSheet656Activity,
   listLocalActivityData,
@@ -269,37 +292,9 @@ interface ActivityEntryForm {
   remark?: string;
 }
 
-type DerivedValueMap = Record<string, string>;
+type DerivedValueMap = Record<string, string | number | undefined>;
 
 const route = useRoute();
-
-const FIELD_DESCRIPTORS: Sheet656FieldDescriptor[] = [
-  {
-    fieldOrder: 1,
-    sourceColumnCode: 'f001',
-    sourceColumnName: 'PK_排放源识别编号',
-    sourceRequired: false,
-    rowValueRequired: true,
-    derivedField: false
-  },
-  { fieldOrder: 2, sourceColumnCode: 'f002', sourceColumnName: 'FK_公司编号', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 3, sourceColumnCode: 'f003', sourceColumnName: '公司名称', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 4, sourceColumnCode: 'f004', sourceColumnName: '工厂', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 5, sourceColumnCode: 'f005', sourceColumnName: 'FK_排放源分类', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 6, sourceColumnCode: 'f006', sourceColumnName: '范围', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 7, sourceColumnCode: 'f007', sourceColumnName: '范围子类别', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 8, sourceColumnCode: 'f008', sourceColumnName: '排放源识别', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 9, sourceColumnCode: 'f009', sourceColumnName: '排放源', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 10, sourceColumnCode: 'f010', sourceColumnName: '单位', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 11, sourceColumnCode: 'f011', sourceColumnName: '年度', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 12, sourceColumnCode: 'f012', sourceColumnName: '月份', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 13, sourceColumnCode: 'f013', sourceColumnName: '日期', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 14, sourceColumnCode: 'f014', sourceColumnName: '活动数据', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 15, sourceColumnCode: 'f015', sourceColumnName: '负责部门', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 16, sourceColumnCode: 'f016', sourceColumnName: '数据来源', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 17, sourceColumnCode: 'f017', sourceColumnName: '备注', sourceRequired: false, rowValueRequired: false, derivedField: false },
-  { fieldOrder: 18, sourceColumnCode: 'f018', sourceColumnName: 'FK_排放因子', sourceRequired: false, rowValueRequired: false, derivedField: true }
-];
 
 const queryFormRef = ref<FormInstance>();
 const activityFormRef = ref<FormInstance>();
@@ -310,9 +305,13 @@ const validating = ref(false);
 const saving = ref(false);
 const uploadParsing = ref(false);
 const uploadImporting = ref(false);
+const templateFieldLoading = ref(false);
 const total = ref(0);
 const activityList = ref<ActivityDataVO[]>([]);
 const emissionSources = ref<EmissionSourceVO[]>([]);
+const activityTemplateSheets = ref<TemplateSheetVO[]>([]);
+const templateFields = ref<TemplateFieldVO[]>([]);
+const selectedSheetId = ref<string | number>();
 const manualValidation = ref<Sheet656ImportValidationResult>();
 const uploadValidation = ref<Sheet656ImportValidationResult>();
 const manualResolvedDerivedValues = ref<DerivedValueMap>({});
@@ -351,16 +350,40 @@ const form = reactive<ActivityEntryForm>({
   remark: undefined
 });
 
-const dataSourceOptions = [
-  { label: '发票/结算单', value: 'invoice' },
-  { label: '仪表/计量系统', value: 'meter' },
-  { label: 'ERP/MES 系统', value: 'erp_mes' },
-  { label: '台账记录', value: 'ledger' },
-  { label: '供应商证明', value: 'supplier_evidence' },
-  { label: '其他原始凭证', value: 'other_evidence' }
-];
+const isActivityRequiredField = (fieldName: string) => ['PK_排放源识别编号', '年度', '月份', '日期', '活动数据', '负责部门', '数据来源'].includes(fieldName);
+const isActivityDerivedField = (fieldName: string) =>
+  ['FK_公司编号', '公司名称', '工厂', 'FK_排放源分类', '范围', '范围子类别', '排放源识别', '排放源', '单位', 'FK_排放因子'].includes(fieldName);
+const templateFieldDescriptors = computed<Sheet656FieldDescriptor[]>(() =>
+  templateFields.value
+    .slice()
+    .sort((a, b) => Number(a.fieldOrder ?? 0) - Number(b.fieldOrder ?? 0))
+    .map((field, index) => {
+      const sourceColumnCode = field.targetColumnCode || `f${String(index + 1).padStart(3, '0')}`;
+      const sourceColumnName = field.originalFieldName || sourceColumnCode;
+      return {
+        fieldOrder: Number(field.fieldOrder ?? index + 1),
+        sourceColumnCode,
+        sourceColumnName,
+        sourceRequired: field.requiredFlag === true,
+        rowValueRequired: isActivityRequiredField(sourceColumnName),
+        derivedField: isActivityDerivedField(sourceColumnName)
+      };
+    })
+);
+const activeFieldDescriptors = computed<Sheet656FieldDescriptor[]>(() => templateFieldDescriptors.value);
+const selectedActivitySheet = computed(() => activityTemplateSheets.value.find((sheet) => String(sheet.id) === String(selectedSheetId.value)));
+const activitySheetSourceText = computed(() => {
+  const sheet = selectedActivitySheet.value;
+  if (!sheet) return '字段来源：企业端模板字段接口，当前未匹配到活动数据 Sheet。';
+  return `字段来源：${sheet.sourceGroup ?? '-'} / ${sheet.sheetName ?? '-'}，${sheet.fieldCount ?? activeFieldDescriptors.value.length} 个字段`;
+});
+const activitySheetHint = computed(() =>
+  selectedActivitySheet.value
+    ? '字段来自客户资料模板接口。维度字段通过排放源下拉选择，保存前调用服务端校验并自动带出公司、分类、单位和因子。'
+    : '未加载到客户活动数据字段，请确认企业端模板种子已导入。'
+);
 const sheetColumns = computed<SpreadsheetColumn[]>(() =>
-  FIELD_DESCRIPTORS.map((field) => {
+  activeFieldDescriptors.value.map((field) => {
     if (field.sourceColumnCode === 'f001') {
       return {
         prop: field.sourceColumnCode,
@@ -394,10 +417,8 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
       return {
         prop: field.sourceColumnCode,
         label: field.sourceColumnName,
-        type: 'select',
         required: true,
-        width: 170,
-        options: dataSourceOptions
+        width: 170
       };
     }
     return {
@@ -424,7 +445,7 @@ const sheetRows = computed(() =>
   })
 );
 const sheetEmptyRow = computed(() =>
-  FIELD_DESCRIPTORS.reduce<Record<string, string | number | undefined>>((row, field) => {
+  activeFieldDescriptors.value.reduce<Record<string, string | number | undefined>>((row, field) => {
     row[field.sourceColumnCode] = undefined;
     return row;
   }, {})
@@ -466,7 +487,7 @@ const uploadStatusText = computed(() => {
 
 const sourceLabel = (source: EmissionSourceVO) => [source.sourceCode, source.sourceName].filter(Boolean).join(' / ');
 const isBlockingIssue = (issue: Sheet656ValidationIssue) => issue.severity === 'ERROR';
-const valueToString = (value?: string | number) => (value === undefined || value === null ? '' : String(value));
+const valueToString = (value?: string | number | boolean | null) => (value === undefined || value === null ? '' : String(value));
 const firstQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
 const splitPeriod = (period?: string) => {
   const [year, month] = (period ?? '').split('-');
@@ -509,7 +530,7 @@ const buildFieldValues = (): Sheet656FieldValue[] => {
     ...manualResolvedDerivedValues.value
   };
 
-  return FIELD_DESCRIPTORS.map((field) => ({
+  return activeFieldDescriptors.value.map((field) => ({
     sourceColumnCode: field.sourceColumnCode,
     sourceColumnName: field.sourceColumnName,
     value: values[field.sourceColumnCode] ?? ''
@@ -517,7 +538,7 @@ const buildFieldValues = (): Sheet656FieldValue[] => {
 };
 
 const buildManualValidationRequest = (): Sheet656ImportValidationRequest => ({
-  headerFields: cloneFieldDescriptors(FIELD_DESCRIPTORS),
+  headerFields: cloneFieldDescriptors(activeFieldDescriptors.value),
   rows: [
     {
       rowNumber: 2,
@@ -593,9 +614,9 @@ const openSheetDrawer = () => {
 
 const downloadImportTemplate = () => {
   downloadXlsxTemplate({
-    fileName: `sheet_656_activity_template_${new Date().getTime()}.xlsx`,
-    sheetName: 'sheet_656',
-    headers: FIELD_DESCRIPTORS.map((field) => field.sourceColumnName)
+    fileName: `${selectedActivitySheet.value?.sheetName ?? 'activity'}_template_${new Date().getTime()}.xlsx`,
+    sheetName: selectedActivitySheet.value?.sheetName ?? 'activity',
+    headers: activeFieldDescriptors.value.map((field) => field.sourceColumnName)
   });
 };
 
@@ -747,10 +768,10 @@ const importUploadedRows = async () => {
 };
 
 const buildSheetRowRequest = (rows: Record<string, any>[]): Sheet656ImportValidationRequest => ({
-  headerFields: cloneFieldDescriptors(FIELD_DESCRIPTORS),
+  headerFields: cloneFieldDescriptors(activeFieldDescriptors.value),
   rows: rows.map((row, index) => ({
     rowNumber: index + 2,
-    fieldValues: FIELD_DESCRIPTORS.map((field) => ({
+    fieldValues: activeFieldDescriptors.value.map((field) => ({
       sourceColumnCode: field.sourceColumnCode,
       sourceColumnName: field.sourceColumnName,
       value: valueToString(row[field.sourceColumnCode])
@@ -780,6 +801,38 @@ const saveSheetRows = async (rows: Record<string, any>[]) => {
   } finally {
     sheetSaving.value = false;
   }
+};
+
+const activitySheetOptionLabel = (sheet: TemplateSheetVO) => `${sheet.sheetName ?? sheet.targetTableCode} (${sheet.fieldCount ?? 0}字段)`;
+
+const handleActivitySheetChange = async () => {
+  await loadTemplateFields();
+};
+
+const loadActivityTemplateSheets = async () => {
+  templateFieldLoading.value = true;
+  try {
+    const res = await listTemplateSheet({ templateVersionId: 1 });
+    const rows = ((res as any).rows ?? res.data ?? []) as TemplateSheetVO[];
+    activityTemplateSheets.value = rows
+      .filter((sheet) => sheet.moduleCode === '03-活动数据' && sheet.allowExtension !== false && Number(sheet.fieldCount ?? 0) > 0)
+      .sort((a, b) => String(a.sheetName ?? '').localeCompare(String(b.sheetName ?? ''), 'zh-Hans-CN'));
+    if (!activityTemplateSheets.value.some((sheet) => String(sheet.id) === String(selectedSheetId.value))) {
+      selectedSheetId.value = activityTemplateSheets.value[0]?.id;
+    }
+    await loadTemplateFields();
+  } finally {
+    templateFieldLoading.value = false;
+  }
+};
+
+const loadTemplateFields = async () => {
+  if (!selectedSheetId.value) {
+    templateFields.value = [];
+    return;
+  }
+  const res = await listTemplateField({ sheetId: selectedSheetId.value });
+  templateFields.value = ((res as any).rows ?? res.data ?? []) as TemplateFieldVO[];
 };
 
 const loadEmissionSources = async () => {
@@ -837,6 +890,7 @@ watch(selectedSource, (source) => {
 
 onMounted(async () => {
   applyRouteQuery();
+  await loadActivityTemplateSheets();
   await loadEmissionSources();
   await loadActivities();
 });
@@ -853,6 +907,38 @@ useAutoQuery(queryParams, () => handleQuery());
   .query-month,
   .query-status {
     width: 220px;
+  }
+
+  .sheet-source-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid var(--carbon-soft-line);
+    border-radius: 8px;
+    background: var(--carbon-panel);
+  }
+
+  .sheet-source-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .sheet-source-copy strong {
+    color: var(--carbon-ink);
+  }
+
+  .sheet-source-copy span {
+    color: var(--carbon-muted);
+    font-size: 13px;
+  }
+
+  .sheet-source-select {
+    width: 320px;
+    max-width: 42vw;
   }
 
   .head-actions,
