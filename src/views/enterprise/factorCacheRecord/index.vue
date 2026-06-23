@@ -11,6 +11,7 @@ import {
   listFactorCacheRecord,
   updateFactorCacheRecord
 } from '@/api/enterprise/factorCacheRecord';
+import { FACTOR_TABLE_OPTIONS } from '@/utils/enterpriseFieldOptions';
 
 const enabledOptions = [
   { label: '启用', value: true },
@@ -50,7 +51,7 @@ const config = {
   ],
   searchFields: [
     { prop: 'cacheVersionId', label: '缓存版本ID' },
-    { prop: 'factorTableCode', label: '因子表类型' },
+    { prop: 'factorTableCode', label: '因子表类型', type: 'select', options: FACTOR_TABLE_OPTIONS },
     { prop: 'factorCode', label: '因子编码' },
     { prop: 'factorName', label: '因子名称' },
     { prop: 'factorCategory', label: '因子分类' },

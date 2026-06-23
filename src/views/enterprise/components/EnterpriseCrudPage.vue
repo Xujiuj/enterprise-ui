@@ -12,7 +12,7 @@
         <el-form-item v-for="field in config.searchFields" :key="field.prop" :label="field.label">
           <component :is="controlComponent(field)" v-bind="controlProps(field)" v-model="queryParams[field.prop]" @keyup.enter="handleQuery">
             <template v-if="field.type === 'select'">
-              <el-option v-for="option in field.options ?? []" :key="String(option.value)" :label="option.label" :value="option.value" />
+              <el-option v-for="option in fieldOptions(field)" :key="String(option.value)" :label="option.label" :value="option.value" />
             </template>
           </component>
         </el-form-item>
@@ -114,9 +114,14 @@
     <el-drawer v-model="dialog.visible" :title="dialog.title" size="620px" append-to-body>
       <el-form ref="crudFormRef" :model="form" :rules="rules" label-width="132px">
         <el-form-item v-for="field in config.formFields" :key="field.prop" :label="field.label" :prop="field.required ? field.prop : undefined">
-          <component :is="controlComponent(field)" v-bind="controlProps(field)" v-model="form[field.prop]">
+          <component
+            :is="controlComponent(field)"
+            v-bind="controlProps(field)"
+            v-model="form[field.prop]"
+            @change="(value: CrudValue) => handleFieldChange(field, value)"
+          >
             <template v-if="field.type === 'select'">
-              <el-option v-for="option in field.options ?? []" :key="String(option.value)" :label="option.label" :value="option.value" />
+              <el-option v-for="option in fieldOptions(field)" :key="String(option.value)" :label="option.label" :value="option.value" />
             </template>
           </component>
         </el-form-item>
@@ -174,6 +179,7 @@ type CrudRecord = Record<string, any>;
 interface SelectOption {
   label: string;
   value: string | number | boolean;
+  record?: CrudRecord;
 }
 
 interface FieldConfig {
@@ -181,9 +187,12 @@ interface FieldConfig {
   label: string;
   type?: string;
   options?: SelectOption[];
+  loadOptions?: () => Promise<SelectOption[]>;
+  onChange?: (value: CrudValue, form: CrudRecord, option?: SelectOption) => void;
   required?: boolean;
   placeholder?: string;
   precision?: number;
+  disabled?: boolean;
 }
 
 interface ColumnConfig {
@@ -262,6 +271,7 @@ const queryParams = reactive<CrudRecord>({
 });
 
 const form = ref<CrudRecord>({});
+const dynamicOptions = reactive<Record<string, SelectOption[]>>({});
 const dialog = reactive({
   visible: false,
   title: ''
@@ -330,6 +340,23 @@ const visibleColumns = computed(() => {
 const resetForm = () => {
   form.value = { ...props.config.emptyForm };
   crudFormRef.value?.resetFields();
+};
+
+const fieldOptions = (field: FieldConfig) => field.options ?? dynamicOptions[field.prop] ?? [];
+
+const loadFieldOptions = async () => {
+  const fields = [...props.config.searchFields, ...props.config.formFields];
+  const uniqueLoaders = new Map<string, () => Promise<SelectOption[]>>();
+  fields.forEach((field) => {
+    if (field.loadOptions) {
+      uniqueLoaders.set(field.prop, field.loadOptions);
+    }
+  });
+  await Promise.all(
+    Array.from(uniqueLoaders.entries()).map(async ([prop, loader]) => {
+      dynamicOptions[prop] = await loader();
+    })
+  );
 };
 
 const resetExtensionValues = () => {
@@ -407,6 +434,14 @@ const handleUpdate = async (row: CrudRecord) => {
   dialog.title = `编辑${props.config.title}`;
 };
 
+const handleFieldChange = (field: FieldConfig, value: CrudValue) => {
+  if (!field.onChange) {
+    return;
+  }
+  const option = fieldOptions(field).find((item) => item.value === value);
+  field.onChange(value, form.value, option);
+};
+
 const resolveSavedRecordId = (response: unknown, fallback?: string | number) => {
   const payload = response as { data?: unknown; id?: string | number };
   const data = payload?.data;
@@ -481,6 +516,9 @@ const controlComponent = (field: FieldConfig) => {
   if (field.type === 'date') {
     return ElDatePicker;
   }
+  if (field.type === 'month') {
+    return ElDatePicker;
+  }
   if (field.type === 'textarea') {
     return ElInput;
   }
@@ -494,21 +532,24 @@ const controlProps = (field: FieldConfig) => {
   const isSelectionField = field.type === 'select' || field.type === 'date';
   const placeholder = field.placeholder ?? (isSelectionField ? `请选择${field.label}` : `请输入${field.label}`);
   if (field.type === 'number') {
-    return { placeholder, min: 0, precision: field.precision ?? 2, controlsPosition: 'right', class: 'w-full' };
+    return { placeholder, min: 0, precision: field.precision ?? 2, controlsPosition: 'right', class: 'w-full', disabled: field.disabled };
   }
   if (field.type === 'select') {
-    return { placeholder, clearable: true, class: 'w-full' };
+    return { placeholder, clearable: true, filterable: true, class: 'w-full', disabled: field.disabled };
   }
   if (field.type === 'date') {
-    return { placeholder, type: 'date', valueFormat: 'YYYY-MM-DD', class: 'w-full' };
+    return { placeholder, type: 'date', valueFormat: 'YYYY-MM-DD', class: 'w-full', disabled: field.disabled };
+  }
+  if (field.type === 'month') {
+    return { placeholder, type: 'month', valueFormat: 'YYYY-MM', class: 'w-full', disabled: field.disabled };
   }
   if (field.type === 'textarea') {
-    return { placeholder, type: 'textarea', rows: 3, maxlength: 300, showWordLimit: true };
+    return { placeholder, type: 'textarea', rows: 3, maxlength: 300, showWordLimit: true, disabled: field.disabled };
   }
   if (field.type === 'switch') {
-    return { activeValue: true, inactiveValue: false };
+    return { activeValue: true, inactiveValue: false, disabled: field.disabled };
   }
-  return { placeholder, clearable: true, class: 'w-full' };
+  return { placeholder, clearable: true, class: 'w-full', disabled: field.disabled };
 };
 
 const extensionFieldKey = (field: ExtensionFieldVO) => String(field.id);
@@ -694,6 +735,7 @@ onMounted(async () => {
   syncColumnOptions();
   resetForm();
   applyRouteQueryParams();
+  await loadFieldOptions();
   await loadExtensionFields();
   getList();
 });

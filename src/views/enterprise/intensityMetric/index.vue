@@ -23,8 +23,8 @@ const config = {
   description: '维护客户样例口径的碳排放强度指标结果，分母数据来自强度分母事实表。',
   permissionPrefix: 'enterprise:intensityMetric',
   extension: {
-    moduleCode: 'intensity_denominator',
-    ownerTableCode: 'ce_intensity_denominator_fact'
+    moduleCode: 'intensity_denominator' as const,
+    ownerTableCode: 'ce_intensity_denominator_fact' as const
   },
   columns: [
     { prop: 'metricCode', label: '指标编码', minWidth: 150 },

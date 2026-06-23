@@ -11,7 +11,7 @@ import {
 
 export interface LocalListResponse<T> {
   rows?: T[];
-  total?: number;
+  total?: number | string;
   data?: T[];
 }
 

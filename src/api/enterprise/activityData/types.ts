@@ -64,6 +64,8 @@ export interface ActivityDataQuery extends PageQuery {
   sourceCategoryKey?: string;
   scopeName?: string;
   activityUnit?: string;
+  responsibleDept?: string;
+  dataSource?: string;
   activityYear?: number;
   activityMonth?: number;
   dataStatus?: string;

@@ -64,6 +64,8 @@ export interface GreenPowerCertificateQuery extends PageQuery {
   issuingOrg?: string;
   powerGridRegion?: string;
   offsetPowerSource?: string;
+  dataSource?: string;
+  factorKey?: string;
   proofStatus?: string;
   params?: any;
 }

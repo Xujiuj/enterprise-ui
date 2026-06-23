@@ -7,8 +7,38 @@
             <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceIdentificationCode" />
           </el-select>
         </el-form-item>
+        <el-form-item label="公司" prop="companyCode">
+          <el-select v-model="queryParams.companyCode" clearable filterable class="query-medium">
+            <el-option v-for="option in companyOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="工厂" prop="factoryName">
+          <el-select v-model="queryParams.factoryName" clearable filterable class="query-medium">
+            <el-option v-for="option in factoryOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="排放源分类" prop="sourceCategoryKey">
+          <el-select v-model="queryParams.sourceCategoryKey" clearable filterable class="query-medium">
+            <el-option v-for="option in sourceCategoryOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="活动期间">
           <el-date-picker v-model="selectedQueryPeriod" type="month" value-format="YYYY-MM" class="query-month" @change="handleQueryPeriodChange" />
+        </el-form-item>
+        <el-form-item label="活动单位" prop="activityUnit">
+          <el-select v-model="queryParams.activityUnit" clearable filterable class="query-medium">
+            <el-option v-for="option in activityUnitOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="负责部门" prop="responsibleDept">
+          <el-select v-model="queryParams.responsibleDept" clearable filterable class="query-medium">
+            <el-option v-for="option in deptOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="数据来源" prop="dataSource">
+          <el-select v-model="queryParams.dataSource" clearable filterable class="query-medium">
+            <el-option v-for="option in DATA_SOURCE_OPTIONS" :key="String(option.value)" :label="option.label" :value="option.value" />
+          </el-select>
         </el-form-item>
         <el-form-item label="数据状态" prop="dataStatus">
           <el-select v-model="queryParams.dataStatus" clearable class="query-status">
@@ -153,12 +183,16 @@
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="负责部门" prop="responsibleDept">
-              <el-input v-model="form.responsibleDept" maxlength="64" clearable :disabled="formDrawer.readonly" />
+              <el-select v-model="form.responsibleDept" clearable filterable class="w-full" :disabled="formDrawer.readonly">
+                <el-option v-for="option in deptOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="数据来源" prop="dataSource">
-              <el-input v-model="form.dataSource" maxlength="64" clearable :disabled="formDrawer.readonly" />
+              <el-select v-model="form.dataSource" clearable filterable class="w-full" :disabled="formDrawer.readonly">
+                <el-option v-for="option in DATA_SOURCE_OPTIONS" :key="String(option.value)" :label="option.label" :value="option.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24">
@@ -289,6 +323,7 @@ import {
   saveLocalSheet656Activity,
   validateLocalSheet656Activity
 } from '@/api/enterprise/activityEntry';
+import { DATA_SOURCE_OPTIONS, loadDeptOptions, loadDimensionOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
 import type { ActivityDataQuery, ActivityDataVO } from '@/api/enterprise/activityData/types';
 import type { EmissionSourceVO } from '@/api/enterprise/emissionSource/types';
 import type {
@@ -360,6 +395,10 @@ const uploadImporting = ref(false);
 const total = ref(0);
 const activityList = ref<ActivityDataVO[]>([]);
 const emissionSources = ref<EmissionSourceVO[]>([]);
+const companyOptions = ref<SelectOption[]>([]);
+const factoryOptions = ref<SelectOption[]>([]);
+const sourceCategoryOptions = ref<SelectOption[]>([]);
+const deptOptions = ref<SelectOption[]>([]);
 const manualValidation = ref<Sheet656ImportValidationResult>();
 const uploadValidation = ref<Sheet656ImportValidationResult>();
 const manualResolvedDerivedValues = ref<DerivedValueMap>({});
@@ -386,6 +425,12 @@ const queryParams = reactive<ActivityDataQuery>({
   pageNum: 1,
   pageSize: 10,
   sourceIdentificationCode: undefined,
+  companyCode: undefined,
+  factoryName: undefined,
+  sourceCategoryKey: undefined,
+  activityUnit: undefined,
+  responsibleDept: undefined,
+  dataSource: undefined,
   activityYear: undefined,
   activityMonth: undefined,
   dataStatus: undefined
@@ -464,6 +509,26 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         width: 150
       };
     }
+    if (field.sourceColumnCode === 'f015') {
+      return {
+        prop: field.sourceColumnCode,
+        label: field.sourceColumnName,
+        type: 'select',
+        required: field.rowValueRequired,
+        options: deptOptions.value,
+        width: 170
+      };
+    }
+    if (field.sourceColumnCode === 'f016') {
+      return {
+        prop: field.sourceColumnCode,
+        label: field.sourceColumnName,
+        type: 'select',
+        required: field.rowValueRequired,
+        options: DATA_SOURCE_OPTIONS,
+        width: 160
+      };
+    }
     return {
       prop: field.sourceColumnCode,
       label: field.sourceColumnName,
@@ -506,11 +571,15 @@ const rules: FormRules<ActivityEntryForm> = {
   selectedPeriod: [{ required: true, message: '请选择活动期间', trigger: 'change' }],
   date: [{ required: true, message: '请选择日期', trigger: 'change' }],
   activityValue: [{ required: true, message: '请输入活动数据', trigger: 'blur' }],
-  responsibleDept: [{ required: true, message: '请输入负责部门', trigger: 'blur' }],
+  responsibleDept: [{ required: true, message: '请选择负责部门', trigger: 'change' }],
   dataSource: [{ required: true, message: '请选择数据来源', trigger: 'change' }]
 };
 
 const selectedSource = computed(() => emissionSources.value.find((source) => source.sourceIdentificationCode === form.sourceIdentificationCode));
+const activityUnitOptions = computed<SelectOption[]>(() => {
+  const units = new Set(sourceCategoryOptions.value.map((option) => (option.record as Record<string, any> | undefined)?.field02).filter(Boolean) as string[]);
+  return Array.from(units).map((unit) => ({ label: unit, value: unit }));
+});
 const manualIssues = computed(() => collectIssues(manualValidation.value));
 const manualBlockingIssues = computed(() => manualIssues.value.filter((issue) => isBlockingIssue(issue)));
 const manualWarningIssues = computed(() => manualIssues.value.filter((issue) => !isBlockingIssue(issue)));
@@ -941,7 +1010,7 @@ const loadActivities = async () => {
   try {
     const res = await listLocalActivityData(queryParams);
     activityList.value = (res.rows ?? res.data ?? []) as ActivityDataVO[];
-    total.value = res.total ?? activityList.value.length;
+    total.value = Number(res.total ?? activityList.value.length);
   } finally {
     listLoading.value = false;
   }
@@ -958,6 +1027,30 @@ const resetQuery = () => {
   applyPeriodToQuery(undefined);
   queryParams.pageNum = 1;
   loadActivities();
+};
+
+const loadControlledOptions = async () => {
+  const [companies, sourceCategories, departments] = await Promise.all([
+    loadDimensionOptions('company'),
+    loadDimensionOptions('emission-source-category'),
+    loadDeptOptions()
+  ]);
+  companyOptions.value = companies;
+  factoryOptions.value = companies
+    .map((option) => {
+      const record = option.record as Record<string, any> | undefined;
+      const factoryName = record?.field02 || record?.recordName;
+      return factoryName
+        ? {
+            label: [record?.recordCode, factoryName].filter(Boolean).join(' / '),
+            value: factoryName,
+            record
+          }
+        : undefined;
+    })
+    .filter(Boolean) as SelectOption[];
+  sourceCategoryOptions.value = sourceCategories;
+  deptOptions.value = departments;
 };
 
 watch(
@@ -992,7 +1085,7 @@ watch(selectedSource, (source) => {
 
 onMounted(async () => {
   applyRouteQuery();
-  await loadEmissionSources();
+  await Promise.all([loadEmissionSources(), loadControlledOptions()]);
   await loadActivities();
 });
 
@@ -1006,7 +1099,8 @@ useAutoQuery(queryParams, () => handleQuery());
   }
 
   .query-month,
-  .query-status {
+  .query-status,
+  .query-medium {
     width: 220px;
   }
 
