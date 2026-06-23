@@ -17,12 +17,12 @@
           </el-select>
         </el-form-item>
           <div class="search-actions">
-            <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="loadActivities" />
+            <right-toolbar v-model:showSearch="showSearch" :columns="activityColumnOptions" :gutter="0" @query-table="loadActivities" />
           </div>
       </el-form>
       <div class="search-bar search-bar-collapsed" v-show="!showSearch">
         <div class="search-actions">
-          <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="loadActivities" />
+          <right-toolbar v-model:showSearch="showSearch" :columns="activityColumnOptions" :gutter="0" @query-table="loadActivities" />
         </div>
       </div>
     </section>
@@ -39,7 +39,7 @@
 
       <el-table v-loading="listLoading" :data="activityList" border>
         <el-table-column
-          v-for="column in activityTableColumns"
+          v-for="column in visibleActivityTableColumns"
           :key="column.prop"
           :prop="column.prop"
           :label="column.label"
@@ -421,6 +421,18 @@ const activityTableColumns: ActivityTableColumn[] = [
   { prop: 'sourceRemark', label: '备注', minWidth: 160 },
   { prop: 'factorKey', label: 'FK_排放因子', width: 130 }
 ];
+const activityColumnOptions = ref<FieldOption[]>(
+  activityTableColumns.map((column) => ({
+    key: String(column.prop),
+    label: column.label,
+    visible: true,
+    children: []
+  }))
+);
+const visibleActivityTableColumns = computed(() => {
+  const hiddenKeys = new Set(activityColumnOptions.value.filter((item) => !item.visible).map((item) => String(item.key)));
+  return activityTableColumns.filter((column) => !hiddenKeys.has(String(column.prop)));
+});
 const sheetColumns = computed<SpreadsheetColumn[]>(() =>
   FIELD_DESCRIPTORS.map((field) => {
     if (field.sourceColumnCode === 'f001') {

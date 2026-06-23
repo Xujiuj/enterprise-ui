@@ -10,7 +10,7 @@ declare global {
    * 界面字段隐藏属性
    */
   declare interface FieldOption {
-    key: number;
+    key: string | number;
     label: string;
     visible: boolean;
     children?: Array<FieldOption>;

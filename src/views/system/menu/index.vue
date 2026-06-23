@@ -341,7 +341,7 @@ const initFormData = {
   orderNum: 1,
   isFrame: '1',
   isCache: '0',
-  visible: '0',
+  visible: '1',
   status: '0'
 };
 const data = reactive<PageData<MenuForm, MenuQuery>>({

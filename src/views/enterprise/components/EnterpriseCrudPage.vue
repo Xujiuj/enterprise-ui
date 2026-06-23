@@ -17,12 +17,12 @@
           </component>
         </el-form-item>
         <div class="search-actions">
-          <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="getList" />
+          <right-toolbar v-model:showSearch="showSearch" :columns="columnOptions" :gutter="0" @query-table="getList" />
         </div>
       </el-form>
       <div v-show="!showSearch" class="search-bar search-bar-collapsed">
         <div class="search-actions">
-          <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="getList" />
+            <right-toolbar v-model:showSearch="showSearch" :columns="columnOptions" :gutter="0" @query-table="getList" />
         </div>
       </div>
 
@@ -45,7 +45,7 @@
       <el-table v-loading="loading" :data="rows" @selection-change="handleSelectionChange">
         <el-table-column v-if="!config.readonly" type="selection" width="48" align="center" />
         <el-table-column
-          v-for="column in config.columns"
+          v-for="column in visibleColumns"
           :key="column.prop"
           :label="column.label"
           :prop="column.prop"
@@ -151,7 +151,7 @@
 </template>
 
 <script setup name="EnterpriseCrudPage" lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   ElDatePicker,
@@ -302,6 +302,30 @@ const showExtensionFieldsInCrudDrawer = computed(() => extensionEnabled.value &&
 const showReadonlyExtensionAction = computed(() => extensionEnabled.value && Boolean(props.config.readonly) && extensionFields.value.length > 0);
 
 const showActionColumn = computed(() => !props.config.readonly || (props.config.rowActions?.length ?? 0) > 0 || showReadonlyExtensionAction.value);
+
+const columnOptions = ref<FieldOption[]>(
+  props.config.columns.map((column) => ({
+    key: column.prop,
+    label: column.label,
+    visible: true,
+    children: []
+  }))
+);
+
+const syncColumnOptions = () => {
+  const visibleByProp = new Map(columnOptions.value.map((item) => [String(item.key), item.visible]));
+  columnOptions.value = props.config.columns.map((column) => ({
+    key: column.prop,
+    label: column.label,
+    visible: visibleByProp.get(column.prop) ?? true,
+    children: []
+  }));
+};
+
+const visibleColumns = computed(() => {
+  const hiddenKeys = new Set(columnOptions.value.filter((item) => !item.visible).map((item) => String(item.key)));
+  return props.config.columns.filter((column) => !hiddenKeys.has(column.prop));
+});
 
 const resetForm = () => {
   form.value = { ...props.config.emptyForm };
@@ -667,11 +691,18 @@ const resolveActionType = (action: RowActionConfig): any => {
 };
 
 onMounted(async () => {
+  syncColumnOptions();
   resetForm();
   applyRouteQueryParams();
   await loadExtensionFields();
   getList();
 });
+
+watch(
+  () => props.config.columns,
+  () => syncColumnOptions(),
+  { deep: true }
+);
 
 useAutoQuery(queryParams, () => handleQuery());
 
