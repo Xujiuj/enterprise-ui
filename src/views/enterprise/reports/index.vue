@@ -1,10 +1,7 @@
 <template>
   <div class="p-2 enterprise-reports-page">
     <section class="page-head">
-      <div>
-        <h1>Content</h1>
-        <p>按客户提供的 Content.xlsx 展示报表目录、子目录和页面图表。</p>
-      </div>
+      <h1>Content</h1>
       <el-button icon="Refresh" :loading="loading" @click="loadContent">刷新</el-button>
     </section>
 
@@ -17,15 +14,23 @@
           :class="{ active: directory.key === activeDirectoryKey }"
           @click="activeDirectoryKey = directory.key"
         >
-          <span class="directory-no">{{ directory.no }}</span>
-          <span>{{ directory.name }}</span>
+          <span class="directory-no">{{ formatNo(directory.no) }}</span>
+          <span>{{ stripLeadingDirectoryNo(directory.name) }}</span>
         </button>
       </aside>
 
       <main class="content-table">
         <el-table v-loading="loading" :data="activeRows" row-key="id" border>
-          <el-table-column prop="subdirectoryNo" label="子目录序号" width="110" />
-          <el-table-column prop="subdirectoryName" label="子目录" min-width="180" show-overflow-tooltip />
+          <el-table-column label="子目录序号" width="120">
+            <template #default="scope">
+              {{ formatSubdirectoryNo(scope.row) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="子目录" min-width="180" show-overflow-tooltip>
+            <template #default="scope">
+              {{ stripLeadingSubdirectoryNo(scope.row.subdirectoryName) }}
+            </template>
+          </el-table-column>
           <el-table-column label="页面图表" min-width="420">
             <template #default="scope">
               <ul class="chart-list">
@@ -59,6 +64,21 @@ const unwrapRows = (response: { data?: ReportContentVO[]; rows?: ReportContentVO
 };
 
 const directoryKey = (row: ReportContentVO) => `${row.directoryNo ?? ''}-${row.directoryName ?? ''}`;
+
+const formatNo = (value?: number) => (value == null ? '' : String(Number(value)));
+
+const stripLeadingDirectoryNo = (value?: string) => String(value || '-').replace(/^\s*\d+\s*/, '').trim() || '-';
+
+const stripLeadingSubdirectoryNo = (value?: string) => String(value || '-').replace(/^\s*\d+(?:\.\d+)?\s*/, '').trim() || '-';
+
+const formatSubdirectoryNo = (row: ReportContentVO) => {
+  if (row.directoryNo == null || row.subdirectoryNo == null) {
+    return '';
+  }
+  const rawName = String(row.subdirectoryName || '');
+  const match = rawName.match(/^\s*(\d+\.\d+)/);
+  return match?.[1] || `${Number(row.directoryNo)}.${Number(row.subdirectoryNo)}`;
+};
 
 const directories = computed<DirectoryItem[]>(() => {
   const seen = new Map<string, DirectoryItem>();
@@ -115,11 +135,7 @@ onMounted(loadContent);
     margin: 0 0 4px;
     font-size: 22px;
     font-weight: 650;
-  }
-
-  p {
-    margin: 0;
-    color: var(--el-text-color-secondary);
+    margin-bottom: 0;
   }
 }
 

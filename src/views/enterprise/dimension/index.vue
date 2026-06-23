@@ -18,7 +18,7 @@
             <label>{{ page.nameLabel }}</label>
             <el-input v-model="queryParams.recordName" :placeholder="`请输入${page.nameLabel}`" clearable @keyup.enter="handleQuery" />
           </div>
-          <div class="search-item">
+          <div v-if="page.showStatus !== false" class="search-item">
             <label>状态</label>
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
               <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -68,15 +68,15 @@
             :min-width="field.width ?? 140"
             :show-overflow-tooltip="true"
           />
-          <el-table-column label="状态" align="center" prop="status" width="100">
+          <el-table-column v-if="page.showStatus !== false" label="状态" align="center" prop="status" width="100">
             <template #default="scope">
               <span class="tag" :class="scope.row.status === '0' ? 'ok' : 'gray'">
                 {{ statusLabel(scope.row.status) }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="排序" align="center" prop="sortOrder" width="80" />
-          <el-table-column label="备注" align="center" prop="remark" min-width="180" :show-overflow-tooltip="true" />
+          <el-table-column v-if="page.showSort !== false" label="排序" align="center" prop="sortOrder" width="80" />
+          <el-table-column v-if="page.showRemark !== false" label="备注" align="center" prop="remark" min-width="180" :show-overflow-tooltip="true" />
           <el-table-column v-if="isEditable" label="操作" align="center" width="150" fixed="right">
             <template #default="scope">
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['enterprise:dimension:edit']">编辑</el-button>
@@ -116,16 +116,16 @@
             <el-input v-else-if="field.type === 'number'" v-model="form[field.prop]" type="number" :placeholder="`请输入${field.label}`" />
             <el-input v-else v-model="form[field.prop]" :placeholder="`请输入${field.label}`" />
           </el-form-item>
-          <el-form-item label="状态" prop="status">
+          <el-form-item v-if="page.showStatus !== false" label="状态" prop="status">
             <el-radio-group v-model="form.status">
               <el-radio value="0">启用</el-radio>
               <el-radio value="1">停用</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="排序" prop="sortOrder">
+          <el-form-item v-if="page.showSort !== false" label="排序" prop="sortOrder">
             <el-input-number v-model="form.sortOrder" :min="0" controls-position="right" class="w-full" />
           </el-form-item>
-          <el-form-item label="备注" prop="remark">
+          <el-form-item v-if="page.showRemark !== false" label="备注" prop="remark">
             <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
           </el-form-item>
         </el-form>
@@ -221,6 +221,9 @@ interface PageConfig {
   codeLabel: string;
   nameLabel: string;
   showParent?: boolean;
+  showStatus?: boolean;
+  showSort?: boolean;
+  showRemark?: boolean;
   fields: FieldConfig[];
 }
 
@@ -392,12 +395,16 @@ const dimensionPages: Record<string, PageConfig> = {
     owner: '企业',
     mode: '企业维护',
     codeLabel: '分母规则Key',
-    nameLabel: '分母度量名称',
-    showParent: true,
+    nameLabel: '工厂类型',
+    showStatus: false,
+    showSort: false,
+    showRemark: false,
     fields: [
-      { prop: 'field01', label: '工厂类型' },
       { prop: 'field02', label: '分母类型' },
-      { prop: 'field03', label: '强度单位展示' }
+      { prop: 'field03', label: '分母度量名称' },
+      { prop: 'field04', label: '强度单位展示' },
+      { prop: 'field05', label: '是否启用', options: ['是', '否'] },
+      { prop: 'field06', label: '备注', width: 220 }
     ]
   },
   'intensity-target': {
@@ -406,10 +413,12 @@ const dimensionPages: Record<string, PageConfig> = {
     owner: '企业',
     mode: '企业维护',
     codeLabel: '工厂类型',
-    nameLabel: '目标名称',
+    nameLabel: '年份',
+    showStatus: false,
+    showSort: false,
+    showRemark: false,
     fields: [
-      { prop: 'field02', label: '目标年份', type: 'number' },
-      { prop: 'field03', label: '目标值', type: 'number' },
+      { prop: 'field03', label: '强度目标值', type: 'number' },
       { prop: 'field04', label: '单位' }
     ]
   },
@@ -419,16 +428,20 @@ const dimensionPages: Record<string, PageConfig> = {
     owner: '企业',
     mode: '企业填报',
     codeLabel: '工厂编号',
-    nameLabel: '分母度量名称',
+    nameLabel: '工厂名称',
+    showStatus: false,
+    showSort: false,
+    showRemark: false,
     fields: [
-      { prop: 'field01', label: '工厂名称' },
       { prop: 'field02', label: '工厂类型' },
       { prop: 'field03', label: '年份', type: 'number' },
       { prop: 'field04', label: '月份', type: 'number' },
       { prop: 'field05', label: '分母类型' },
+      { prop: 'field06', label: '分母度量名称' },
       { prop: 'field07', label: '分母值', type: 'number' },
       { prop: 'field08', label: '单位' },
-      { prop: 'field09', label: '数据来源' }
+      { prop: 'field09', label: '数据来源' },
+      { prop: 'field10', label: '备注', width: 220 }
     ]
   },
   'intensity-tolerance': {
@@ -438,8 +451,13 @@ const dimensionPages: Record<string, PageConfig> = {
     mode: '企业维护',
     codeLabel: '容忍率Key',
     nameLabel: '行业门类',
+    showStatus: false,
+    showSort: false,
+    showRemark: false,
     fields: [
-      { prop: 'field02', label: '容忍率', type: 'number' }
+      { prop: 'field02', label: '容忍率', type: 'number' },
+      { prop: 'field03', label: '是否启用', options: ['是', '否'] },
+      { prop: 'field04', label: '备注', width: 220 }
     ]
   },
   'report-template-download': {
@@ -514,18 +532,22 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
       precision: field.type === 'number' ? 2 : undefined
     });
   });
-  columns.push(
-    {
+  if (page.value.showStatus !== false) {
+    columns.push({
       prop: 'status',
       label: '状态',
       type: 'select',
       required: true,
       width: 120,
       options: statusOptions
-    },
-    { prop: 'sortOrder', label: '排序', type: 'number', width: 110, min: 0, precision: 0 },
-    { prop: 'remark', label: '备注', width: 220 }
-  );
+    });
+  }
+  if (page.value.showSort !== false) {
+    columns.push({ prop: 'sortOrder', label: '排序', type: 'number', width: 110, min: 0, precision: 0 });
+  }
+  if (page.value.showRemark !== false) {
+    columns.push({ prop: 'remark', label: '备注', width: 220 });
+  }
   return columns;
 });
 

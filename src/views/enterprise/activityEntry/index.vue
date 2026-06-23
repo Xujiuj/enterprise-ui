@@ -38,32 +38,20 @@
       </div>
 
       <el-table v-loading="listLoading" :data="activityList" border>
-        <el-table-column label="排放源" min-width="220" show-overflow-tooltip>
+        <el-table-column
+          v-for="column in activityTableColumns"
+          :key="column.prop"
+          :prop="column.prop"
+          :label="column.label"
+          :width="column.width"
+          :min-width="column.minWidth"
+          :align="column.align"
+          show-overflow-tooltip
+        >
           <template #default="{ row }">
-            {{ activitySourceName(row) }}
+            {{ formatActivityCell(row, column.prop) }}
           </template>
         </el-table-column>
-        <el-table-column label="活动期间" width="120">
-          <template #default="{ row }">
-            {{ formatActivityPeriod(row) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="activityValue" label="活动数据" width="140" align="right">
-          <template #default="{ row }">
-            {{ formatDecimal2(row.activityValue) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="activityUnit" label="单位" width="110" />
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag size="small" :type="row.dataStatus === 'submitted' ? 'success' : 'info'">
-              {{ row.dataStatus === 'submitted' ? '已提交' : '草稿' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="calculatedEmission" label="计算排放量" width="140" align="right" />
-        <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="updateTime" label="更新时间" width="170" />
         <el-table-column label="操作" width="170" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" icon="View" @click="openDetailDrawer(row)">查看</el-button>
@@ -85,10 +73,50 @@
       <el-form ref="activityFormRef" :model="form" :rules="rules" label-width="112px">
         <el-row :gutter="16">
           <el-col :xs="24" :sm="12">
-            <el-form-item label="排放源" prop="sourceIdentificationCode">
+            <el-form-item label="PK_排放源识别编号" prop="sourceIdentificationCode">
               <el-select v-model="form.sourceIdentificationCode" class="w-full" clearable filterable :loading="sourceLoading" :disabled="formDrawer.readonly">
                 <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceIdentificationCode" />
               </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="FK_公司编号">
+              <el-input :model-value="derivedFieldValue('f002')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="公司名称">
+              <el-input :model-value="derivedFieldValue('f003')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="工厂">
+              <el-input :model-value="derivedFieldValue('f004')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="FK_排放源分类">
+              <el-input :model-value="derivedFieldValue('f005')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="范围">
+              <el-input :model-value="derivedFieldValue('f006')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="范围子类别">
+              <el-input :model-value="derivedFieldValue('f007')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="排放源识别">
+              <el-input :model-value="derivedFieldValue('f008')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="排放源">
+              <el-input :model-value="derivedFieldValue('f009')" disabled />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -114,8 +142,13 @@
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="活动单位">
+            <el-form-item label="单位">
               <el-input v-model="derivedActivityUnit" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="FK_排放因子">
+              <el-input :model-value="derivedFieldValue('f018')" disabled />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -125,9 +158,7 @@
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="数据来源" prop="dataSource">
-              <el-select v-model="form.dataSource" class="w-full" clearable filterable :disabled="formDrawer.readonly">
-                <el-option v-for="option in dataSourceOptions" :key="option.value" :label="option.label" :value="option.value" />
-              </el-select>
+              <el-input v-model="form.dataSource" maxlength="64" clearable :disabled="formDrawer.readonly" />
             </el-form-item>
           </el-col>
           <el-col :xs="24">
@@ -243,7 +274,7 @@
 
 <script setup name="EnterpriseActivityEntry" lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue';
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules, type UploadFile, type UploadRawFile } from 'element-plus';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
@@ -279,6 +310,13 @@ interface ActivityEntryForm {
 }
 
 type DerivedValueMap = Record<string, string>;
+type ActivityTableColumn = {
+  prop: keyof ActivityDataVO;
+  label: string;
+  width?: number;
+  minWidth?: number;
+  align?: 'left' | 'center' | 'right';
+};
 
 const route = useRoute();
 
@@ -328,6 +366,7 @@ const manualResolvedDerivedValues = ref<DerivedValueMap>({});
 const parsedUploadRequest = ref<Sheet656ImportValidationRequest>();
 const uploadFileName = ref('');
 const selectedQueryPeriod = ref('');
+const initializingForm = ref(false);
 
 const formDrawer = reactive({
   open: false,
@@ -362,13 +401,25 @@ const form = reactive<ActivityEntryForm>({
   remark: undefined
 });
 
-const dataSourceOptions = [
-  { label: '发票/结算单', value: 'invoice' },
-  { label: '仪表/计量系统', value: 'meter' },
-  { label: 'ERP/MES 系统', value: 'erp_mes' },
-  { label: '台账记录', value: 'ledger' },
-  { label: '供应商证明', value: 'supplier_evidence' },
-  { label: '其他原始凭证', value: 'other_evidence' }
+const activityTableColumns: ActivityTableColumn[] = [
+  { prop: 'sourceIdentificationCode', label: 'PK_排放源识别编号', width: 170 },
+  { prop: 'companyCode', label: 'FK_公司编号', width: 130 },
+  { prop: 'companyName', label: '公司名称', minWidth: 180 },
+  { prop: 'factoryName', label: '工厂', minWidth: 150 },
+  { prop: 'sourceCategoryKey', label: 'FK_排放源分类', width: 140 },
+  { prop: 'scopeName', label: '范围', width: 110 },
+  { prop: 'scopeSubcategory', label: '范围子类别', minWidth: 190 },
+  { prop: 'sourceIdentificationName', label: '排放源识别', minWidth: 170 },
+  { prop: 'emissionSourceName', label: '排放源', minWidth: 160 },
+  { prop: 'activityUnit', label: '单位', width: 100 },
+  { prop: 'activityYear', label: '年度', width: 90, align: 'center' },
+  { prop: 'activityMonth', label: '月份', width: 80, align: 'center' },
+  { prop: 'activityDate', label: '日期', width: 120 },
+  { prop: 'activityValue', label: '活动数据', width: 130, align: 'right' },
+  { prop: 'responsibleDept', label: '负责部门', width: 130 },
+  { prop: 'dataSource', label: '数据来源', width: 130 },
+  { prop: 'sourceRemark', label: '备注', minWidth: 160 },
+  { prop: 'factorKey', label: 'FK_排放因子', width: 130 }
 ];
 const sheetColumns = computed<SpreadsheetColumn[]>(() =>
   FIELD_DESCRIPTORS.map((field) => {
@@ -401,16 +452,6 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         width: 150
       };
     }
-    if (field.sourceColumnCode === 'f016') {
-      return {
-        prop: field.sourceColumnCode,
-        label: field.sourceColumnName,
-        type: 'select',
-        required: true,
-        width: 170,
-        options: dataSourceOptions
-      };
-    }
     return {
       prop: field.sourceColumnCode,
       label: field.sourceColumnName,
@@ -420,21 +461,26 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
   })
 );
 const sheetRows = computed(() =>
-  activityList.value.map((row) => {
-    const source = row.sourceIdentificationCode ? sourceByCode.value.get(row.sourceIdentificationCode) : undefined;
-    return {
-      f001: row.sourceIdentificationCode ?? source?.sourceIdentificationCode,
-      f010: row.activityUnit,
-      f011: row.activityYear,
-      f012: row.activityMonth,
-      f013: row.activityDate,
-      f014: roundToTwoDecimal(row.activityValue),
-      f015: row.responsibleDept,
-      f016: row.dataSource,
-      f017: row.sourceRemark ?? row.remark,
-      f018: row.factorKey
-    };
-  })
+  activityList.value.map((row) => ({
+    f001: row.sourceIdentificationCode,
+    f002: row.companyCode,
+    f003: row.companyName,
+    f004: row.factoryName,
+    f005: row.sourceCategoryKey,
+    f006: row.scopeName,
+    f007: row.scopeSubcategory,
+    f008: row.sourceIdentificationName,
+    f009: row.emissionSourceName,
+    f010: row.activityUnit,
+    f011: row.activityYear,
+    f012: row.activityMonth,
+    f013: row.activityDate,
+    f014: roundToTwoDecimal(row.activityValue),
+    f015: row.responsibleDept,
+    f016: row.dataSource,
+    f017: row.sourceRemark,
+    f018: row.factorKey
+  }))
 );
 const sheetEmptyRow = computed(() =>
   FIELD_DESCRIPTORS.reduce<Record<string, string | number | undefined>>((row, field) => {
@@ -453,15 +499,6 @@ const rules: FormRules<ActivityEntryForm> = {
 };
 
 const selectedSource = computed(() => emissionSources.value.find((source) => source.sourceIdentificationCode === form.sourceIdentificationCode));
-const sourceByCode = computed(() => {
-  const map = new Map<string, EmissionSourceVO>();
-  emissionSources.value.forEach((source) => {
-    if (source.sourceIdentificationCode) {
-      map.set(source.sourceIdentificationCode, source);
-    }
-  });
-  return map;
-});
 const manualIssues = computed(() => collectIssues(manualValidation.value));
 const manualBlockingIssues = computed(() => manualIssues.value.filter((issue) => isBlockingIssue(issue)));
 const manualWarningIssues = computed(() => manualIssues.value.filter((issue) => !isBlockingIssue(issue)));
@@ -473,7 +510,7 @@ const canImportUploadedRows = computed(
   () =>
     parsedUploadRowCount.value > 0 && !!uploadValidation.value && !uploadValidation.value.blocking && !uploadParsing.value && !uploadImporting.value
 );
-const derivedActivityUnit = computed(() => manualResolvedDerivedValues.value.f010 ?? '');
+const derivedActivityUnit = computed(() => derivedFieldValue('f010'));
 const uploadStatusText = computed(() => {
   if (uploadParsing.value) return '解析中';
   if (!uploadValidation.value) return '待解析';
@@ -495,6 +532,13 @@ const roundToTwoDecimal = (value?: string | number) => {
 const formatDecimal2 = (value?: string | number) => {
   const rounded = roundToTwoDecimal(value);
   return rounded === undefined ? '-' : rounded.toFixed(2);
+};
+const formatActivityCell = (row: ActivityDataVO, prop: keyof ActivityDataVO) => {
+  const value = row[prop];
+  if (prop === 'activityValue') {
+    return formatDecimal2(value as string | number | undefined);
+  }
+  return value === undefined || value === null || value === '' ? '-' : String(value);
 };
 const firstQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
 const splitPeriod = (period?: string) => {
@@ -520,12 +564,25 @@ const handleQueryPeriodChange = (period?: string) => {
   handleQuery();
 };
 
-const activitySourceName = (row: ActivityDataVO) => {
-  const source = row.sourceIdentificationCode ? sourceByCode.value.get(row.sourceIdentificationCode) : undefined;
-  return source ? sourceLabel(source) : row.emissionSourceName || row.sourceIdentificationCode || '-';
+const fieldValueFromSource = (source: EmissionSourceVO | undefined, code: string) => {
+  if (!source) return '';
+  const values: DerivedValueMap = {
+    f002: source.companyCode ?? '',
+    f003: source.companyName ?? '',
+    f004: source.factoryName ?? '',
+    f005: source.sourceCategoryKey ?? '',
+    f006: source.scopeName ?? '',
+    f007: source.scopeSubcategory ?? '',
+    f008: source.sourceIdentificationName ?? '',
+    f009: source.emissionSourceName ?? '',
+    f018: source.factorKey ?? ''
+  };
+  return values[code] ?? '';
 };
 
-const formatActivityPeriod = (row: ActivityDataVO) => joinPeriod(row.activityYear, row.activityMonth) || '-';
+const derivedFieldValue = (code: string) => {
+  return manualResolvedDerivedValues.value[code] ?? fieldValueFromSource(selectedSource.value, code);
+};
 
 const collectIssues = (result?: Sheet656ImportValidationResult): Sheet656ValidationIssue[] => [
   ...(result?.headerIssues ?? []),
@@ -589,9 +646,11 @@ const applyRouteQuery = () => {
   }
 };
 
-const clearManualValidation = () => {
+const clearManualValidation = (options: { keepDerivedValues?: boolean } = {}) => {
   manualValidation.value = undefined;
-  manualResolvedDerivedValues.value = {};
+  if (!options.keepDerivedValues) {
+    manualResolvedDerivedValues.value = {};
+  }
 };
 
 const resetForm = () => {
@@ -617,6 +676,7 @@ const openCreateDrawer = () => {
 };
 
 const openDetailDrawer = (row: ActivityDataVO) => {
+  initializingForm.value = true;
   resetForm();
   Object.assign(form, {
     sourceIdentificationCode: row.sourceIdentificationCode,
@@ -628,11 +688,23 @@ const openDetailDrawer = (row: ActivityDataVO) => {
     remark: row.sourceRemark ?? row.remark
   });
   manualResolvedDerivedValues.value = {
-    f010: row.activityUnit ?? ''
+    f002: row.companyCode ?? '',
+    f003: row.companyName ?? '',
+    f004: row.factoryName ?? '',
+    f005: row.sourceCategoryKey ?? '',
+    f006: row.scopeName ?? '',
+    f007: row.scopeSubcategory ?? '',
+    f008: row.sourceIdentificationName ?? '',
+    f009: row.emissionSourceName ?? '',
+    f010: row.activityUnit ?? '',
+    f018: row.factorKey ?? ''
   };
   formDrawer.title = '查看活动数据';
   formDrawer.readonly = true;
   formDrawer.open = true;
+  nextTick(() => {
+    initializingForm.value = false;
+  });
 };
 
 const openEditDrawer = (row: ActivityDataVO) => {
@@ -877,10 +949,19 @@ const resetQuery = () => {
 };
 
 watch(
-  () => [form.sourceIdentificationCode, form.selectedPeriod, form.date, form.activityValue, form.responsibleDept, form.dataSource, form.remark],
+  () => form.sourceIdentificationCode,
   () => {
-    if (!formDrawer.readonly) {
+    if (!formDrawer.readonly && !initializingForm.value) {
       clearManualValidation();
+    }
+  }
+);
+
+watch(
+  () => [form.selectedPeriod, form.date, form.activityValue, form.responsibleDept, form.dataSource, form.remark],
+  () => {
+    if (!formDrawer.readonly && !initializingForm.value) {
+      clearManualValidation({ keepDerivedValues: true });
     }
   }
 );
