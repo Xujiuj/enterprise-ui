@@ -1,153 +1,193 @@
 <template>
   <div class="p-2 enterprise-reports-page">
-    <el-row :gutter="16">
-      <el-col :xs="24" :lg="10">
-        <el-card shadow="never">
-          <template #header>
-            <div class="card-head compact">
-              <span>报表授权状态</span>
-              <el-tooltip content="刷新" placement="top">
-                <el-button circle icon="Refresh" :loading="loading" @click="loadGate" />
-              </el-tooltip>
-            </div>
-          </template>
-          <el-skeleton v-if="loading && !gateStatus" :rows="5" animated />
-          <template v-else>
-            <el-result v-if="gateAllowed" icon="success" title="报表入口可用" sub-title="License gate 已允许 report-gate 功能。" />
-            <el-result v-else icon="warning" title="报表入口未放行" :sub-title="gateReason" />
-            <el-descriptions :column="1" border>
-              <el-descriptions-item label="featureCode">{{ gateStatus?.featureCode || 'report-gate' }}</el-descriptions-item>
-              <el-descriptions-item label="licenseStatus">{{ gateLicenseStatus }}</el-descriptions-item>
-              <el-descriptions-item label="expiresAt">{{ gateExpiresAt }}</el-descriptions-item>
-            </el-descriptions>
-          </template>
-        </el-card>
-      </el-col>
+    <section class="page-head">
+      <div>
+        <h1>Content</h1>
+        <p>按客户提供的 Content.xlsx 展示报表目录、子目录和页面图表。</p>
+      </div>
+      <el-button icon="Refresh" :loading="loading" @click="loadContent">刷新</el-button>
+    </section>
 
-      <el-col :xs="24" :lg="14">
-        <el-card shadow="never">
-          <template #header>
-            <div class="card-head compact">
-              <span>企业本地报表入口</span>
-              <el-tooltip content="刷新模板" placement="top">
-                <el-button circle icon="Refresh" :loading="templateLoading" @click="loadTemplates" />
-              </el-tooltip>
-            </div>
-          </template>
-          <el-alert type="info" show-icon :closable="false" class="mb-4">
-            <template #title>Power BI 只读账号连接企业本地 rpt 视图，不连接厂商库。</template>
-          </el-alert>
-          <el-table :data="reportEntries" row-key="viewName">
-            <el-table-column prop="title" label="报表" width="180" />
-            <el-table-column prop="viewName" label="本地视图" width="170" />
-            <el-table-column prop="description" label="说明" min-width="260" />
-            <el-table-column label="状态" width="110">
-              <template #default>
-                <el-tag :type="gateAllowed ? 'success' : 'warning'">{{ gateAllowed ? '可连接' : '待授权' }}</el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
+    <section class="content-grid">
+      <aside class="directory-list">
+        <button
+          v-for="directory in directories"
+          :key="directory.key"
+          type="button"
+          :class="{ active: directory.key === activeDirectoryKey }"
+          @click="activeDirectoryKey = directory.key"
+        >
+          <span class="directory-no">{{ directory.no }}</span>
+          <span>{{ directory.name }}</span>
+        </button>
+      </aside>
 
-          <el-divider />
-          <el-table v-loading="templateLoading" :data="templateFiles" row-key="id">
-            <el-table-column prop="templateCode" label="模板编码" width="150" />
-            <el-table-column prop="templateName" label="模板名称" min-width="180" show-overflow-tooltip />
-            <el-table-column prop="templateType" label="类型" width="110" />
-            <el-table-column prop="fileName" label="文件名" min-width="190" show-overflow-tooltip />
-            <el-table-column label="状态" width="90">
-              <template #default="scope">
-                <el-tag :type="scope.row.enabledFlag ? 'success' : 'info'">{{ scope.row.enabledFlag ? '启用' : '停用' }}</el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
-    </el-row>
+      <main class="content-table">
+        <el-table v-loading="loading" :data="activeRows" row-key="id" border>
+          <el-table-column prop="subdirectoryNo" label="子目录序号" width="110" />
+          <el-table-column prop="subdirectoryName" label="子目录" min-width="180" show-overflow-tooltip />
+          <el-table-column label="页面图表" min-width="420">
+            <template #default="scope">
+              <ul class="chart-list">
+                <li v-for="chart in splitCharts(scope.row.chartNames)" :key="chart">{{ chart }}</li>
+              </ul>
+            </template>
+          </el-table-column>
+        </el-table>
+      </main>
+    </section>
   </div>
 </template>
 
 <script setup name="EnterpriseReports" lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { getEnterpriseReportGate, type EnterpriseReportGateStatus } from '@/api/enterprise/reports';
-import { getCurrentLicenseState } from '@/api/enterprise/licenseImport';
-import type { EnterpriseLicenseCurrentState } from '@/api/enterprise/licenseImport/types';
-import { listReportTemplateFile } from '@/api/enterprise/reportTemplateFile';
-import type { ReportTemplateFileVO } from '@/api/enterprise/reportTemplateFile/types';
+import { listReportContent } from '@/api/enterprise/reportContent';
+import type { ReportContentVO } from '@/api/enterprise/reportContent/types';
+
+interface DirectoryItem {
+  key: string;
+  no?: number;
+  name: string;
+}
 
 const loading = ref(false);
-const templateLoading = ref(false);
-const gateStatus = ref<EnterpriseReportGateStatus>();
-const currentState = ref<EnterpriseLicenseCurrentState>();
-const templateFiles = ref<ReportTemplateFileVO[]>([]);
+const rows = ref<ReportContentVO[]>([]);
+const activeDirectoryKey = ref('');
 
-const reportEntries = [
-  {
-    title: 'License gate 状态',
-    viewName: 'rpt.v_LicenseGate',
-    description: '用于确认本地授权状态和报表功能 gate。'
-  },
-  {
-    title: '活动数据明细',
-    viewName: 'rpt.v_CaptureRows',
-    description: '读取企业本地 capture batch / row 数据，供 Power BI 只读分析。'
-  }
-];
-
-const gateAllowed = computed(() => gateStatus.value?.decision === 'ALLOW');
-const gateLicenseState = computed(() => gateStatus.value?.licenseState);
-const gateLicenseStatus = computed(() => gateLicenseState.value?.licenseStatus || '-');
-const gateExpiresAt = computed(() => gateLicenseState.value?.expiresAt || gateLicenseState.value?.validTo || '-');
-const gateReason = computed(() => gateStatus.value?.message || gateStatus.value?.reason || '后端未返回可用的 report-gate 授权状态。');
-
-const unwrapResponse = <T,>(response: unknown): T => {
-  const payload = response as { data?: T };
-  return payload.data ?? (response as T);
+const unwrapRows = (response: { data?: ReportContentVO[]; rows?: ReportContentVO[] }): ReportContentVO[] => {
+  return response.data ?? response.rows ?? [];
 };
 
-const loadGate = async () => {
+const directoryKey = (row: ReportContentVO) => `${row.directoryNo ?? ''}-${row.directoryName ?? ''}`;
+
+const directories = computed<DirectoryItem[]>(() => {
+  const seen = new Map<string, DirectoryItem>();
+  rows.value.forEach((row) => {
+    const key = directoryKey(row);
+    if (!seen.has(key)) {
+      seen.set(key, {
+        key,
+        no: row.directoryNo,
+        name: row.directoryName || '-'
+      });
+    }
+  });
+  return Array.from(seen.values());
+});
+
+const activeRows = computed(() => rows.value.filter((row) => directoryKey(row) === activeDirectoryKey.value));
+
+const splitCharts = (value?: string) =>
+  String(value || '')
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const loadContent = async () => {
   loading.value = true;
   try {
-    const stateResult = await getCurrentLicenseState();
-    currentState.value = unwrapResponse<EnterpriseLicenseCurrentState>(stateResult);
-    const expectedInstallId = currentState.value?.installId ? String(currentState.value.installId) : '';
-    if (!expectedInstallId) {
-      gateStatus.value = undefined;
-      return;
+    rows.value = unwrapRows(await listReportContent());
+    if (!activeDirectoryKey.value || !directories.value.some((item) => item.key === activeDirectoryKey.value)) {
+      activeDirectoryKey.value = directories.value[0]?.key || '';
     }
-    const res = await getEnterpriseReportGate(expectedInstallId);
-    gateStatus.value = unwrapResponse<EnterpriseReportGateStatus>(res);
   } finally {
     loading.value = false;
   }
 };
 
-const loadTemplates = async () => {
-  templateLoading.value = true;
-  try {
-    const res = await listReportTemplateFile({ enabledFlag: true, pageNum: 1, pageSize: 20 });
-    templateFiles.value = res.rows ?? res.data ?? [];
-  } finally {
-    templateLoading.value = false;
-  }
-};
-
-onMounted(() => {
-  loadGate();
-  loadTemplates();
-});
+onMounted(loadContent);
 </script>
 
 <style scoped lang="scss">
 .enterprise-reports-page {
-  .card-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  h1 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 650;
   }
 
-  .compact {
-    min-height: 32px;
+  p {
+    margin: 0;
+    color: var(--el-text-color-secondary);
+  }
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 520px;
+}
+
+.directory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 6px;
+  background: var(--el-bg-color);
+
+  button {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--el-text-color-primary);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  button.active {
+    border-color: var(--el-color-primary-light-7);
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+  }
+}
+
+.directory-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--el-fill-color-light);
+  font-weight: 650;
+}
+
+.content-table {
+  min-width: 0;
+}
+
+.chart-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+@media (max-width: 900px) {
+  .content-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

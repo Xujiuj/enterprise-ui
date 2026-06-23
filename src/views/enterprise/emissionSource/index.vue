@@ -16,7 +16,6 @@ const config = {
   description: '维护客户样例口径的排放源识别数据，供活动数据录入和排放计算引用。',
   permissionPrefix: 'enterprise:emissionSource',
   columns: [
-    { prop: 'rowNo', label: '行号', width: 90 },
     { prop: 'companyCode', label: '公司编号', minWidth: 140 },
     { prop: 'companyName', label: '公司名称', minWidth: 180 },
     { prop: 'factoryName', label: '工厂', minWidth: 150 },
@@ -47,7 +46,6 @@ const config = {
     { prop: 'enabledFlag', label: '状态', type: 'select', options: enabledOptions }
   ],
   formFields: [
-    { prop: 'rowNo', label: '行号', type: 'number', precision: 0 },
     { prop: 'companyCode', label: '公司编号', required: true },
     { prop: 'companyName', label: '公司名称' },
     { prop: 'factoryName', label: '工厂' },

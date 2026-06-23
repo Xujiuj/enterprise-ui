@@ -1,6 +1,5 @@
 export interface EmissionSourceVO {
   id: string | number;
-  rowNo?: number;
   companyCode?: string;
   companyName?: string;
   factoryName?: string;
@@ -21,7 +20,6 @@ export interface EmissionSourceVO {
 
 export interface EmissionSourceForm extends BaseEntity {
   id?: string | number;
-  rowNo?: number;
   companyCode?: string;
   companyName?: string;
   factoryName?: string;
@@ -39,7 +37,6 @@ export interface EmissionSourceForm extends BaseEntity {
 }
 
 export interface EmissionSourceQuery extends PageQuery {
-  rowNo?: number;
   companyCode?: string;
   companyName?: string;
   factoryName?: string;

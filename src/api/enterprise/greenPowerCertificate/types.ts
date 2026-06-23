@@ -1,6 +1,5 @@
 export interface GreenPowerCertificateVO {
   id: string | number;
-  rowNo?: number;
   factoryCode?: string;
   factoryName?: string;
   activityYear?: number;
@@ -29,7 +28,6 @@ export interface GreenPowerCertificateVO {
 
 export interface GreenPowerCertificateForm extends BaseEntity {
   id?: string | number;
-  rowNo?: number;
   factoryCode?: string;
   factoryName?: string;
   activityYear?: number;
@@ -55,7 +53,6 @@ export interface GreenPowerCertificateForm extends BaseEntity {
 }
 
 export interface GreenPowerCertificateQuery extends PageQuery {
-  rowNo?: number;
   factoryCode?: string;
   factoryName?: string;
   activityYear?: number;

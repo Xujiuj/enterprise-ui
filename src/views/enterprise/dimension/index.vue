@@ -148,7 +148,7 @@
       </el-drawer>
 
       <el-dialog v-model="uploadDialog.visible" :title="`${page.title} Excel 上传`" width="720px" append-to-body destroy-on-close v-loading="uploadParsing">
-        <el-upload drag action="#" accept=".xlsx" :auto-upload="false" :show-file-list="false" :before-upload="parseDimensionUploadFile">
+        <el-upload drag action="#" accept=".xlsx" :auto-upload="false" :show-file-list="false" :on-change="parseDimensionUploadFile">
           <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
           <div class="el-upload__text">拖拽 Excel 文件到此处，或点击选择 `.xlsx` 文件</div>
         </el-upload>
@@ -171,8 +171,9 @@
 
 <script setup name="EnterpriseDimension" lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue';
-import { ElMessage, type UploadRawFile } from 'element-plus';
+import { ElMessage, type UploadFile, type UploadRawFile } from 'element-plus';
 import { computed, reactive, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { addDimensionRecord, delDimensionRecord, getDimensionRecord, listDimensionRecord, updateDimensionRecord } from '@/api/enterprise/dimensionRecord';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { DimensionRecordForm, DimensionRecordQuery, DimensionRecordVO } from '@/api/enterprise/dimensionRecord/types';
@@ -230,6 +231,7 @@ interface ZipEntry {
 }
 
 const route = useRoute();
+const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const statusOptions = [
@@ -290,20 +292,6 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'field01', label: '核算范围', options: ['范围一', '范围二', '范围三'] },
       { prop: 'field02', label: '默认活动单位' },
       { prop: 'field03', label: '默认因子口径' }
-    ]
-  },
-  'emission-source': {
-    title: '排放源识别',
-    stage: '配置排放源',
-    owner: '企业',
-    mode: '企业维护',
-    codeLabel: '排放源识别编号',
-    nameLabel: '排放源名称',
-    fields: [
-      { prop: 'field01', label: '公司编号' },
-      { prop: 'field02', label: '分类编码' },
-      { prop: 'field03', label: '活动数据单位' },
-      { prop: 'field04', label: '默认因子编码' }
     ]
   },
   'base-year': {
@@ -398,36 +386,6 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'field03', label: '化学式' }
     ]
   },
-  'emission-activity-data': {
-    title: '排放活动数据',
-    stage: '活动数据',
-    owner: '企业',
-    mode: '企业填报',
-    codeLabel: '活动数据编号',
-    nameLabel: '活动数据名称',
-    fields: [
-      { prop: 'field01', label: '排放源识别编号' },
-      { prop: 'field02', label: '核算期间' },
-      { prop: 'field03', label: '活动数据', type: 'number' },
-      { prop: 'field04', label: '活动单位' },
-      { prop: 'field05', label: '负责部门' }
-    ]
-  },
-  'green-electricity-data': {
-    title: '绿电绿证数据',
-    stage: '绿电绿证',
-    owner: '企业',
-    mode: '企业填报',
-    codeLabel: '绿电绿证编号',
-    nameLabel: '绿电绿证名称',
-    fields: [
-      { prop: 'field01', label: '电力类型', options: ['自建光伏', '绿电直购', '绿证'] },
-      { prop: 'field02', label: '数量', type: 'number' },
-      { prop: 'field03', label: '单位' },
-      { prop: 'field04', label: '购买日期', type: 'date' },
-      { prop: 'field05', label: '到期日期', type: 'date' }
-    ]
-  },
   'intensity-denominator': {
     title: '碳排放强度分母维度表',
     stage: '强度管理',
@@ -500,6 +458,12 @@ const dimensionPages: Record<string, PageConfig> = {
   }
 };
 
+const concreteTableRoutes: Record<string, string> = {
+  'emission-source': '/emission-source-config/emission-source',
+  'emission-activity-data': '/activity-data/emission-activity-data',
+  'green-electricity-data': '/green-electricity/green-electricity-data'
+};
+
 const vendorOnlyDimensionCodes = new Set([
   'admin-division',
   'emission-source-category',
@@ -526,6 +490,7 @@ const routeKey = computed(() => {
   const leafPath = pathParts[pathParts.length - 1] ?? '';
   return queryCode || leafPath;
 });
+const concreteTableRoute = computed(() => concreteTableRoutes[routeKey.value]);
 const page = computed(() => dimensionPages[routeKey.value]);
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
 const isEditable = computed(() => editableDimensionCodes.has(routeKey.value));
@@ -848,7 +813,7 @@ const parseXlsxRows = async (file: Blob) => {
 };
 
 const getList = async () => {
-  if (!page.value) {
+  if (concreteTableRoute.value || !page.value) {
     recordList.value = [];
     total.value = 0;
     return;
@@ -986,7 +951,9 @@ const saveSheetRows = async (rows: Record<string, any>[]) => {
   sheetDrawer.visible = false;
 };
 
-const parseDimensionUploadFile = async (file: UploadRawFile) => {
+const parseDimensionUploadFile = async (uploadFile: UploadFile | UploadRawFile) => {
+  const file = 'raw' in uploadFile ? uploadFile.raw : uploadFile;
+  if (!file) return false;
   if (!isEditable.value) return false;
   if (!file.name.toLowerCase().endsWith('.xlsx')) {
     ElMessage.warning('请选择 .xlsx 文件');
@@ -1021,6 +988,10 @@ const handleDelete = async (row?: DimensionRecordVO) => {
 watch(
   () => routeKey.value,
   () => {
+    if (concreteTableRoute.value) {
+      router.replace(concreteTableRoute.value);
+      return;
+    }
     resetQuery();
   },
   { immediate: true }

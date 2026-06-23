@@ -48,7 +48,11 @@
             {{ formatActivityPeriod(row) }}
           </template>
         </el-table-column>
-        <el-table-column prop="activityValue" label="活动数据" width="140" align="right" />
+        <el-table-column prop="activityValue" label="活动数据" width="140" align="right">
+          <template #default="{ row }">
+            {{ formatDecimal2(row.activityValue) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="activityUnit" label="单位" width="110" />
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
@@ -60,9 +64,10 @@
         <el-table-column prop="calculatedEmission" label="计算排放量" width="140" align="right" />
         <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
         <el-table-column prop="updateTime" label="更新时间" width="170" />
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="170" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" icon="View" @click="openDetailDrawer(row)">查看</el-button>
+            <el-button link type="primary" icon="Edit" @click="openEditDrawer(row)" v-hasPermi="['enterprise:activityImport:import']">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -101,7 +106,7 @@
               <el-input-number
                 v-model="form.activityValue"
                 :min="0"
-                :precision="4"
+                :precision="2"
                 controls-position="right"
                 class="w-full"
                 :disabled="formDrawer.readonly"
@@ -171,7 +176,7 @@
     </el-drawer>
 
     <el-dialog v-model="uploadDialog.open" title="Excel 上传" width="820px" append-to-body destroy-on-close>
-      <el-upload drag action="#" accept=".xlsx" :auto-upload="false" :show-file-list="false" :before-upload="parseUploadedFile">
+      <el-upload drag action="#" accept=".xlsx" :auto-upload="false" :show-file-list="false" :on-change="parseUploadedFile">
         <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
         <div class="el-upload__text">拖拽 Excel 文件到此处，或点击选择 `.xlsx` 文件</div>
       </el-upload>
@@ -240,7 +245,7 @@
 import { UploadFilled } from '@element-plus/icons-vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { ElMessage, type FormInstance, type FormRules, type UploadRawFile } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules, type UploadFile, type UploadRawFile } from 'element-plus';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
@@ -383,7 +388,7 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         label: field.sourceColumnName,
         type: 'number',
         required: field.rowValueRequired,
-        precision: field.sourceColumnCode === 'f014' ? 4 : 0,
+        precision: field.sourceColumnCode === 'f014' ? 2 : 0,
         width: 140
       };
     }
@@ -423,7 +428,7 @@ const sheetRows = computed(() =>
       f011: row.activityYear,
       f012: row.activityMonth,
       f013: row.activityDate,
-      f014: row.activityValue,
+      f014: roundToTwoDecimal(row.activityValue),
       f015: row.responsibleDept,
       f016: row.dataSource,
       f017: row.sourceRemark ?? row.remark,
@@ -480,6 +485,17 @@ const sourceLabel = (source: EmissionSourceVO) =>
   [source.sourceIdentificationCode, source.emissionSourceName ?? source.sourceIdentificationName].filter(Boolean).join(' / ');
 const isBlockingIssue = (issue: Sheet656ValidationIssue) => issue.severity === 'ERROR';
 const valueToString = (value?: string | number) => (value === undefined || value === null ? '' : String(value));
+const roundToTwoDecimal = (value?: string | number) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? Number(numberValue.toFixed(2)) : undefined;
+};
+const formatDecimal2 = (value?: string | number) => {
+  const rounded = roundToTwoDecimal(value);
+  return rounded === undefined ? '-' : rounded.toFixed(2);
+};
 const firstQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
 const splitPeriod = (period?: string) => {
   const [year, month] = (period ?? '').split('-');
@@ -535,7 +551,7 @@ const buildFieldValues = (): Sheet656FieldValue[] => {
     f011: year,
     f012: month,
     f013: form.date ?? '',
-    f014: valueToString(form.activityValue),
+    f014: valueToString(roundToTwoDecimal(form.activityValue)),
     f015: form.responsibleDept ?? '',
     f016: form.dataSource ?? '',
     f017: form.remark ?? '',
@@ -606,7 +622,7 @@ const openDetailDrawer = (row: ActivityDataVO) => {
     sourceIdentificationCode: row.sourceIdentificationCode,
     selectedPeriod: joinPeriod(row.activityYear, row.activityMonth),
     date: row.activityDate,
-    activityValue: row.activityValue,
+    activityValue: roundToTwoDecimal(row.activityValue),
     responsibleDept: row.responsibleDept,
     dataSource: row.dataSource,
     remark: row.sourceRemark ?? row.remark
@@ -617,6 +633,12 @@ const openDetailDrawer = (row: ActivityDataVO) => {
   formDrawer.title = '查看活动数据';
   formDrawer.readonly = true;
   formDrawer.open = true;
+};
+
+const openEditDrawer = (row: ActivityDataVO) => {
+  openDetailDrawer(row);
+  formDrawer.title = '编辑活动数据';
+  formDrawer.readonly = false;
 };
 
 const openUploadDialog = () => {
@@ -716,7 +738,9 @@ const saveActivity = async () => {
   }
 };
 
-const parseUploadedFile = async (file: UploadRawFile) => {
+const parseUploadedFile = async (uploadFile: UploadFile | UploadRawFile) => {
+  const file = 'raw' in uploadFile ? uploadFile.raw : uploadFile;
+  if (!file) return false;
   if (!file.name.toLowerCase().endsWith('.xlsx')) {
     ElMessage.warning('请选择 .xlsx 文件');
     return false;
@@ -789,7 +813,7 @@ const buildSheetRowRequest = (rows: Record<string, any>[]): Sheet656ImportValida
     fieldValues: FIELD_DESCRIPTORS.map((field) => ({
       sourceColumnCode: field.sourceColumnCode,
       sourceColumnName: field.sourceColumnName,
-      value: valueToString(row[field.sourceColumnCode])
+      value: valueToString(field.sourceColumnCode === 'f014' ? roundToTwoDecimal(row[field.sourceColumnCode]) : row[field.sourceColumnCode])
     }))
   }))
 });

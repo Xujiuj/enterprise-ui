@@ -28,7 +28,6 @@ const config = {
     ownerTableCode: 'ce_green_power_certificate'
   },
   columns: [
-    { prop: 'rowNo', label: '行号', width: 90 },
     { prop: 'factoryCode', label: '工厂编号', minWidth: 140 },
     { prop: 'factoryName', label: '工厂名称', minWidth: 160 },
     { prop: 'activityYear', label: '年度', width: 90 },
@@ -62,7 +61,6 @@ const config = {
     { prop: 'proofStatus', label: '核验状态', type: 'select', options: proofStatusOptions }
   ],
   formFields: [
-    { prop: 'rowNo', label: '行号', type: 'number', precision: 0 },
     { prop: 'factoryCode', label: '工厂编号', required: true },
     { prop: 'factoryName', label: '工厂名称' },
     { prop: 'activityYear', label: '年度', type: 'number', precision: 0 },
