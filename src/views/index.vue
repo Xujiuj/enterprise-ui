@@ -145,24 +145,44 @@ const noticeDialog = reactive<{ visible: boolean; notice?: WorkbenchSystemNotice
 });
 
 const emptyCards: WorkbenchMetricCard[] = [
-  { label: '授权状态', value: '--', note: '--' },
   { label: '当前期间', value: '--', note: '--' },
-  { label: '碳排放总量', value: '--', note: '--' },
-  { label: '因子库版本', value: '--', note: '--' }
+  { label: '授权状态', value: '--', note: '--' },
+  { label: '因子库版本', value: '--', note: '--' },
+  { label: '数据进度', value: '--', note: '--' }
 ];
 
 const displayValue = (value?: number | string) => (value === undefined || value === null || value === '' ? '--' : value);
 
-const statusCards = computed<WorkbenchMetricCard[]>(() => {
-  const cards = overview.value.statusCards || [];
-  return cards.length ? cards : emptyCards;
-});
+const formatNumber = (value?: number | string) => {
+  if (value === undefined || value === null || value === '') return '--';
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toLocaleString('zh-CN') : String(value);
+};
+
+const isCarbonTotalLabel = (label?: string) => Boolean(label && /碳排放总量|排放总量|CO2e/i.test(label));
+
+const findMetricCard = (cards: WorkbenchMetricCard[], patterns: RegExp[]) =>
+  cards.find((card) => patterns.some((pattern) => pattern.test(card.label)));
+
 const currentPeriod = computed(() => overview.value.currentPeriod || '--');
 const cycleStages = computed<WorkbenchCycleStage[]>(() => overview.value.cycleStages || []);
 const scopeEmissions = computed<WorkbenchScopeEmission[]>(() => overview.value.scopeEmissions || []);
 const todoItems = computed<WorkbenchTodoItem[]>(() => overview.value.todoItems || []);
 const recentActivities = computed<WorkbenchRecentActivity[]>(() => overview.value.recentActivities || []);
 const systemNotices = computed<WorkbenchSystemNotice[]>(() => overview.value.systemNotices || []);
+
+const statusCards = computed<WorkbenchMetricCard[]>(() => {
+  const cards = (overview.value.statusCards || []).filter((card) => !isCarbonTotalLabel(card.label));
+  const periodCard = findMetricCard(cards, [/当前期间/, /本期/, /期间/]) || {
+    label: '当前期间',
+    value: currentPeriod.value,
+    note: '当前填报周期'
+  };
+  const authCard = findMetricCard(cards, [/授权/, /许可/, /状态/]) || emptyCards[1];
+  const factorCard = findMetricCard(cards, [/因子库/, /因子.*版本/, /版本/]) || emptyCards[2];
+  const progressCard = findMetricCard(cards, [/进度/, /录入/, /填报/, /报表库/, /可用记录/]) || emptyCards[3];
+  return [periodCard, authCard, factorCard, progressCard];
+});
 
 const scopeBars = computed(() =>
   scopeEmissions.value.map((item) => ({
@@ -179,12 +199,6 @@ const businessActions = [
   { step: '04', title: '绿电绿证', detail: '登记抵扣记录', path: '/green-electricity/green-electricity-data' },
   { step: '05', title: '强度管理', detail: '分母录入与目标核算', path: '/intensity/intensity-target' }
 ];
-
-const formatNumber = (value?: number | string) => {
-  if (value === undefined || value === null || value === '') return '--';
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric.toLocaleString('zh-CN') : String(value);
-};
 
 const plainText = (value: string) =>
   value
@@ -252,6 +266,7 @@ onMounted(() => {
   font-size: 30px;
   font-weight: 800;
   line-height: 1;
+  overflow-wrap: anywhere;
 }
 
 .dash-stat .value.is-success {
