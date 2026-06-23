@@ -20,14 +20,10 @@ import {
   syncFactors,
   updateFactorConfirmation
 } from '@/api/enterprise/factorConfirmation';
+import { loadFactorConfirmationStatusOptions } from '@/utils/enterpriseFieldOptions';
 
 const syncing = ref(false);
-
-const statusOptions = [
-  { label: '待确认', value: 'pending' },
-  { label: '已确认', value: 'confirmed' },
-  { label: '已退回', value: 'rejected' }
-];
+const loadConfirmationStatusOptions = loadFactorConfirmationStatusOptions;
 
 async function handleSync(refresh: () => Promise<void>) {
   syncing.value = true;
@@ -59,7 +55,6 @@ const config = {
       label: '确认状态',
       type: 'tag',
       width: 110,
-      valueMap: { pending: '待确认', confirmed: '已确认', rejected: '已退回' },
       tagMap: { pending: 'warning', confirmed: 'success', rejected: 'danger' }
     },
     { prop: 'confirmedBy', label: '确认人', width: 120 },
@@ -70,7 +65,7 @@ const config = {
     { prop: 'factorCode', label: '因子编码' },
     { prop: 'factorName', label: '因子名称' },
     { prop: 'factorVersionCode', label: '版本编码' },
-    { prop: 'confirmationStatus', label: '确认状态', type: 'select', options: statusOptions }
+    { prop: 'confirmationStatus', label: '确认状态', type: 'select', loadOptions: loadConfirmationStatusOptions }
   ],
   formFields: [
     { prop: 'factorCode', label: '因子编码', required: true },
@@ -78,10 +73,10 @@ const config = {
     { prop: 'factorVersionCode', label: '版本编码' },
     { prop: 'factorValue', label: '因子值', type: 'number', required: true, precision: 6 },
     { prop: 'factorUnit', label: '单位', required: true },
-    { prop: 'confirmationStatus', label: '确认状态', type: 'select', options: statusOptions, required: true },
+    { prop: 'confirmationStatus', label: '确认状态', type: 'select', loadOptions: loadConfirmationStatusOptions, required: true },
     { prop: 'confirmedBy', label: '确认人' },
     { prop: 'confirmedTime', label: '确认时间', type: 'date' },
-    { prop: 'licenseId', label: '授权ID' },
+    { prop: 'licenseId', label: '授权编号' },
     { prop: 'remark', label: '备注', type: 'textarea' }
   ],
   emptyForm: {

@@ -10,14 +10,12 @@
         </el-form-item>
         <el-form-item label="校验状态">
           <el-select v-model="queryParams.validationStatus" clearable placeholder="全部">
-            <el-option label="通过" value="PASS" />
-            <el-option label="失败" value="FAIL" />
-            <el-option label="警告" value="WARN" />
+            <el-option v-for="option in validationStatusOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
           </el-select>
         </el-form-item>
-          <div class="search-actions">
-            <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="loadBatches" />
-          </div>
+        <div class="search-actions">
+          <right-toolbar v-model:showSearch="showSearch" :gutter="0" @query-table="loadBatches" />
+        </div>
       </el-form>
       <div class="search-bar search-bar-collapsed" v-show="!showSearch">
         <div class="search-actions">
@@ -26,7 +24,7 @@
       </div>
 
       <el-table v-loading="loading" :data="batchList" row-key="id">
-        <el-table-column prop="id" label="批次ID" width="110" />
+        <el-table-column prop="id" label="批次号" width="110" />
         <el-table-column prop="moduleCode" label="模块" width="140" show-overflow-tooltip />
         <el-table-column prop="sourceMode" label="来源" width="110" />
         <el-table-column prop="batchStatus" label="批次状态" width="120">
@@ -89,11 +87,13 @@ import { listCaptureRow } from '@/api/enterprise/captureRow';
 import type { CaptureRowQuery, CaptureRowVO } from '@/api/enterprise/captureRow/types';
 
 import { useAutoQuery } from '@/hooks/useAutoQuery';
+import { loadValidationStatusOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
 const loading = ref(false);
 const showSearch = ref(true);
 const rowLoading = ref(false);
 const batchList = ref<CaptureBatchVO[]>([]);
 const rowList = ref<CaptureRowVO[]>([]);
+const validationStatusOptions = ref<SelectOption[]>([]);
 const total = ref(0);
 const rowTotal = ref(0);
 
@@ -170,7 +170,8 @@ const openRows = async (batch: CaptureBatchVO) => {
   await loadRows();
 };
 
-onMounted(() => {
+onMounted(async () => {
+  validationStatusOptions.value = await loadValidationStatusOptions();
   loadBatches();
 });
 

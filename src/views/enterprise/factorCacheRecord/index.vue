@@ -11,12 +11,7 @@ import {
   listFactorCacheRecord,
   updateFactorCacheRecord
 } from '@/api/enterprise/factorCacheRecord';
-import { FACTOR_TABLE_OPTIONS } from '@/utils/enterpriseFieldOptions';
-
-const enabledOptions = [
-  { label: '启用', value: true },
-  { label: '停用', value: false }
-];
+import { loadBooleanStatusOptions, loadFactorTableOptions } from '@/utils/enterpriseFieldOptions';
 
 const config = {
   title: '因子缓存记录',
@@ -24,10 +19,7 @@ const config = {
   permissionPrefix: 'enterprise:factorCacheRecord',
   readonly: true,
   columns: [
-    { prop: 'cacheVersionId', label: '缓存版本ID', width: 120 },
     { prop: 'factorTableCode', label: '因子表类型', minWidth: 150 },
-    { prop: 'factorKey', label: '样例主键', minWidth: 150 },
-    { prop: 'factorCode', label: '因子编码', minWidth: 150 },
     { prop: 'factorName', label: '因子名称', minWidth: 180 },
     { prop: 'emissionSourceName', label: '排放源', minWidth: 170 },
     { prop: 'emissionSourceNameEn', label: '排放源_EN', minWidth: 170 },
@@ -43,19 +35,16 @@ const config = {
       label: '状态',
       type: 'tag',
       width: 90,
-      valueMap: { true: '启用', false: '停用' },
       tagMap: { true: 'success', false: 'info' }
     },
     { prop: 'sourceRef', label: '来源引用', minWidth: 180 },
     { prop: 'syncedTime', label: '同步时间', minWidth: 170 }
   ],
   searchFields: [
-    { prop: 'cacheVersionId', label: '缓存版本ID' },
-    { prop: 'factorTableCode', label: '因子表类型', type: 'select', options: FACTOR_TABLE_OPTIONS },
-    { prop: 'factorCode', label: '因子编码' },
+    { prop: 'factorTableCode', label: '因子表类型', type: 'select', loadOptions: loadFactorTableOptions },
     { prop: 'factorName', label: '因子名称' },
     { prop: 'factorCategory', label: '因子分类' },
-    { prop: 'enabledFlag', label: '状态', type: 'select', options: enabledOptions }
+    { prop: 'enabledFlag', label: '状态', type: 'select', loadOptions: loadBooleanStatusOptions }
   ],
   formFields: [],
   emptyForm: {}

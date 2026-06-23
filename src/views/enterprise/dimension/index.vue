@@ -38,7 +38,9 @@
           <div class="btns">
             <el-button v-if="isEditable" type="primary" icon="Plus" @click="handleAdd" v-hasPermi="['enterprise:dimension:add']">新增</el-button>
             <el-button v-if="isEditable" icon="Grid" @click="openSheetDrawer" v-hasPermi="['enterprise:dimension:edit']">在线填报</el-button>
-            <el-button v-if="isEditable" icon="Download" @click="downloadDimensionTemplate" v-hasPermi="['enterprise:dimension:edit']">下载模板</el-button>
+            <el-button v-if="isEditable" icon="Download" @click="downloadDimensionTemplate" v-hasPermi="['enterprise:dimension:edit']"
+              >下载模板</el-button
+            >
             <el-button v-if="isEditable" icon="Upload" @click="openUploadDialog" v-hasPermi="['enterprise:dimension:edit']">Excel 上传</el-button>
             <el-button
               v-if="isEditable"
@@ -102,8 +104,8 @@
             <el-input v-model="form.parentCode" placeholder="请输入上级编码" />
           </el-form-item>
           <el-form-item v-for="field in page.fields" :key="field.prop" :label="field.label" :prop="field.prop">
-            <el-select v-if="field.options" v-model="form[field.prop]" :placeholder="`请选择${field.label}`" clearable class="w-full">
-              <el-option v-for="item in field.options" :key="item" :label="item" :value="item" />
+            <el-select v-if="field.optionSource" v-model="form[field.prop]" :placeholder="`请选择${field.label}`" clearable class="w-full">
+              <el-option v-for="item in fieldOptions(field)" :key="String(item.value)" :label="item.label" :value="item.value" />
             </el-select>
             <el-date-picker
               v-else-if="field.type === 'date'"
@@ -147,7 +149,14 @@
         />
       </el-drawer>
 
-      <el-dialog v-model="uploadDialog.visible" :title="`${page.title} Excel 上传`" width="720px" append-to-body destroy-on-close v-loading="uploadParsing">
+      <el-dialog
+        v-model="uploadDialog.visible"
+        :title="`${page.title} Excel 上传`"
+        width="720px"
+        append-to-body
+        destroy-on-close
+        v-loading="uploadParsing"
+      >
         <el-upload drag action="#" accept=".xlsx" :auto-upload="false" :show-file-list="false" :on-change="parseDimensionUploadFile">
           <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
           <div class="el-upload__text">拖拽 Excel 文件到此处，或点击选择 `.xlsx` 文件</div>
@@ -172,14 +181,21 @@
 <script setup name="EnterpriseDimension" lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue';
 import { ElMessage, type UploadFile, type UploadRawFile } from 'element-plus';
-import { computed, reactive, watch } from 'vue';
+import { computed, onMounted, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { addDimensionRecord, delDimensionRecord, getDimensionRecord, listDimensionRecord, updateDimensionRecord } from '@/api/enterprise/dimensionRecord';
+import {
+  addDimensionRecord,
+  delDimensionRecord,
+  getDimensionRecord,
+  listDimensionRecord,
+  updateDimensionRecord
+} from '@/api/enterprise/dimensionRecord';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { DimensionRecordForm, DimensionRecordQuery, DimensionRecordVO } from '@/api/enterprise/dimensionRecord/types';
 import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
 import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
+import { loadDimensionFieldOptions, loadRecordStatusOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
 
 type FieldProp =
   | 'field01'
@@ -209,7 +225,7 @@ interface FieldConfig {
   prop: FieldProp;
   label: string;
   type?: 'text' | 'number' | 'date';
-  options?: string[];
+  optionSource?: 'dimension-field';
   width?: number;
 }
 
@@ -237,10 +253,8 @@ const route = useRoute();
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const statusOptions = [
-  { label: '启用', value: '0' },
-  { label: '停用', value: '1' }
-];
+const statusOptions = ref<SelectOption[]>([]);
+const dynamicFieldOptions = reactive<Record<string, SelectOption[]>>({});
 const dimensionPages: Record<string, PageConfig> = {
   'admin-division': {
     title: '行政区划',
@@ -251,9 +265,9 @@ const dimensionPages: Record<string, PageConfig> = {
     nameLabel: '行政区划名称',
     showParent: true,
     fields: [
-      { prop: 'field01', label: '区划层级', options: ['省级', '市级', '区县级'] },
+      { prop: 'field01', label: '区划层级', optionSource: 'dimension-field' },
       { prop: 'field02', label: '适用电网区域' },
-      { prop: 'field03', label: '国家/地区', options: ['中国'] }
+      { prop: 'field03', label: '国家/地区', optionSource: 'dimension-field' }
     ]
   },
   company: {
@@ -280,7 +294,7 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'field13', label: '行业小类名称' },
       { prop: 'field14', label: '生效日期', type: 'date' },
       { prop: 'field15', label: '失效日期', type: 'date' },
-      { prop: 'field16', label: '是否有效', options: ['Y', 'N'] }
+      { prop: 'field16', label: '是否有效', optionSource: 'dimension-field' }
     ]
   },
   'emission-source-category': {
@@ -292,7 +306,7 @@ const dimensionPages: Record<string, PageConfig> = {
     nameLabel: '分类名称',
     showParent: true,
     fields: [
-      { prop: 'field01', label: '核算范围', options: ['范围一', '范围二', '范围三'] },
+      { prop: 'field01', label: '核算范围', optionSource: 'dimension-field' },
       { prop: 'field02', label: '默认活动单位' },
       { prop: 'field03', label: '默认因子口径' }
     ]
@@ -306,7 +320,7 @@ const dimensionPages: Record<string, PageConfig> = {
     nameLabel: '工厂名称',
     fields: [
       { prop: 'field01', label: '基准年', type: 'number' },
-      { prop: 'field02', label: '是否当前基准', options: ['Y', 'N'] }
+      { prop: 'field02', label: '是否当前基准', optionSource: 'dimension-field' }
     ]
   },
   'ef-factor': {
@@ -360,9 +374,7 @@ const dimensionPages: Record<string, PageConfig> = {
     mode: '企业确认',
     codeLabel: '因子版本',
     nameLabel: '版本说明',
-    fields: [
-      { prop: 'field02', label: '生效年份', type: 'number' }
-    ]
+    fields: [{ prop: 'field02', label: '生效年份', type: 'number' }]
   },
   'ef-electricity-scope': {
     title: 'EF电力因子口径维度',
@@ -372,7 +384,7 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '口径编码',
     nameLabel: '口径名称',
     fields: [
-      { prop: 'field01', label: '口径类型', options: ['全国', '区域', '省级', '市场化交易'] },
+      { prop: 'field01', label: '口径类型', optionSource: 'dimension-field' },
       { prop: 'field02', label: '适用说明', width: 220 }
     ]
   },
@@ -403,7 +415,7 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'field02', label: '分母类型' },
       { prop: 'field03', label: '分母度量名称' },
       { prop: 'field04', label: '强度单位展示' },
-      { prop: 'field05', label: '是否启用', options: ['是', '否'] },
+      { prop: 'field05', label: '是否启用', optionSource: 'dimension-field' },
       { prop: 'field06', label: '备注', width: 220 }
     ]
   },
@@ -456,7 +468,7 @@ const dimensionPages: Record<string, PageConfig> = {
     showRemark: false,
     fields: [
       { prop: 'field02', label: '容忍率', type: 'number' },
-      { prop: 'field03', label: '是否启用', options: ['是', '否'] },
+      { prop: 'field03', label: '是否启用', optionSource: 'dimension-field' },
       { prop: 'field04', label: '备注', width: 220 }
     ]
   },
@@ -468,7 +480,7 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '模板编码',
     nameLabel: '模板名称',
     fields: [
-      { prop: 'field01', label: '模板类型', options: ['Power BI', 'Excel', 'PDF'] },
+      { prop: 'field01', label: '模板类型', optionSource: 'dimension-field' },
       { prop: 'field02', label: '版本号' },
       { prop: 'field03', label: '文件路径', width: 220 },
       { prop: 'field04', label: '发布时间', type: 'date' }
@@ -526,8 +538,8 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
     columns.push({
       prop: field.prop,
       label: field.label,
-      type: field.options ? 'select' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text',
-      options: field.options?.map((option) => ({ label: option, value: option })),
+      type: field.optionSource ? 'select' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text',
+      options: field.optionSource ? fieldOptions(field) : undefined,
       width: field.width ?? 150,
       precision: field.type === 'number' ? 2 : undefined
     });
@@ -539,7 +551,7 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
       type: 'select',
       required: true,
       width: 120,
-      options: statusOptions
+      options: statusOptions.value
     });
   }
   if (page.value.showSort !== false) {
@@ -692,7 +704,24 @@ const data = reactive<PageData<DimensionRecordForm, DimensionRecordQuery>>({
 
 const { queryParams, form, rules } = toRefs(data);
 
-const statusLabel = (value?: string) => statusOptions.find((item) => item.value === value)?.label ?? value ?? '-';
+const statusLabel = (value?: string) => statusOptions.value.find((item) => item.value === value)?.label ?? value ?? '-';
+
+const fieldOptionKey = (dimensionCode: string, field: FieldConfig) => `${dimensionCode}:${field.prop}`;
+const fieldOptions = (field: FieldConfig) => (page.value ? (dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] ?? []) : []);
+
+const loadPageFieldOptions = async () => {
+  statusOptions.value = await loadRecordStatusOptions();
+  const currentPage = page.value;
+  if (!currentPage) {
+    return;
+  }
+  const fields = currentPage.fields.filter((field) => field.optionSource);
+  await Promise.all(
+    fields.map(async (field) => {
+      dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] = await loadDimensionFieldOptions(routeKey.value, field.prop);
+    })
+  );
+};
 
 const textDecoder = new TextDecoder('utf-8');
 
@@ -764,7 +793,7 @@ const normalizeUploadValue = (column: SpreadsheetColumn, value: string) => {
   const text = value.trim();
   if (!text) return undefined;
   if (column.prop === 'status') {
-    return statusOptions.find((option) => option.label === text || option.value === text)?.value ?? text;
+    return statusOptions.value.find((option) => option.label === text || option.value === text)?.value ?? text;
   }
   if (column.type === 'number') {
     const numberValue = Number(text);
@@ -803,8 +832,8 @@ const parseXlsxRows = async (file: Blob) => {
           ? Array.from(cell.getElementsByTagName('t'))
               .map((node) => node.textContent ?? '')
               .join('')
-          : cell.getElementsByTagName('v')[0]?.textContent ?? '';
-      values[index] = type === 's' ? sharedStrings[Number(rawValue)] ?? '' : rawValue;
+          : (cell.getElementsByTagName('v')[0]?.textContent ?? '');
+      values[index] = type === 's' ? (sharedStrings[Number(rawValue)] ?? '') : rawValue;
     });
     return values;
   });
@@ -1014,10 +1043,19 @@ watch(
       router.replace(concreteTableRoute.value);
       return;
     }
+    loadPageFieldOptions();
     resetQuery();
-  },
-  { immediate: true }
+  }
 );
+
+onMounted(async () => {
+  await loadPageFieldOptions();
+  if (concreteTableRoute.value) {
+    router.replace(concreteTableRoute.value);
+    return;
+  }
+  resetQuery();
+});
 
 useAutoQuery(queryParams, () => handleQuery());
 </script>

@@ -37,18 +37,17 @@
         </el-form-item>
         <el-form-item label="数据来源" prop="dataSource">
           <el-select v-model="queryParams.dataSource" clearable filterable class="query-medium">
-            <el-option v-for="option in DATA_SOURCE_OPTIONS" :key="String(option.value)" :label="option.label" :value="option.value" />
+            <el-option v-for="option in dataSourceOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="数据状态" prop="dataStatus">
           <el-select v-model="queryParams.dataStatus" clearable class="query-status">
-            <el-option label="草稿" value="draft" />
-            <el-option label="已提交" value="submitted" />
+            <el-option v-for="option in activityDataStatusOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
           </el-select>
         </el-form-item>
-          <div class="search-actions">
-            <right-toolbar v-model:showSearch="showSearch" :columns="activityColumnOptions" :gutter="0" @query-table="loadActivities" />
-          </div>
+        <div class="search-actions">
+          <right-toolbar v-model:showSearch="showSearch" :columns="activityColumnOptions" :gutter="0" @query-table="loadActivities" />
+        </div>
       </el-form>
       <div class="search-bar search-bar-collapsed" v-show="!showSearch">
         <div class="search-actions">
@@ -103,14 +102,21 @@
       <el-form ref="activityFormRef" :model="form" :rules="rules" label-width="112px">
         <el-row :gutter="16">
           <el-col :xs="24" :sm="12">
-            <el-form-item label="PK_排放源识别编号" prop="sourceIdentificationCode">
-              <el-select v-model="form.sourceIdentificationCode" class="w-full" clearable filterable :loading="sourceLoading" :disabled="formDrawer.readonly">
+            <el-form-item label="排放源" prop="sourceIdentificationCode">
+              <el-select
+                v-model="form.sourceIdentificationCode"
+                class="w-full"
+                clearable
+                filterable
+                :loading="sourceLoading"
+                :disabled="formDrawer.readonly"
+              >
                 <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceIdentificationCode" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="FK_公司编号">
+            <el-form-item label="工厂编号">
               <el-input :model-value="derivedFieldValue('f002')" disabled />
             </el-form-item>
           </el-col>
@@ -125,7 +131,7 @@
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="FK_排放源分类">
+            <el-form-item label="排放源分类">
               <el-input :model-value="derivedFieldValue('f005')" disabled />
             </el-form-item>
           </el-col>
@@ -177,7 +183,7 @@
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="FK_排放因子">
+            <el-form-item label="适用因子">
               <el-input :model-value="derivedFieldValue('f018')" disabled />
             </el-form-item>
           </el-col>
@@ -191,7 +197,7 @@
           <el-col :xs="24" :sm="12">
             <el-form-item label="数据来源" prop="dataSource">
               <el-select v-model="form.dataSource" clearable filterable class="w-full" :disabled="formDrawer.readonly">
-                <el-option v-for="option in DATA_SOURCE_OPTIONS" :key="String(option.value)" :label="option.label" :value="option.value" />
+                <el-option v-for="option in dataSourceOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -323,7 +329,13 @@ import {
   saveLocalSheet656Activity,
   validateLocalSheet656Activity
 } from '@/api/enterprise/activityEntry';
-import { DATA_SOURCE_OPTIONS, loadDeptOptions, loadDimensionOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
+import {
+  loadActivityDataStatusOptions,
+  loadDataSourceOptions,
+  loadDeptOptions,
+  loadDimensionOptions,
+  type SelectOption
+} from '@/utils/enterpriseFieldOptions';
 import type { ActivityDataQuery, ActivityDataVO } from '@/api/enterprise/activityData/types';
 import type { EmissionSourceVO } from '@/api/enterprise/emissionSource/types';
 import type {
@@ -399,6 +411,8 @@ const companyOptions = ref<SelectOption[]>([]);
 const factoryOptions = ref<SelectOption[]>([]);
 const sourceCategoryOptions = ref<SelectOption[]>([]);
 const deptOptions = ref<SelectOption[]>([]);
+const dataSourceOptions = ref<SelectOption[]>([]);
+const activityDataStatusOptions = ref<SelectOption[]>([]);
 const manualValidation = ref<Sheet656ImportValidationResult>();
 const uploadValidation = ref<Sheet656ImportValidationResult>();
 const manualResolvedDerivedValues = ref<DerivedValueMap>({});
@@ -447,12 +461,9 @@ const form = reactive<ActivityEntryForm>({
 });
 
 const activityTableColumns: ActivityTableColumn[] = [
-  { prop: 'sourceIdentificationCode', label: 'PK_排放源识别编号', width: 170 },
-  { prop: 'companyCode', label: 'FK_公司编号', width: 130 },
   { prop: 'companyName', label: '公司名称', minWidth: 180 },
   { prop: 'factoryName', label: '工厂', minWidth: 150 },
-  { prop: 'sourceCategoryKey', label: 'FK_排放源分类', width: 140 },
-  { prop: 'scopeName', label: '范围', width: 110 },
+  { prop: 'scopeName', label: '核算范围', width: 110 },
   { prop: 'scopeSubcategory', label: '范围子类别', minWidth: 190 },
   { prop: 'sourceIdentificationName', label: '排放源识别', minWidth: 170 },
   { prop: 'emissionSourceName', label: '排放源', minWidth: 160 },
@@ -463,8 +474,7 @@ const activityTableColumns: ActivityTableColumn[] = [
   { prop: 'activityValue', label: '活动数据', width: 130, align: 'right' },
   { prop: 'responsibleDept', label: '负责部门', width: 130 },
   { prop: 'dataSource', label: '数据来源', width: 130 },
-  { prop: 'sourceRemark', label: '备注', minWidth: 160 },
-  { prop: 'factorKey', label: 'FK_排放因子', width: 130 }
+  { prop: 'sourceRemark', label: '备注', minWidth: 160 }
 ];
 const activityColumnOptions = ref<FieldOption[]>(
   activityTableColumns.map((column) => ({
@@ -525,7 +535,7 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         label: field.sourceColumnName,
         type: 'select',
         required: field.rowValueRequired,
-        options: DATA_SOURCE_OPTIONS,
+        options: dataSourceOptions.value,
         width: 160
       };
     }
@@ -577,7 +587,9 @@ const rules: FormRules<ActivityEntryForm> = {
 
 const selectedSource = computed(() => emissionSources.value.find((source) => source.sourceIdentificationCode === form.sourceIdentificationCode));
 const activityUnitOptions = computed<SelectOption[]>(() => {
-  const units = new Set(sourceCategoryOptions.value.map((option) => (option.record as Record<string, any> | undefined)?.field02).filter(Boolean) as string[]);
+  const units = new Set(
+    sourceCategoryOptions.value.map((option) => (option.record as Record<string, any> | undefined)?.field02).filter(Boolean) as string[]
+  );
   return Array.from(units).map((unit) => ({ label: unit, value: unit }));
 });
 const manualIssues = computed(() => collectIssues(manualValidation.value));
@@ -600,7 +612,7 @@ const uploadStatusText = computed(() => {
 });
 
 const sourceLabel = (source: EmissionSourceVO) =>
-  [source.sourceIdentificationCode, source.emissionSourceName ?? source.sourceIdentificationName].filter(Boolean).join(' / ');
+  [source.factoryName, source.sourceIdentificationName, source.emissionSourceName].filter(Boolean).join(' / ');
 const isBlockingIssue = (issue: Sheet656ValidationIssue) => issue.severity === 'ERROR';
 const valueToString = (value?: string | number) => (value === undefined || value === null ? '' : String(value));
 const roundToTwoDecimal = (value?: string | number) => {
@@ -1030,10 +1042,12 @@ const resetQuery = () => {
 };
 
 const loadControlledOptions = async () => {
-  const [companies, sourceCategories, departments] = await Promise.all([
+  const [companies, sourceCategories, departments, dataSources, dataStatuses] = await Promise.all([
     loadDimensionOptions('company'),
     loadDimensionOptions('emission-source-category'),
-    loadDeptOptions()
+    loadDeptOptions(),
+    loadDataSourceOptions(),
+    loadActivityDataStatusOptions()
   ]);
   companyOptions.value = companies;
   factoryOptions.value = companies
@@ -1051,6 +1065,8 @@ const loadControlledOptions = async () => {
     .filter(Boolean) as SelectOption[];
   sourceCategoryOptions.value = sourceCategories;
   deptOptions.value = departments;
+  dataSourceOptions.value = dataSources;
+  activityDataStatusOptions.value = dataStatuses;
 };
 
 watch(

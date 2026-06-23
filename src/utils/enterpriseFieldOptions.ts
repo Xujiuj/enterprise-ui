@@ -1,5 +1,6 @@
 import { listDimensionRecord } from '@/api/enterprise/dimensionRecord';
 import type { DimensionRecordVO } from '@/api/enterprise/dimensionRecord/types';
+import { listEnterpriseOptions } from '@/api/enterprise/options';
 import { listDept } from '@/api/system/dept';
 import type { DeptVO } from '@/api/system/dept/types';
 
@@ -8,30 +9,6 @@ export interface SelectOption {
   value: string | number | boolean;
   record?: Record<string, any>;
 }
-
-export const DATA_SOURCE_OPTIONS: SelectOption[] = [
-  { label: '发票', value: '发票' },
-  { label: '系统', value: '系统' },
-  { label: '仪表', value: '仪表' },
-  { label: '合同', value: '合同' },
-  { label: '台账', value: '台账' },
-  { label: 'ERP', value: 'ERP' },
-  { label: '抄表记录', value: '抄表记录' }
-];
-
-export const FACTOR_TABLE_OPTIONS: SelectOption[] = [
-  { label: '201 EF排放因子维度表', value: '201ef' },
-  { label: '202 EF电力因子维度表', value: '202ef' },
-  { label: '203 EF电力因子版本对应', value: '203ef' },
-  { label: '204 EF燃料因子计算', value: '204ef' },
-  { label: '205 EF电力因子口径维度', value: '205ef' },
-  { label: '206 温室气体维度', value: '206' }
-];
-
-export const MONTH_OPTIONS: SelectOption[] = Array.from({ length: 12 }, (_, index) => {
-  const month = index + 1;
-  return { label: `${month}月`, value: month };
-});
 
 const uniqueByValue = (options: SelectOption[]) => {
   const seen = new Set<string>();
@@ -43,6 +20,33 @@ const uniqueByValue = (options: SelectOption[]) => {
     seen.add(key);
     return true;
   });
+};
+
+export const loadEnterpriseOptions = async (
+  optionCode: string,
+  params?: {
+    dimensionCode?: string;
+    field?: string;
+  }
+) => {
+  const res = await listEnterpriseOptions(optionCode, params);
+  return uniqueByValue(
+    (res.data ?? [])
+      .map((record) => {
+        const label = String(record.label ?? '').trim();
+        const value = record.value;
+        const rawValue = String(value ?? '').trim();
+        if (!label || !rawValue) {
+          return undefined;
+        }
+        return {
+          label,
+          value,
+          record
+        };
+      })
+      .filter((option): option is SelectOption => Boolean(option))
+  );
 };
 
 export const dimensionRecordLabel = (record: DimensionRecordVO) =>
@@ -75,3 +79,34 @@ export const loadDeptOptions = async () => {
     }))
   );
 };
+
+export const loadFactoryOptions = () =>
+  loadDimensionOptions('company', (record) => {
+    const factoryCode = record.field01 || record.recordCode;
+    const factoryName = record.field02 || record.recordName;
+    if (!factoryCode) return undefined;
+    return {
+      label: [factoryCode, factoryName].filter(Boolean).join(' / '),
+      value: factoryCode,
+      record
+    };
+  });
+
+export const loadSourceCategoryOptions = () => loadDimensionOptions('emission-source-category');
+export const loadFactorOptions = () => loadDimensionOptions('ef-factor');
+export const loadIntensityRuleOptions = () => loadDimensionOptions('intensity-denominator-rule');
+export const loadIntensityTargetOptions = () => loadDimensionOptions('intensity-target');
+export const loadDataSourceOptions = () => loadEnterpriseOptions('data-source');
+export const loadActivityDataStatusOptions = () => loadEnterpriseOptions('activity-data-status');
+export const loadBooleanStatusOptions = () => loadEnterpriseOptions('boolean-status');
+export const loadFactorTableOptions = () => loadEnterpriseOptions('factor-table-code');
+export const loadYearOptions = () => loadEnterpriseOptions('activity-year');
+export const loadMonthOptions = () => loadEnterpriseOptions('activity-month');
+export const loadElectricityTypeOptions = () => loadEnterpriseOptions('electricity-type');
+export const loadProofStatusOptions = () => loadEnterpriseOptions('proof-status');
+export const loadIntensityMetricStatusOptions = () => loadEnterpriseOptions('intensity-metric-status');
+export const loadFactorConfirmationStatusOptions = () => loadEnterpriseOptions('factor-confirmation-status');
+export const loadTemplateTypeOptions = () => loadEnterpriseOptions('template-type');
+export const loadValidationStatusOptions = () => loadEnterpriseOptions('validation-status');
+export const loadRecordStatusOptions = () => loadEnterpriseOptions('record-status');
+export const loadDimensionFieldOptions = (dimensionCode: string, field: string) => loadEnterpriseOptions('dimension-field', { dimensionCode, field });

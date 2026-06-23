@@ -32,19 +32,9 @@ import {
 import type { ReportTemplateFileVO } from '@/api/enterprise/reportTemplateFile/types';
 import { errorCode } from '@/utils/errorCode';
 import { blobValidate } from '@/utils/ruoyi';
+import { loadBooleanStatusOptions, loadTemplateTypeOptions } from '@/utils/enterpriseFieldOptions';
 
 const syncing = ref(false);
-
-const enabledOptions = [
-  { label: '启用', value: true },
-  { label: '停用', value: false }
-];
-
-const templateTypeOptions = [
-  { label: 'Power BI', value: 'power_bi' },
-  { label: 'Excel', value: 'excel' },
-  { label: 'PDF', value: 'pdf' }
-];
 
 async function handleSync(refresh: () => Promise<void>) {
   syncing.value = true;
@@ -96,7 +86,6 @@ const config = {
       label: '类型',
       type: 'tag',
       width: 110,
-      valueMap: { power_bi: 'Power BI', excel: 'Excel', pdf: 'PDF' },
       tagMap: { power_bi: 'success', excel: 'primary', pdf: 'info' }
     },
     { prop: 'fileName', label: '文件名', minWidth: 180 },
@@ -105,7 +94,6 @@ const config = {
       label: '状态',
       type: 'tag',
       width: 90,
-      valueMap: { true: '启用', false: '停用' },
       tagMap: { true: 'success', false: 'info' }
     },
     { prop: 'remark', label: '备注', minWidth: 180 }
@@ -113,13 +101,13 @@ const config = {
   searchFields: [
     { prop: 'templateCode', label: '模板编码' },
     { prop: 'templateName', label: '模板名称' },
-    { prop: 'templateType', label: '类型', type: 'select', options: templateTypeOptions },
-    { prop: 'enabledFlag', label: '状态', type: 'select', options: enabledOptions }
+    { prop: 'templateType', label: '类型', type: 'select', loadOptions: loadTemplateTypeOptions },
+    { prop: 'enabledFlag', label: '状态', type: 'select', loadOptions: loadBooleanStatusOptions }
   ],
   formFields: [
     { prop: 'templateCode', label: '模板编码', required: true },
     { prop: 'templateName', label: '模板名称', required: true },
-    { prop: 'templateType', label: '类型', type: 'select', options: templateTypeOptions, required: true },
+    { prop: 'templateType', label: '类型', type: 'select', loadOptions: loadTemplateTypeOptions, required: true },
     { prop: 'fileName', label: '文件名', required: true },
     {
       prop: 'filePath',

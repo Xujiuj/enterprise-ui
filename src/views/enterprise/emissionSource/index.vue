@@ -5,26 +5,39 @@
 <script setup name="EnterpriseEmissionSource" lang="ts">
 import EnterpriseCrudPage from '@/views/enterprise/components/EnterpriseCrudPage.vue';
 import { addEmissionSource, delEmissionSource, getEmissionSource, listEmissionSource, updateEmissionSource } from '@/api/enterprise/emissionSource';
-import { DATA_SOURCE_OPTIONS, loadDeptOptions, loadDimensionOptions } from '@/utils/enterpriseFieldOptions';
+import {
+  loadDeptOptions,
+  loadDimensionOptions,
+  loadFactorOptions,
+  loadBooleanStatusOptions,
+  loadDataSourceOptions
+} from '@/utils/enterpriseFieldOptions';
 
-const loadCompanyOptions = () => loadDimensionOptions('company');
+const loadCompanyOptions = () =>
+  loadDimensionOptions('company', (record) => {
+    const factoryCode = record.field01 || record.recordCode;
+    const factoryName = record.field02 || record.recordName;
+    return {
+      label: [factoryCode, factoryName].filter(Boolean).join(' / '),
+      value: factoryCode,
+      record
+    };
+  });
+
 const loadFactoryOptions = () =>
   loadDimensionOptions('company', (record) => {
+    const factoryCode = record.field01 || record.recordCode;
     const factoryName = record.field02 || record.recordName;
     if (!factoryName) return undefined;
     return {
-      label: [record.recordCode, factoryName].filter(Boolean).join(' / '),
+      label: [factoryCode, factoryName].filter(Boolean).join(' / '),
       value: factoryName,
       record
     };
   });
-const loadSourceCategoryOptions = () => loadDimensionOptions('emission-source-category');
-const loadFactorOptions = () => loadDimensionOptions('ef-factor');
 
-const enabledOptions = [
-  { label: '启用', value: true },
-  { label: '停用', value: false }
-];
+const loadSourceCategoryOptions = () => loadDimensionOptions('emission-source-category');
+const loadEmissionSourceOptions = () => loadDimensionOptions('emission-source');
 
 const applyCompany = (_value: unknown, form: Record<string, any>, option?: { record?: Record<string, any> }) => {
   const record = option?.record;
@@ -48,46 +61,49 @@ const applyFactor = (_value: unknown, form: Record<string, any>, option?: { reco
 
 const config = {
   title: '排放源识别',
-  description: '维护客户样例口径的排放源识别数据，供活动数据录入和排放计算引用。',
+  description: '维护企业排放源、负责部门、数据来源和适用因子。企业填报活动数据时只需选择排放源，系统自动带出公司、工厂、分类、范围和因子。',
   permissionPrefix: 'enterprise:emissionSource',
   columns: [
-    { prop: 'companyCode', label: 'FK_公司编号', minWidth: 140 },
     { prop: 'companyName', label: '公司名称', minWidth: 180 },
-    { prop: 'factoryName', label: '工厂', minWidth: 150 },
-    { prop: 'sourceCategoryKey', label: 'FK_排放源分类', minWidth: 150 },
-    { prop: 'scopeName', label: '范围', width: 110 },
-    { prop: 'scopeSubcategory', label: '范围子类别', minWidth: 160 },
-    { prop: 'sourceIdentificationCode', label: 'PK_排放源识别编号', minWidth: 170 },
+    { prop: 'factoryName', label: '工厂', minWidth: 180 },
+    { prop: 'scopeName', label: '核算范围', width: 110 },
+    { prop: 'scopeSubcategory', label: '范围子类别', minWidth: 170 },
+    { prop: 'sourceIdentificationCode', label: '排放源编号', minWidth: 150 },
     { prop: 'sourceIdentificationName', label: '排放源识别', minWidth: 180 },
     { prop: 'emissionSourceName', label: '排放源', minWidth: 180 },
     { prop: 'responsibleDept', label: '负责部门', minWidth: 150 },
-    { prop: 'dataSource', label: '数据来源', minWidth: 150 },
-    { prop: 'factorKey', label: 'FK_排放因子', minWidth: 140 }
+    { prop: 'dataSource', label: '数据来源', minWidth: 150 }
   ],
   searchFields: [
-    { prop: 'companyCode', label: 'FK_公司编号', type: 'select', loadOptions: loadCompanyOptions },
+    { prop: 'companyCode', label: '公司/工厂', type: 'select', loadOptions: loadCompanyOptions },
     { prop: 'factoryName', label: '工厂', type: 'select', loadOptions: loadFactoryOptions },
-    { prop: 'sourceCategoryKey', label: 'FK_排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions },
-    { prop: 'sourceIdentificationCode', label: 'PK_排放源识别编号' },
-    { prop: 'emissionSourceName', label: '排放源' },
+    { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions },
+    { prop: 'sourceIdentificationCode', label: '排放源编号', type: 'select', loadOptions: loadEmissionSourceOptions },
     { prop: 'responsibleDept', label: '负责部门', type: 'select', loadOptions: loadDeptOptions },
-    { prop: 'dataSource', label: '数据来源', type: 'select', options: DATA_SOURCE_OPTIONS },
-    { prop: 'factorKey', label: 'FK_排放因子', type: 'select', loadOptions: loadFactorOptions },
-    { prop: 'enabledFlag', label: '状态', type: 'select', options: enabledOptions }
+    { prop: 'dataSource', label: '数据来源', type: 'select', loadOptions: loadDataSourceOptions },
+    { prop: 'factorKey', label: '适用因子', type: 'select', loadOptions: loadFactorOptions },
+    { prop: 'enabledFlag', label: '状态', type: 'select', loadOptions: loadBooleanStatusOptions }
   ],
   formFields: [
-    { prop: 'companyCode', label: 'FK_公司编号', type: 'select', loadOptions: loadCompanyOptions, onChange: applyCompany, required: true },
+    { prop: 'companyCode', label: '公司/工厂', type: 'select', loadOptions: loadCompanyOptions, onChange: applyCompany, required: true },
     { prop: 'companyName', label: '公司名称', disabled: true },
     { prop: 'factoryName', label: '工厂', type: 'select', loadOptions: loadFactoryOptions },
-    { prop: 'sourceCategoryKey', label: 'FK_排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions, onChange: applySourceCategory, required: true },
-    { prop: 'scopeName', label: '范围', disabled: true },
+    {
+      prop: 'sourceCategoryKey',
+      label: '排放源分类',
+      type: 'select',
+      loadOptions: loadSourceCategoryOptions,
+      onChange: applySourceCategory,
+      required: true
+    },
+    { prop: 'scopeName', label: '核算范围', disabled: true },
     { prop: 'scopeSubcategory', label: '范围子类别', disabled: true },
-    { prop: 'sourceIdentificationCode', label: 'PK_排放源识别编号', required: true },
+    { prop: 'sourceIdentificationCode', label: '排放源编号', required: true },
     { prop: 'sourceIdentificationName', label: '排放源识别' },
     { prop: 'emissionSourceName', label: '排放源' },
     { prop: 'responsibleDept', label: '负责部门', type: 'select', loadOptions: loadDeptOptions },
-    { prop: 'dataSource', label: '数据来源', type: 'select', options: DATA_SOURCE_OPTIONS },
-    { prop: 'factorKey', label: 'FK_排放因子', type: 'select', loadOptions: loadFactorOptions, onChange: applyFactor }
+    { prop: 'dataSource', label: '数据来源', type: 'select', loadOptions: loadDataSourceOptions },
+    { prop: 'factorKey', label: '适用因子', type: 'select', loadOptions: loadFactorOptions, onChange: applyFactor }
   ],
   emptyForm: {
     enabledFlag: true

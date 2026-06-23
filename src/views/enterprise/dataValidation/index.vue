@@ -10,7 +10,14 @@
     <section class="panel mb-4">
       <el-form :model="queryParams" inline label-width="84px">
         <el-form-item label="核算期间">
-          <el-date-picker v-model="selectedPeriod" type="month" value-format="YYYY-MM" placeholder="选择期间" clearable @change="handlePeriodChange" />
+          <el-date-picker
+            v-model="selectedPeriod"
+            type="month"
+            value-format="YYYY-MM"
+            placeholder="选择期间"
+            clearable
+            @change="handlePeriodChange"
+          />
         </el-form-item>
       </el-form>
     </section>

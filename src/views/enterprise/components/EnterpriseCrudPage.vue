@@ -22,7 +22,7 @@
       </el-form>
       <div v-show="!showSearch" class="search-bar search-bar-collapsed">
         <div class="search-actions">
-            <right-toolbar v-model:showSearch="showSearch" :columns="columnOptions" :gutter="0" @query-table="getList" />
+          <right-toolbar v-model:showSearch="showSearch" :columns="columnOptions" :gutter="0" @query-table="getList" />
         </div>
       </div>
 
@@ -128,7 +128,11 @@
         <template v-if="showExtensionFieldsInCrudDrawer">
           <el-divider content-position="left">扩展字段</el-divider>
           <el-form-item v-for="field in extensionFields" :key="String(field.id)" :label="field.fieldName || field.fieldCode">
-            <component :is="extensionControlComponent(field)" v-bind="extensionControlProps(field)" v-model="extensionValues[extensionFieldKey(field)]" />
+            <component
+              :is="extensionControlComponent(field)"
+              v-bind="extensionControlProps(field)"
+              v-model="extensionValues[extensionFieldKey(field)]"
+            />
           </el-form-item>
         </template>
       </el-form>
@@ -142,7 +146,11 @@
       <el-form label-width="132px">
         <template v-if="extensionFields.length > 0">
           <el-form-item v-for="field in extensionFields" :key="String(field.id)" :label="field.fieldName || field.fieldCode">
-            <component :is="extensionControlComponent(field)" v-bind="extensionControlProps(field)" v-model="extensionValues[extensionFieldKey(field)]" />
+            <component
+              :is="extensionControlComponent(field)"
+              v-bind="extensionControlProps(field)"
+              v-model="extensionValues[extensionFieldKey(field)]"
+            />
           </el-form-item>
         </template>
         <el-empty v-else description="暂无可维护的扩展字段" />
@@ -158,17 +166,7 @@
 <script setup name="EnterpriseCrudPage" lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import {
-  ElDatePicker,
-  ElInput,
-  ElInputNumber,
-  ElMessage,
-  ElMessageBox,
-  ElSelect,
-  ElSwitch,
-  type FormInstance,
-  type FormRules
-} from 'element-plus';
+import { ElDatePicker, ElInput, ElInputNumber, ElMessage, ElMessageBox, ElSelect, ElSwitch, type FormInstance, type FormRules } from 'element-plus';
 import { listExtensionFields, listExtensionFieldValues, saveExtensionFieldValuesBatch } from '@/api/enterprise/extensionField';
 import type { ExtensionFieldVO, ExtensionFieldValueForm, ExtensionFieldValueVO } from '@/api/enterprise/extensionField/types';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
@@ -186,7 +184,6 @@ interface FieldConfig {
   prop: string;
   label: string;
   type?: string;
-  options?: SelectOption[];
   loadOptions?: () => Promise<SelectOption[]>;
   onChange?: (value: CrudValue, form: CrudRecord, option?: SelectOption) => void;
   required?: boolean;
@@ -342,7 +339,7 @@ const resetForm = () => {
   crudFormRef.value?.resetFields();
 };
 
-const fieldOptions = (field: FieldConfig) => field.options ?? dynamicOptions[field.prop] ?? [];
+const fieldOptions = (field: FieldConfig) => dynamicOptions[field.prop] ?? [];
 
 const loadFieldOptions = async () => {
   const fields = [...props.config.searchFields, ...props.config.formFields];
@@ -720,7 +717,8 @@ const submitExtensionValues = async () => {
 
 const formatValue = (column: ColumnConfig, value: CrudValue) => {
   const key = String(value ?? '');
-  return column.valueMap?.[key] ?? value ?? '-';
+  const optionLabel = dynamicOptions[column.prop]?.find((option) => String(option.value) === key)?.label;
+  return optionLabel ?? column.valueMap?.[key] ?? value ?? '-';
 };
 
 const resolveTagType = (column: ColumnConfig, value: CrudValue): any => {
