@@ -25,11 +25,6 @@
         <el-form-item label="活动期间">
           <el-date-picker v-model="selectedQueryPeriod" type="month" value-format="YYYY-MM" class="query-month" @change="handleQueryPeriodChange" />
         </el-form-item>
-        <el-form-item label="活动单位" prop="activityUnit">
-          <el-select v-model="queryParams.activityUnit" clearable filterable class="query-medium">
-            <el-option v-for="option in activityUnitOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="负责部门" prop="responsibleDept">
           <el-select v-model="queryParams.responsibleDept" clearable filterable class="query-medium">
             <el-option v-for="option in deptOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
@@ -331,9 +326,11 @@ import {
 } from '@/api/enterprise/activityEntry';
 import {
   loadActivityDataStatusOptions,
+  loadCompanyCodeOptions,
   loadDataSourceOptions,
-  loadDeptOptions,
-  loadDimensionOptions,
+  loadFactoryNameOptions,
+  loadResponsibleDeptOptions,
+  loadSourceCategoryOptions,
   type SelectOption
 } from '@/utils/enterpriseFieldOptions';
 import type { ActivityDataQuery, ActivityDataVO } from '@/api/enterprise/activityData/types';
@@ -442,7 +439,6 @@ const queryParams = reactive<ActivityDataQuery>({
   companyCode: undefined,
   factoryName: undefined,
   sourceCategoryKey: undefined,
-  activityUnit: undefined,
   responsibleDept: undefined,
   dataSource: undefined,
   activityYear: undefined,
@@ -586,12 +582,6 @@ const rules: FormRules<ActivityEntryForm> = {
 };
 
 const selectedSource = computed(() => emissionSources.value.find((source) => source.sourceIdentificationCode === form.sourceIdentificationCode));
-const activityUnitOptions = computed<SelectOption[]>(() => {
-  const units = new Set(
-    sourceCategoryOptions.value.map((option) => (option.record as Record<string, any> | undefined)?.field02).filter(Boolean) as string[]
-  );
-  return Array.from(units).map((unit) => ({ label: unit, value: unit }));
-});
 const manualIssues = computed(() => collectIssues(manualValidation.value));
 const manualBlockingIssues = computed(() => manualIssues.value.filter((issue) => isBlockingIssue(issue)));
 const manualWarningIssues = computed(() => manualIssues.value.filter((issue) => !isBlockingIssue(issue)));
@@ -1042,27 +1032,16 @@ const resetQuery = () => {
 };
 
 const loadControlledOptions = async () => {
-  const [companies, sourceCategories, departments, dataSources, dataStatuses] = await Promise.all([
-    loadDimensionOptions('company'),
-    loadDimensionOptions('emission-source-category'),
-    loadDeptOptions(),
+  const [companies, factories, sourceCategories, departments, dataSources, dataStatuses] = await Promise.all([
+    loadCompanyCodeOptions(),
+    loadFactoryNameOptions(),
+    loadSourceCategoryOptions(),
+    loadResponsibleDeptOptions(),
     loadDataSourceOptions(),
     loadActivityDataStatusOptions()
   ]);
   companyOptions.value = companies;
-  factoryOptions.value = companies
-    .map((option) => {
-      const record = option.record as Record<string, any> | undefined;
-      const factoryName = record?.field02 || record?.recordName;
-      return factoryName
-        ? {
-            label: [record?.recordCode, factoryName].filter(Boolean).join(' / '),
-            value: factoryName,
-            record
-          }
-        : undefined;
-    })
-    .filter(Boolean) as SelectOption[];
+  factoryOptions.value = factories;
   sourceCategoryOptions.value = sourceCategories;
   deptOptions.value = departments;
   dataSourceOptions.value = dataSources;

@@ -1,8 +1,6 @@
 import { listDimensionRecord } from '@/api/enterprise/dimensionRecord';
 import type { DimensionRecordVO } from '@/api/enterprise/dimensionRecord/types';
 import { listEnterpriseOptions } from '@/api/enterprise/options';
-import { listDept } from '@/api/system/dept';
-import type { DeptVO } from '@/api/system/dept/types';
 
 export interface SelectOption {
   label: string;
@@ -69,30 +67,14 @@ export const loadDimensionOptions = async (
   return uniqueByValue((res.rows ?? res.data ?? []).map(mapper).filter((option): option is SelectOption => Boolean(option)));
 };
 
-export const loadDeptOptions = async () => {
-  const res = await listDept({ status: 0, pageNum: 1, pageSize: 1000 });
-  return uniqueByValue(
-    (res.data ?? res.rows ?? []).map((dept: DeptVO) => ({
-      label: dept.deptName,
-      value: dept.deptName,
-      record: dept
-    }))
-  );
-};
-
-export const loadFactoryOptions = () =>
-  loadDimensionOptions('company', (record) => {
-    const factoryCode = record.field01 || record.recordCode;
-    const factoryName = record.field02 || record.recordName;
-    if (!factoryCode) return undefined;
-    return {
-      label: [factoryCode, factoryName].filter(Boolean).join(' / '),
-      value: factoryCode,
-      record
-    };
-  });
-
-export const loadSourceCategoryOptions = () => loadDimensionOptions('emission-source-category');
+export const loadCompanyCodeOptions = () => loadEnterpriseOptions('company-code');
+export const loadCompanyNameOptions = () => loadEnterpriseOptions('company-name');
+export const loadFactoryCodeOptions = () => loadEnterpriseOptions('factory-code');
+export const loadFactoryNameOptions = () => loadEnterpriseOptions('factory-name');
+export const loadFactoryOptions = loadFactoryCodeOptions;
+export const loadSourceCategoryOptions = () => loadEnterpriseOptions('source-category-key');
+export const loadResponsibleDeptOptions = () => loadEnterpriseOptions('responsible-dept');
+export const loadEmissionSourceCodeOptions = () => loadEnterpriseOptions('emission-source-code');
 export const loadFactorOptions = () => loadDimensionOptions('ef-factor');
 export const loadIntensityRuleOptions = () => loadDimensionOptions('intensity-denominator-rule');
 export const loadIntensityTargetOptions = () => loadDimensionOptions('intensity-target');

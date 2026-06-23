@@ -15,25 +15,12 @@ import {
   loadDataSourceOptions,
   loadElectricityTypeOptions,
   loadFactorOptions,
-  loadFactoryOptions,
+  loadFactoryCodeOptions,
   loadMonthOptions,
   loadProofStatusOptions,
   loadSourceCategoryOptions,
   loadYearOptions
 } from '@/utils/enterpriseFieldOptions';
-
-const applyFactory = (_value: unknown, form: Record<string, any>, option?: { record?: Record<string, any> }) => {
-  const record = option?.record;
-  if (!record) return;
-  form.factoryName = record.field02 || record.recordName;
-};
-
-const applySourceCategory = (_value: unknown, form: Record<string, any>, option?: { record?: Record<string, any> }) => {
-  const record = option?.record;
-  if (!record) return;
-  form.scopeName = record.field01 || form.scopeName;
-  form.scopeSubcategory = record.recordName || form.scopeSubcategory;
-};
 
 const applyFactor = (_value: unknown, form: Record<string, any>, option?: { record?: Record<string, any> }) => {
   const record = option?.record;
@@ -43,7 +30,7 @@ const applyFactor = (_value: unknown, form: Record<string, any>, option?: { reco
 
 const config = {
   title: '绿电绿证数据',
-  description: '维护企业采购或持有的绿电、绿证数据，用于抵扣来源、数据验证和报表引用。工厂、排放源分类、数据来源和适用因子均从受控选项选择。',
+  description: '维护企业采购或持有的绿电、绿证数据。工厂、排放源分类、数据来源和适用因子均从企业业务表已有值去重选项选择。',
   permissionPrefix: 'enterprise:greenPowerCertificate',
   extension: {
     moduleCode: 'green_electricity' as const,
@@ -69,7 +56,7 @@ const config = {
     { prop: 'emissionSourceName', label: '排放源', minWidth: 160 }
   ],
   searchFields: [
-    { prop: 'factoryCode', label: '工厂', type: 'select', loadOptions: loadFactoryOptions },
+    { prop: 'factoryCode', label: '工厂', type: 'select', loadOptions: loadFactoryCodeOptions },
     { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions },
     { prop: 'activityYear', label: '年度', type: 'select', loadOptions: loadYearOptions },
     { prop: 'activityMonth', label: '月份', type: 'select', loadOptions: loadMonthOptions },
@@ -80,13 +67,13 @@ const config = {
     { prop: 'certificateCode', label: '证书编号' }
   ],
   formFields: [
-    { prop: 'factoryCode', label: '工厂', type: 'select', loadOptions: loadFactoryOptions, onChange: applyFactory, required: true },
-    { prop: 'factoryName', label: '工厂名称', disabled: true },
+    { prop: 'factoryCode', label: '工厂', type: 'select', loadOptions: loadFactoryCodeOptions, required: true },
+    { prop: 'factoryName', label: '工厂名称' },
     { prop: 'activityYear', label: '年度', type: 'select', loadOptions: loadYearOptions },
     { prop: 'activityMonth', label: '月份', type: 'select', loadOptions: loadMonthOptions },
-    { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions, onChange: applySourceCategory },
-    { prop: 'scopeName', label: '核算范围', disabled: true },
-    { prop: 'scopeSubcategory', label: '范围子类别', disabled: true },
+    { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions },
+    { prop: 'scopeName', label: '核算范围' },
+    { prop: 'scopeSubcategory', label: '范围子类别' },
     { prop: 'electricityType', label: '电力类型', type: 'select', loadOptions: loadElectricityTypeOptions },
     { prop: 'electricityTypeDesc', label: '电力类型说明' },
     { prop: 'quantityKwh', label: '数量(kWh)', type: 'number', precision: 4 },
