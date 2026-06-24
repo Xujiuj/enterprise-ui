@@ -341,13 +341,17 @@ import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
 import {
   importLocalSheet656Activity,
   listLocalActivityData,
-  listLocalEmissionSource,
   parseLocalSheet656ActivityFile,
   saveLocalSheet656Activity,
   validateLocalSheet656Activity
 } from '@/api/enterprise/activityEntry';
 import {
   loadActivityDataStatusOptions,
+  loadActivityEntryEmissionSourceNameOptions,
+  loadActivityEntrySourceCategoryOptions,
+  loadActivityEntrySourceCompanyOptions,
+  loadActivityEntrySourceFactoryOptions,
+  loadActivityEntrySourceLeafOptions,
   loadCompanyNameOptions,
   loadDataSourceOptions,
   loadFactoryNameOptions,
@@ -364,13 +368,6 @@ import type {
   Sheet656ImportValidationResult,
   Sheet656ValidationIssue
 } from '@/api/enterprise/sheet656ActivityValidation/types';
-import {
-  filteredEmissionSourceOptions,
-  sourceOptionLabel,
-  uniqueEmissionSourceNameOptions,
-  uniqueSourceFieldOptions,
-  type EmissionSourceHierarchyFilters
-} from './options';
 
 interface ActivityEntryForm {
   sourceCompanyName?: string;
@@ -445,13 +442,18 @@ const uploadParsing = ref(false);
 const uploadImporting = ref(false);
 const total = ref(0);
 const activityList = ref<ActivityDataVO[]>([]);
-const emissionSources = ref<EmissionSourceVO[]>([]);
 const companyOptions = ref<SelectOption[]>([]);
 const factoryOptions = ref<SelectOption[]>([]);
 const sourceCategoryOptions = ref<SelectOption[]>([]);
 const deptOptions = ref<SelectOption[]>([]);
 const dataSourceOptions = ref<SelectOption[]>([]);
 const activityDataStatusOptions = ref<SelectOption[]>([]);
+const emissionSourceNameOptions = ref<SelectOption[]>([]);
+const sourceCompanyOptions = ref<SelectOption[]>([]);
+const sourceFactoryOptions = ref<SelectOption[]>([]);
+const sourceCategoryCascadeOptions = ref<SelectOption[]>([]);
+const sourceLeafOptions = ref<SelectOption[]>([]);
+const allSourceOptions = ref<SelectOption[]>([]);
 const manualValidation = ref<Sheet656ImportValidationResult>();
 const uploadValidation = ref<Sheet656ImportValidationResult>();
 const manualResolvedDerivedValues = ref<DerivedValueMap>({});
@@ -459,49 +461,6 @@ const parsedUploadRequest = ref<Sheet656ImportValidationRequest>();
 const uploadFileName = ref('');
 const selectedQueryPeriod = ref('');
 const initializingForm = ref(false);
-const emissionSourceNameOptions = computed(() => uniqueEmissionSourceNameOptions(emissionSources.value));
-const sourceCompanyOptions = computed(() => uniqueSourceFieldOptions(emissionSources.value, 'companyName'));
-const sourceFactoryOptions = computed(() =>
-  uniqueSourceFieldOptions(emissionSources.value, 'factoryName', {
-    companyName: form.sourceCompanyName
-  })
-);
-const sourceCategoryCascadeOptions = computed(() =>
-  uniqueSourceFieldOptions(emissionSources.value, 'sourceCategoryKey', {
-    companyName: form.sourceCompanyName,
-    factoryName: form.sourceFactoryName
-  })
-);
-const sourceScopeOptions = computed(() =>
-  uniqueSourceFieldOptions(emissionSources.value, 'scopeName', {
-    companyName: form.sourceCompanyName,
-    factoryName: form.sourceFactoryName,
-    sourceCategoryKey: form.sourceCategoryKey
-  })
-);
-const sourceScopeSubcategoryOptions = computed(() =>
-  uniqueSourceFieldOptions(emissionSources.value, 'scopeSubcategory', {
-    companyName: form.sourceCompanyName,
-    factoryName: form.sourceFactoryName,
-    sourceCategoryKey: form.sourceCategoryKey,
-    scopeName: form.scopeName
-  })
-);
-const sourceIdentificationNameOptions = computed(() =>
-  uniqueSourceFieldOptions(emissionSources.value, 'sourceIdentificationName', sourceHierarchyFilters(true))
-);
-const sourceLeafOptions = computed(() => filteredEmissionSourceOptions(emissionSources.value, sourceHierarchyFilters()));
-
-const allSourceOptions = computed(() =>
-  emissionSources.value
-    .filter((source) => source.enabledFlag !== false)
-    .map((source) => ({
-      label: sourceOptionLabel(source),
-      value: source.sourceIdentificationCode || '',
-      info: `${source.companyName || ''} / ${source.factoryName || ''} / ${source.sourceCategoryKey || ''}`
-    }))
-    .filter((option) => option.value)
-);
 
 const formDrawer = reactive({
   open: false,
@@ -586,7 +545,7 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         type: 'select',
         required: true,
         width: 230,
-        options: emissionSources.value.map((source) => ({ label: sourceOptionLabel(source), value: source.sourceIdentificationCode }))
+        options: allSourceOptions.value
       };
     }
     if (field.sourceColumnCode === 'f011' || field.sourceColumnCode === 'f012' || field.sourceColumnCode === 'f014') {
@@ -677,7 +636,8 @@ const rules: FormRules<ActivityEntryForm> = {
   dataSource: [{ required: true, message: '请选择数据来源', trigger: 'change' }]
 };
 
-const selectedSource = computed(() => emissionSources.value.find((source) => source.sourceIdentificationCode === form.sourceIdentificationCode));
+const optionRecordAsSource = (option?: SelectOption): EmissionSourceVO | undefined => option?.record as EmissionSourceVO | undefined;
+const selectedSource = computed(() => optionRecordAsSource(sourceLeafOptions.value.find((option) => option.value === form.sourceIdentificationCode)));
 const manualIssues = computed(() => collectIssues(manualValidation.value));
 const manualBlockingIssues = computed(() => manualIssues.value.filter((issue) => isBlockingIssue(issue)));
 const manualWarningIssues = computed(() => manualIssues.value.filter((issue) => !isBlockingIssue(issue)));
@@ -723,7 +683,7 @@ const splitPeriod = (period?: string) => {
   return { year, month };
 };
 
-const sourceHierarchyFilters = (excludeIdentificationName = false): EmissionSourceHierarchyFilters => ({
+const sourceHierarchyFilters = (excludeIdentificationName = false) => ({
   companyName: form.sourceCompanyName,
   factoryName: form.sourceFactoryName,
   sourceCategoryKey: form.sourceCategoryKey,
@@ -741,20 +701,51 @@ const applySourceHierarchy = (source: EmissionSourceVO | undefined) => {
   form.sourceIdentificationName = source?.sourceIdentificationName;
 };
 
-const handleCompanyChange = () => {
+const loadSourceFactoryOptions = async () => {
+  sourceFactoryOptions.value = form.sourceCompanyName ? await loadActivityEntrySourceFactoryOptions(sourceHierarchyFilters()) : [];
+};
+
+const loadSourceCategoryCascadeOptions = async () => {
+  sourceCategoryCascadeOptions.value =
+    form.sourceCompanyName && form.sourceFactoryName ? await loadActivityEntrySourceCategoryOptions(sourceHierarchyFilters()) : [];
+};
+
+const loadSourceLeafOptions = async () => {
+  sourceLoading.value = true;
+  try {
+    sourceLeafOptions.value =
+      form.sourceCompanyName && form.sourceFactoryName && form.sourceCategoryKey
+        ? await loadActivityEntrySourceLeafOptions(sourceHierarchyFilters())
+        : [];
+  } finally {
+    sourceLoading.value = false;
+  }
+};
+
+const refreshSourceCascadeOptions = async () => {
+  await loadSourceFactoryOptions();
+  await loadSourceCategoryCascadeOptions();
+  await loadSourceLeafOptions();
+};
+
+const handleCompanyChange = async () => {
   clearSourceHierarchyAfter('sourceCompanyName');
+  await refreshSourceCascadeOptions();
 };
 
-const handleFactoryChange = () => {
+const handleFactoryChange = async () => {
   clearSourceHierarchyAfter('sourceFactoryName');
+  await loadSourceCategoryCascadeOptions();
+  await loadSourceLeafOptions();
 };
 
-const handleCategoryChange = () => {
+const handleCategoryChange = async () => {
   clearSourceHierarchyAfter('sourceCategoryKey');
+  await loadSourceLeafOptions();
 };
 
 const handleSourceSelect = (sourceIdentificationCode: string) => {
-  const source = emissionSources.value.find((s) => s.sourceIdentificationCode === sourceIdentificationCode);
+  const source = optionRecordAsSource(sourceLeafOptions.value.find((option) => option.value === sourceIdentificationCode));
   if (source) {
     form.sourceIdentificationName = source.sourceIdentificationName;
     form.scopeName = source.scopeName;
@@ -910,15 +901,16 @@ const resetForm = () => {
   activityFormRef.value?.clearValidate();
 };
 
-const openCreateDrawer = () => {
+const openCreateDrawer = async () => {
   resetForm();
   applyRouteQuery();
+  await refreshSourceCascadeOptions();
   formDrawer.title = '新增活动数据';
   formDrawer.readonly = false;
   formDrawer.open = true;
 };
 
-const openDetailDrawer = (row: ActivityDataVO) => {
+const openDetailDrawer = async (row: ActivityDataVO) => {
   initializingForm.value = true;
   resetForm();
   Object.assign(form, {
@@ -948,6 +940,7 @@ const openDetailDrawer = (row: ActivityDataVO) => {
     f010: row.activityUnit ?? '',
     f018: row.factorKey ?? ''
   };
+  await refreshSourceCascadeOptions();
   formDrawer.title = '查看活动数据';
   formDrawer.readonly = true;
   formDrawer.open = true;
@@ -956,8 +949,8 @@ const openDetailDrawer = (row: ActivityDataVO) => {
   });
 };
 
-const openEditDrawer = (row: ActivityDataVO) => {
-  openDetailDrawer(row);
+const openEditDrawer = async (row: ActivityDataVO) => {
+  await openDetailDrawer(row);
   formDrawer.title = '编辑活动数据';
   formDrawer.readonly = false;
 };
@@ -1163,11 +1156,17 @@ const saveSheetRows = async (rows: Record<string, any>[]) => {
   }
 };
 
-const loadEmissionSources = async () => {
+const loadEmissionSourceOptions = async () => {
   sourceLoading.value = true;
   try {
-    const res = await listLocalEmissionSource({ pageNum: 1, pageSize: 500, enabledFlag: true });
-    emissionSources.value = (res.rows ?? res.data ?? []) as EmissionSourceVO[];
+    const [sourceNames, companies, allSources] = await Promise.all([
+      loadActivityEntryEmissionSourceNameOptions(),
+      loadActivityEntrySourceCompanyOptions(),
+      loadActivityEntrySourceLeafOptions()
+    ]);
+    emissionSourceNameOptions.value = sourceNames;
+    sourceCompanyOptions.value = companies;
+    allSourceOptions.value = allSources;
   } finally {
     sourceLoading.value = false;
   }
@@ -1249,7 +1248,7 @@ watch(selectedSource, (source) => {
 
 onMounted(async () => {
   applyRouteQuery();
-  await Promise.all([loadEmissionSources(), loadControlledOptions()]);
+  await Promise.all([loadEmissionSourceOptions(), loadControlledOptions()]);
   await loadActivities();
 });
 

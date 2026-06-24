@@ -1,6 +1,7 @@
 import { listDimensionRecord } from '@/api/enterprise/dimensionRecord';
 import type { DimensionRecordVO } from '@/api/enterprise/dimensionRecord/types';
 import { listEnterpriseOptions } from '@/api/enterprise/options';
+import type { EnterpriseOptionQuery } from '@/api/enterprise/options/types';
 
 export interface SelectOption {
   label: string;
@@ -22,10 +23,7 @@ const uniqueByValue = (options: SelectOption[]) => {
 
 export const loadEnterpriseOptions = async (
   optionCode: string,
-  params?: {
-    dimensionCode?: string;
-    field?: string;
-  }
+  params?: EnterpriseOptionQuery
 ) => {
   const res = await listEnterpriseOptions(optionCode, params);
   return uniqueByValue(
@@ -77,7 +75,7 @@ export const loadResponsibleDeptOptions = () => loadEnterpriseOptions('responsib
 export const loadEmissionSourceCodeOptions = () => loadEnterpriseOptions('emission-source-code');
 export const loadFactorOptions = () => loadDimensionOptions('ef-factor');
 export const loadIntensityRuleOptions = () => loadEnterpriseOptions('intensity-rule-code');
-export const loadIntensityTargetOptions = () => loadDimensionOptions('intensity-target');
+export const loadIntensityTargetOptions = () => loadEnterpriseOptions('intensity-target-code');
 export const loadDataSourceOptions = () => loadEnterpriseOptions('data-source');
 export const loadActivityDataStatusOptions = () => loadEnterpriseOptions('activity-data-status');
 export const loadBooleanStatusOptions = () => loadEnterpriseOptions('boolean-status');
@@ -92,18 +90,17 @@ export const loadTemplateTypeOptions = () => loadEnterpriseOptions('template-typ
 export const loadValidationStatusOptions = () => loadEnterpriseOptions('validation-status');
 export const loadRecordStatusOptions = () => loadEnterpriseOptions('record-status');
 export const loadDimensionFieldOptions = (dimensionCode: string, field: string) => loadEnterpriseOptions('dimension-field', { dimensionCode, field });
+export const loadActivityEntryEmissionSourceNameOptions = (params?: EnterpriseOptionQuery) =>
+  loadEnterpriseOptions('activity-entry-emission-source-name', params);
+export const loadActivityEntrySourceCompanyOptions = (params?: EnterpriseOptionQuery) =>
+  loadEnterpriseOptions('activity-entry-source-company', params);
+export const loadActivityEntrySourceFactoryOptions = (params?: EnterpriseOptionQuery) =>
+  loadEnterpriseOptions('activity-entry-source-factory', params);
+export const loadActivityEntrySourceCategoryOptions = (params?: EnterpriseOptionQuery) =>
+  loadEnterpriseOptions('activity-entry-source-category', params);
+export const loadActivityEntrySourceLeafOptions = (params?: EnterpriseOptionQuery) => loadEnterpriseOptions('activity-entry-source-leaf', params);
 
-export const loadDenominatorUnitOptions = async (): Promise<SelectOption[]> => [
-  { label: '吨', value: '吨' },
-  { label: '万升', value: '万升' },
-  { label: 'MWh', value: 'MWh' },
-  { label: '万Nm³', value: '万Nm³' },
-  { label: '吨标煤', value: '吨标煤' },
-  { label: '万km', value: '万km' },
-  { label: '万人次', value: '万人次' },
-  { label: '万产值(万元)', value: '万产值(万元)' },
-  { label: '面积(万m²)', value: '面积(万m²)' }
-];
+export const loadDenominatorUnitOptions = () => loadEnterpriseOptions('denominator-unit');
 
 export const loadPowerGridRegionOptions = () => loadEnterpriseOptions('power-grid-region');
 export const loadOffsetPowerSourceOptions = () => loadEnterpriseOptions('offset-power-source');
