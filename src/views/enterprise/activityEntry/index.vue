@@ -96,102 +96,7 @@
     <el-drawer v-model="formDrawer.open" :title="formDrawer.title" size="680px" append-to-body destroy-on-close>
       <el-form ref="activityFormRef" :model="form" :rules="rules" label-width="112px">
         <el-row :gutter="16">
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="公司名称">
-              <el-select
-                v-model="form.sourceCompanyName"
-                class="w-full"
-                clearable
-                filterable
-                :loading="sourceLoading"
-                :disabled="formDrawer.readonly"
-                @change="clearSourceHierarchyAfter('sourceCompanyName')"
-              >
-                <el-option v-for="option in sourceCompanyOptions" :key="option.value" :label="option.label" :value="option.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="工厂编号">
-              <el-input :model-value="derivedFieldValue('f002')" disabled />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="工厂">
-              <el-select
-                v-model="form.sourceFactoryName"
-                class="w-full"
-                clearable
-                filterable
-                :loading="sourceLoading"
-                :disabled="formDrawer.readonly || !form.sourceCompanyName"
-                @change="clearSourceHierarchyAfter('sourceFactoryName')"
-              >
-                <el-option v-for="option in sourceFactoryOptions" :key="option.value" :label="option.label" :value="option.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="排放源分类">
-              <el-select
-                v-model="form.sourceCategoryKey"
-                class="w-full"
-                clearable
-                filterable
-                :loading="sourceLoading"
-                :disabled="formDrawer.readonly || !form.sourceFactoryName"
-                @change="clearSourceHierarchyAfter('sourceCategoryKey')"
-              >
-                <el-option v-for="option in sourceCategoryCascadeOptions" :key="option.value" :label="option.label" :value="option.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="范围">
-              <el-select
-                v-model="form.scopeName"
-                class="w-full"
-                clearable
-                filterable
-                :loading="sourceLoading"
-                :disabled="formDrawer.readonly || !form.sourceCategoryKey"
-                @change="clearSourceHierarchyAfter('scopeName')"
-              >
-                <el-option v-for="option in sourceScopeOptions" :key="option.value" :label="option.label" :value="option.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="范围子类别">
-              <el-select
-                v-model="form.scopeSubcategory"
-                class="w-full"
-                clearable
-                filterable
-                :loading="sourceLoading"
-                :disabled="formDrawer.readonly || !form.scopeName"
-                @change="clearSourceHierarchyAfter('scopeSubcategory')"
-              >
-                <el-option v-for="option in sourceScopeSubcategoryOptions" :key="option.value" :label="option.label" :value="option.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="排放源识别">
-              <el-select
-                v-model="form.sourceIdentificationName"
-                class="w-full"
-                clearable
-                filterable
-                :loading="sourceLoading"
-                :disabled="formDrawer.readonly || !form.scopeSubcategory"
-                @change="clearSourceHierarchyAfter('sourceIdentificationName')"
-              >
-                <el-option v-for="option in sourceIdentificationNameOptions" :key="option.value" :label="option.label" :value="option.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
+          <el-col :xs="24">
             <el-form-item label="排放源" prop="sourceIdentificationCode">
               <el-select
                 v-model="form.sourceIdentificationCode"
@@ -199,10 +104,52 @@
                 clearable
                 filterable
                 :loading="sourceLoading"
-                :disabled="formDrawer.readonly || !form.sourceIdentificationName"
+                :disabled="formDrawer.readonly"
+                placeholder="请选择排放源（选择后自动填充相关信息）"
+                @change="handleSourceSelect"
               >
-                <el-option v-for="option in sourceLeafOptions" :key="option.value" :label="option.label" :value="option.value" />
+                <el-option v-for="option in allSourceOptions" :key="option.value" :label="option.label" :value="option.value">
+                  <div class="source-option">
+                    <span class="source-option-name">{{ option.label }}</span>
+                    <span class="source-option-info">{{ option.info }}</span>
+                  </div>
+                </el-option>
               </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="公司名称">
+              <el-input :model-value="form.sourceCompanyName || derivedFieldValue('f003')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="工厂">
+              <el-input :model-value="form.sourceFactoryName || derivedFieldValue('f004')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="排放源分类">
+              <el-input :model-value="form.sourceCategoryKey || derivedFieldValue('f005')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="范围">
+              <el-input :model-value="form.scopeName || derivedFieldValue('f006')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="范围子类别">
+              <el-input :model-value="form.scopeSubcategory || derivedFieldValue('f007')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="排放源识别">
+              <el-input :model-value="form.sourceIdentificationName || derivedFieldValue('f008')" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="排放源名称">
+              <el-input :model-value="derivedFieldValue('f009')" disabled />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -229,7 +176,7 @@
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="单位">
-              <el-input v-model="derivedActivityUnit" disabled />
+              <el-input :model-value="derivedActivityUnit" disabled />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -525,6 +472,17 @@ const sourceIdentificationNameOptions = computed(() =>
 );
 const sourceLeafOptions = computed(() => filteredEmissionSourceOptions(emissionSources.value, sourceHierarchyFilters()));
 
+const allSourceOptions = computed(() =>
+  emissionSources.value
+    .filter((source) => source.enabledFlag !== false)
+    .map((source) => ({
+      label: sourceOptionLabel(source),
+      value: source.sourceIdentificationCode || '',
+      info: `${source.companyName || ''} / ${source.factoryName || ''} / ${source.sourceCategoryKey || ''}`
+    }))
+    .filter((option) => option.value)
+);
+
 const formDrawer = reactive({
   open: false,
   title: '新增活动数据',
@@ -758,6 +716,17 @@ const applySourceHierarchy = (source: EmissionSourceVO | undefined) => {
   form.scopeName = source?.scopeName;
   form.scopeSubcategory = source?.scopeSubcategory;
   form.sourceIdentificationName = source?.sourceIdentificationName;
+};
+
+const handleSourceSelect = (sourceIdentificationCode: string) => {
+  const source = emissionSources.value.find((s) => s.sourceIdentificationCode === sourceIdentificationCode);
+  if (source) {
+    applySourceHierarchy(source);
+    if (!form.responsibleDept && source.responsibleDept) {
+      form.responsibleDept = source.responsibleDept;
+    }
+  }
+  clearManualValidation();
 };
 
 const clearSourceHierarchyAfter = (field: SourceHierarchyFormField) => {
@@ -1273,6 +1242,21 @@ useAutoQuery(queryParams, () => handleQuery());
   .drawer-footer,
   .dialog-footer {
     justify-content: flex-end;
+  }
+
+  .source-option {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .source-option-name {
+      font-weight: 500;
+    }
+
+    .source-option-info {
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+    }
   }
 }
 </style>
