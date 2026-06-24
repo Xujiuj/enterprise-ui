@@ -76,7 +76,7 @@ export const loadSourceCategoryOptions = () => loadEnterpriseOptions('source-cat
 export const loadResponsibleDeptOptions = () => loadEnterpriseOptions('responsible-dept');
 export const loadEmissionSourceCodeOptions = () => loadEnterpriseOptions('emission-source-code');
 export const loadFactorOptions = () => loadDimensionOptions('ef-factor');
-export const loadIntensityRuleOptions = () => loadDimensionOptions('intensity-denominator-rule');
+export const loadIntensityRuleOptions = () => loadEnterpriseOptions('intensity-rule-code');
 export const loadIntensityTargetOptions = () => loadDimensionOptions('intensity-target');
 export const loadDataSourceOptions = () => loadEnterpriseOptions('data-source');
 export const loadActivityDataStatusOptions = () => loadEnterpriseOptions('activity-data-status');

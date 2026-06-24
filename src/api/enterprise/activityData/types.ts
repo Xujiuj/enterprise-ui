@@ -63,6 +63,9 @@ export interface ActivityDataQuery extends PageQuery {
   factoryName?: string;
   sourceCategoryKey?: string;
   scopeName?: string;
+  scopeSubcategory?: string;
+  sourceIdentificationName?: string;
+  emissionSourceName?: string;
   activityUnit?: string;
   responsibleDept?: string;
   dataSource?: string;
