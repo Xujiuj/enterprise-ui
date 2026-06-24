@@ -4,11 +4,11 @@
       <el-form v-show="showSearch" ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="search-bar wide activity-search">
         <el-form-item label="排放源" prop="sourceIdentificationCode">
           <el-select v-model="queryParams.sourceIdentificationCode" clearable filterable :loading="sourceLoading" class="query-source">
-            <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceIdentificationCode" />
+            <el-option v-for="source in emissionSources" :key="source.id" :label="sourceOptionLabel(source)" :value="source.sourceIdentificationCode" />
           </el-select>
         </el-form-item>
-        <el-form-item label="公司" prop="companyCode">
-          <el-select v-model="queryParams.companyCode" clearable filterable class="query-medium">
+        <el-form-item label="公司" prop="companyName">
+          <el-select v-model="queryParams.companyName" clearable filterable class="query-medium">
             <el-option v-for="option in companyOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
           </el-select>
         </el-form-item>
@@ -106,7 +106,7 @@
                 :loading="sourceLoading"
                 :disabled="formDrawer.readonly"
               >
-                <el-option v-for="source in emissionSources" :key="source.id" :label="sourceLabel(source)" :value="source.sourceIdentificationCode" />
+                <el-option v-for="source in emissionSources" :key="source.id" :label="sourceOptionLabel(source)" :value="source.sourceIdentificationCode" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -326,7 +326,7 @@ import {
 } from '@/api/enterprise/activityEntry';
 import {
   loadActivityDataStatusOptions,
-  loadCompanyCodeOptions,
+  loadCompanyNameOptions,
   loadDataSourceOptions,
   loadFactoryNameOptions,
   loadResponsibleDeptOptions,
@@ -342,6 +342,7 @@ import type {
   Sheet656ImportValidationResult,
   Sheet656ValidationIssue
 } from '@/api/enterprise/sheet656ActivityValidation/types';
+import { sourceOptionLabel } from './options';
 
 interface ActivityEntryForm {
   sourceIdentificationCode?: string;
@@ -437,6 +438,7 @@ const queryParams = reactive<ActivityDataQuery>({
   pageSize: 10,
   sourceIdentificationCode: undefined,
   companyCode: undefined,
+  companyName: undefined,
   factoryName: undefined,
   sourceCategoryKey: undefined,
   responsibleDept: undefined,
@@ -493,7 +495,7 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         type: 'select',
         required: true,
         width: 230,
-        options: emissionSources.value.map((source) => ({ label: sourceLabel(source), value: source.sourceIdentificationCode }))
+        options: emissionSources.value.map((source) => ({ label: sourceOptionLabel(source), value: source.sourceIdentificationCode }))
       };
     }
     if (field.sourceColumnCode === 'f011' || field.sourceColumnCode === 'f012' || field.sourceColumnCode === 'f014') {
@@ -601,8 +603,6 @@ const uploadStatusText = computed(() => {
   return parsedUploadRowCount.value > 0 ? '可导入' : '无可导入数据';
 });
 
-const sourceLabel = (source: EmissionSourceVO) =>
-  [source.factoryName, source.sourceIdentificationName, source.emissionSourceName].filter(Boolean).join(' / ');
 const isBlockingIssue = (issue: Sheet656ValidationIssue) => issue.severity === 'ERROR';
 const valueToString = (value?: string | number) => (value === undefined || value === null ? '' : String(value));
 const roundToTwoDecimal = (value?: string | number) => {
@@ -1033,7 +1033,7 @@ const resetQuery = () => {
 
 const loadControlledOptions = async () => {
   const [companies, factories, sourceCategories, departments, dataSources, dataStatuses] = await Promise.all([
-    loadCompanyCodeOptions(),
+    loadCompanyNameOptions(),
     loadFactoryNameOptions(),
     loadSourceCategoryOptions(),
     loadResponsibleDeptOptions(),
