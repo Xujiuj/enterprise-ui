@@ -2,9 +2,9 @@
   <div class="enterprise-activity-entry">
     <section class="panel search-panel">
       <el-form v-show="showSearch" ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="search-bar wide activity-search">
-        <el-form-item label="排放源" prop="sourceIdentificationCode">
-          <el-select v-model="queryParams.sourceIdentificationCode" clearable filterable :loading="sourceLoading" class="query-source">
-            <el-option v-for="source in emissionSources" :key="source.id" :label="sourceOptionLabel(source)" :value="source.sourceIdentificationCode" />
+        <el-form-item label="排放源" prop="emissionSourceName">
+          <el-select v-model="queryParams.emissionSourceName" clearable filterable :loading="sourceLoading" class="query-source">
+            <el-option v-for="option in emissionSourceNameOptions" :key="option.value" :label="option.label" :value="option.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="公司" prop="companyName">
@@ -342,7 +342,7 @@ import type {
   Sheet656ImportValidationResult,
   Sheet656ValidationIssue
 } from '@/api/enterprise/sheet656ActivityValidation/types';
-import { sourceOptionLabel } from './options';
+import { sourceOptionLabel, uniqueEmissionSourceNameOptions } from './options';
 
 interface ActivityEntryForm {
   sourceIdentificationCode?: string;
@@ -418,6 +418,7 @@ const parsedUploadRequest = ref<Sheet656ImportValidationRequest>();
 const uploadFileName = ref('');
 const selectedQueryPeriod = ref('');
 const initializingForm = ref(false);
+const emissionSourceNameOptions = computed(() => uniqueEmissionSourceNameOptions(emissionSources.value));
 
 const formDrawer = reactive({
   open: false,
@@ -437,6 +438,7 @@ const queryParams = reactive<ActivityDataQuery>({
   pageNum: 1,
   pageSize: 10,
   sourceIdentificationCode: undefined,
+  emissionSourceName: undefined,
   companyCode: undefined,
   companyName: undefined,
   factoryName: undefined,
