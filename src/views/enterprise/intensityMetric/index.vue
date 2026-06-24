@@ -11,7 +11,7 @@ import {
   listIntensityMetric,
   updateIntensityMetric
 } from '@/api/enterprise/intensityMetric';
-import { loadIntensityMetricStatusOptions, loadIntensityRuleOptions, loadIntensityTargetOptions } from '@/utils/enterpriseFieldOptions';
+import { loadDenominatorUnitOptions, loadIntensityMetricStatusOptions, loadIntensityRuleOptions, loadIntensityTargetOptions } from '@/utils/enterpriseFieldOptions';
 
 const config = {
   title: '强度指标结果',
@@ -52,7 +52,7 @@ const config = {
     { prop: 'metricPeriod', label: '期间', type: 'month', required: true },
     { prop: 'numeratorEmission', label: '排放量分子', type: 'number', required: true, precision: 6 },
     { prop: 'denominatorValue', label: '分母值', type: 'number', required: true, precision: 6 },
-    { prop: 'denominatorUnit', label: '分母单位', required: true },
+    { prop: 'denominatorUnit', label: '分母单位', type: 'select', loadOptions: loadDenominatorUnitOptions, required: true },
     { prop: 'intensityValue', label: '强度值', type: 'number', precision: 6 },
     { prop: 'targetCode', label: '目标', type: 'select', loadOptions: loadIntensityTargetOptions },
     { prop: 'metricStatus', label: '状态', type: 'select', loadOptions: loadIntensityMetricStatusOptions, required: true },

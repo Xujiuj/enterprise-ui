@@ -54,7 +54,7 @@ const config = {
     { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions, required: true },
     { prop: 'scopeName', label: '核算范围' },
     { prop: 'scopeSubcategory', label: '范围子类别' },
-    { prop: 'sourceIdentificationCode', label: '排放源编号', required: true },
+    { prop: 'sourceIdentificationCode', label: '排放源编号', type: 'select', loadOptions: loadEmissionSourceCodeOptions, required: true },
     { prop: 'sourceIdentificationName', label: '排放源识别' },
     { prop: 'emissionSourceName', label: '排放源' },
     { prop: 'responsibleDept', label: '负责部门', type: 'select', loadOptions: loadResponsibleDeptOptions },

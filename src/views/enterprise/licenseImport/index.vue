@@ -27,9 +27,7 @@
             <el-empty v-if="!currentState" description="暂无可用授权状态" />
             <template v-else>
               <el-alert v-if="statusMismatch" class="mb-4" type="warning" :closable="false" show-icon>
-                <template #title>
-                  导入状态为 {{ stateText }}，但当前运行状态为 {{ effectiveStatusText }}。请以运行状态作为访问控制结果。
-                </template>
+                <template #title> 导入状态为 {{ stateText }}，但当前运行状态为 {{ effectiveStatusText }}。请以运行状态作为访问控制结果。 </template>
               </el-alert>
               <el-descriptions :column="2" border>
                 <el-descriptions-item label="客户标识">{{ currentState.customerId || '-' }}</el-descriptions-item>
@@ -90,13 +88,7 @@
             <div class="el-upload__text">拖拽 License 文件到此处，或点击选择</div>
           </el-upload>
 
-          <el-input
-            v-model="expectedInstallId"
-            class="mt-4"
-            maxlength="128"
-            show-word-limit
-            placeholder="请输入本地部署指纹 expectedInstallId"
-          />
+          <el-input v-model="expectedInstallId" class="mt-4" maxlength="128" show-word-limit placeholder="请输入本地部署指纹 expectedInstallId" />
 
           <el-input
             v-model="licenseContent"
@@ -176,7 +168,7 @@ const gateAllowed = computed(() => {
 const stateText = computed(() => normalizeStatus(currentState.value?.licenseStatus));
 const stateTagType = computed(() => statusTagType(currentState.value?.licenseStatus));
 const importResultTagType = computed(() => statusTagType(lastImportResult.value?.status));
-const effectiveStatusText = computed(() => gateStatus.value ? gateReasonText(effectiveReason.value) : '未读取网关状态');
+const effectiveStatusText = computed(() => (gateStatus.value ? gateReasonText(effectiveReason.value) : '未读取网关状态'));
 const effectiveStatusTagType = computed(() => gateReasonTagType(effectiveReason.value));
 const gateDecisionText = computed(() => {
   if (!gateStatus.value) {
@@ -266,7 +258,9 @@ function statusTagType(status?: string): 'success' | 'warning' | 'danger' | 'inf
 }
 
 function normalizeStatusKey(status?: string): string {
-  return String(status ?? '').trim().toUpperCase();
+  return String(status ?? '')
+    .trim()
+    .toUpperCase();
 }
 
 function normalizeComparableStatus(status?: string): string {

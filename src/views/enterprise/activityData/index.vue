@@ -10,10 +10,10 @@
     <section class="panel">
       <el-tabs>
         <el-tab-pane label="填报与上传">
-        <EnterpriseActivityEntry />
+          <EnterpriseActivityEntry />
         </el-tab-pane>
         <el-tab-pane label="导入结果">
-        <EnterpriseImportResults />
+          <EnterpriseImportResults />
         </el-tab-pane>
       </el-tabs>
     </section>

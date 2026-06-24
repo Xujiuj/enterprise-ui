@@ -5,11 +5,8 @@
 <script setup name="EnterpriseFactorCacheRecord" lang="ts">
 import EnterpriseCrudPage from '@/views/enterprise/components/EnterpriseCrudPage.vue';
 import {
-  addFactorCacheRecord,
-  delFactorCacheRecord,
   getFactorCacheRecord,
-  listFactorCacheRecord,
-  updateFactorCacheRecord
+  listFactorCacheRecord
 } from '@/api/enterprise/factorCacheRecord';
 import { loadBooleanStatusOptions, loadFactorTableOptions } from '@/utils/enterpriseFieldOptions';
 
@@ -52,9 +49,6 @@ const config = {
 
 const api = {
   list: listFactorCacheRecord,
-  get: getFactorCacheRecord,
-  add: addFactorCacheRecord,
-  update: updateFactorCacheRecord,
-  remove: delFactorCacheRecord
+  get: getFactorCacheRecord
 };
 </script>

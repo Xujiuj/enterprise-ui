@@ -1,7 +1,7 @@
 <template>
   <div class="p-2 enterprise-reports-page">
     <section class="page-head">
-      <h1>Content</h1>
+      <h1>报表内容目录</h1>
       <el-button icon="Refresh" :loading="loading" @click="loadContent">刷新</el-button>
     </section>
 
@@ -67,9 +67,15 @@ const directoryKey = (row: ReportContentVO) => `${row.directoryNo ?? ''}-${row.d
 
 const formatNo = (value?: number) => (value == null ? '' : String(Number(value)));
 
-const stripLeadingDirectoryNo = (value?: string) => String(value || '-').replace(/^\s*\d+\s*/, '').trim() || '-';
+const stripLeadingDirectoryNo = (value?: string) =>
+  String(value || '-')
+    .replace(/^\s*\d+\s*/, '')
+    .trim() || '-';
 
-const stripLeadingSubdirectoryNo = (value?: string) => String(value || '-').replace(/^\s*\d+(?:\.\d+)?\s*/, '').trim() || '-';
+const stripLeadingSubdirectoryNo = (value?: string) =>
+  String(value || '-')
+    .replace(/^\s*\d+(?:\.\d+)?\s*/, '')
+    .trim() || '-';
 
 const formatSubdirectoryNo = (row: ReportContentVO) => {
   if (row.directoryNo == null || row.subdirectoryNo == null) {

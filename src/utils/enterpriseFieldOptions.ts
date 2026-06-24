@@ -92,3 +92,21 @@ export const loadTemplateTypeOptions = () => loadEnterpriseOptions('template-typ
 export const loadValidationStatusOptions = () => loadEnterpriseOptions('validation-status');
 export const loadRecordStatusOptions = () => loadEnterpriseOptions('record-status');
 export const loadDimensionFieldOptions = (dimensionCode: string, field: string) => loadEnterpriseOptions('dimension-field', { dimensionCode, field });
+
+export const loadDenominatorUnitOptions = async (): Promise<SelectOption[]> => [
+  { label: '吨', value: '吨' },
+  { label: '万升', value: '万升' },
+  { label: 'MWh', value: 'MWh' },
+  { label: '万Nm³', value: '万Nm³' },
+  { label: '吨标煤', value: '吨标煤' },
+  { label: '万km', value: '万km' },
+  { label: '万人次', value: '万人次' },
+  { label: '万产值(万元)', value: '万产值(万元)' },
+  { label: '面积(万m²)', value: '面积(万m²)' }
+];
+
+export const loadPowerGridRegionOptions = () => loadEnterpriseOptions('power-grid-region');
+export const loadOffsetPowerSourceOptions = () => loadEnterpriseOptions('offset-power-source');
+export const loadIssuingOrgOptions = () => loadEnterpriseOptions('issuing-org');
+export const loadConfirmedByOptions = () => loadEnterpriseOptions('confirmed-by');
+export const loadLicenseIdOptions = () => loadEnterpriseOptions('license-id');

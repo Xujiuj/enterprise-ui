@@ -101,7 +101,9 @@
             <el-input v-model="form.recordName" :placeholder="`请输入${page.nameLabel}`" />
           </el-form-item>
           <el-form-item v-if="page.showParent" label="上级编码" prop="parentCode">
-            <el-input v-model="form.parentCode" placeholder="请输入上级编码" />
+            <el-select v-model="form.parentCode" placeholder="请选择上级编码" clearable filterable allow-create class="w-full">
+              <el-option v-for="item in parentCodeOptions" :key="String(item.value)" :label="item.label" :value="item.value" />
+            </el-select>
           </el-form-item>
           <el-form-item v-for="field in page.fields" :key="field.prop" :label="field.label" :prop="field.prop">
             <el-select v-if="field.optionSource" v-model="form[field.prop]" :placeholder="`请选择${field.label}`" clearable class="w-full">
@@ -281,8 +283,8 @@ const dimensionPages: Record<string, PageConfig> = {
     fields: [
       { prop: 'field01', label: 'SK_公司' },
       { prop: 'field02', label: '工厂' },
-      { prop: 'field03', label: '省份编码' },
-      { prop: 'field04', label: '所在省份' },
+      { prop: 'field03', label: '省份编码', optionSource: 'dimension-field' },
+      { prop: 'field04', label: '所在省份', optionSource: 'dimension-field' },
       { prop: 'field05', label: '工厂类型' },
       { prop: 'field06', label: '行业门类代码' },
       { prop: 'field07', label: '行业门类名称' },
@@ -452,7 +454,7 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'field06', label: '分母度量名称' },
       { prop: 'field07', label: '分母值', type: 'number' },
       { prop: 'field08', label: '单位' },
-      { prop: 'field09', label: '数据来源' },
+      { prop: 'field09', label: '数据来源', optionSource: 'dimension-field' },
       { prop: 'field10', label: '备注', width: 220 }
     ]
   },
@@ -522,6 +524,15 @@ const routeKey = computed(() => {
 });
 const concreteTableRoute = computed(() => concreteTableRoutes[routeKey.value]);
 const page = computed(() => dimensionPages[routeKey.value]);
+const parentCodeOptions = computed(() => {
+  const records = recordList.value ?? [];
+  return records
+    .filter((r: any) => r.recordCode)
+    .map((r: any) => ({
+      label: [r.recordCode, r.recordName].filter(Boolean).join(' / '),
+      value: r.recordCode
+    }));
+});
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
 const isEditable = computed(() => editableDimensionCodes.has(routeKey.value));
 const readOnlyMessage = '旧维度表已拆分为具体业务表，请到对应页面维护。';

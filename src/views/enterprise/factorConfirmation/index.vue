@@ -20,7 +20,7 @@ import {
   syncFactors,
   updateFactorConfirmation
 } from '@/api/enterprise/factorConfirmation';
-import { loadFactorConfirmationStatusOptions } from '@/utils/enterpriseFieldOptions';
+import { loadConfirmedByOptions, loadFactorConfirmationStatusOptions, loadLicenseIdOptions } from '@/utils/enterpriseFieldOptions';
 
 const syncing = ref(false);
 const loadConfirmationStatusOptions = loadFactorConfirmationStatusOptions;
@@ -74,9 +74,9 @@ const config = {
     { prop: 'factorValue', label: '因子值', type: 'number', required: true, precision: 6 },
     { prop: 'factorUnit', label: '单位', required: true },
     { prop: 'confirmationStatus', label: '确认状态', type: 'select', loadOptions: loadConfirmationStatusOptions, required: true },
-    { prop: 'confirmedBy', label: '确认人' },
+    { prop: 'confirmedBy', label: '确认人', type: 'select', loadOptions: loadConfirmedByOptions },
     { prop: 'confirmedTime', label: '确认时间', type: 'date' },
-    { prop: 'licenseId', label: '授权编号' },
+    { prop: 'licenseId', label: '授权编号', type: 'select', loadOptions: loadLicenseIdOptions },
     { prop: 'remark', label: '备注', type: 'textarea' }
   ],
   emptyForm: {
