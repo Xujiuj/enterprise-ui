@@ -97,16 +97,17 @@
       <el-form ref="activityFormRef" :model="form" :rules="rules" label-width="112px">
         <el-row :gutter="16">
           <el-col :xs="24" :sm="12">
-            <el-form-item label="排放源" prop="sourceIdentificationCode">
+            <el-form-item label="公司名称">
               <el-select
-                v-model="form.sourceIdentificationCode"
+                v-model="form.sourceCompanyName"
                 class="w-full"
                 clearable
                 filterable
                 :loading="sourceLoading"
                 :disabled="formDrawer.readonly"
+                @change="clearSourceHierarchyAfter('sourceCompanyName')"
               >
-                <el-option v-for="source in emissionSources" :key="source.id" :label="sourceOptionLabel(source)" :value="source.sourceIdentificationCode" />
+                <el-option v-for="option in sourceCompanyOptions" :key="option.value" :label="option.label" :value="option.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -116,38 +117,92 @@
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="公司名称">
-              <el-input :model-value="derivedFieldValue('f003')" disabled />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
             <el-form-item label="工厂">
-              <el-input :model-value="derivedFieldValue('f004')" disabled />
+              <el-select
+                v-model="form.sourceFactoryName"
+                class="w-full"
+                clearable
+                filterable
+                :loading="sourceLoading"
+                :disabled="formDrawer.readonly || !form.sourceCompanyName"
+                @change="clearSourceHierarchyAfter('sourceFactoryName')"
+              >
+                <el-option v-for="option in sourceFactoryOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="排放源分类">
-              <el-input :model-value="derivedFieldValue('f005')" disabled />
+              <el-select
+                v-model="form.sourceCategoryKey"
+                class="w-full"
+                clearable
+                filterable
+                :loading="sourceLoading"
+                :disabled="formDrawer.readonly || !form.sourceFactoryName"
+                @change="clearSourceHierarchyAfter('sourceCategoryKey')"
+              >
+                <el-option v-for="option in sourceCategoryCascadeOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="范围">
-              <el-input :model-value="derivedFieldValue('f006')" disabled />
+              <el-select
+                v-model="form.scopeName"
+                class="w-full"
+                clearable
+                filterable
+                :loading="sourceLoading"
+                :disabled="formDrawer.readonly || !form.sourceCategoryKey"
+                @change="clearSourceHierarchyAfter('scopeName')"
+              >
+                <el-option v-for="option in sourceScopeOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="范围子类别">
-              <el-input :model-value="derivedFieldValue('f007')" disabled />
+              <el-select
+                v-model="form.scopeSubcategory"
+                class="w-full"
+                clearable
+                filterable
+                :loading="sourceLoading"
+                :disabled="formDrawer.readonly || !form.scopeName"
+                @change="clearSourceHierarchyAfter('scopeSubcategory')"
+              >
+                <el-option v-for="option in sourceScopeSubcategoryOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="排放源识别">
-              <el-input :model-value="derivedFieldValue('f008')" disabled />
+              <el-select
+                v-model="form.sourceIdentificationName"
+                class="w-full"
+                clearable
+                filterable
+                :loading="sourceLoading"
+                :disabled="formDrawer.readonly || !form.scopeSubcategory"
+                @change="clearSourceHierarchyAfter('sourceIdentificationName')"
+              >
+                <el-option v-for="option in sourceIdentificationNameOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="排放源">
-              <el-input :model-value="derivedFieldValue('f009')" disabled />
+            <el-form-item label="排放源" prop="sourceIdentificationCode">
+              <el-select
+                v-model="form.sourceIdentificationCode"
+                class="w-full"
+                clearable
+                filterable
+                :loading="sourceLoading"
+                :disabled="formDrawer.readonly || !form.sourceIdentificationName"
+              >
+                <el-option v-for="option in sourceLeafOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -342,9 +397,21 @@ import type {
   Sheet656ImportValidationResult,
   Sheet656ValidationIssue
 } from '@/api/enterprise/sheet656ActivityValidation/types';
-import { sourceOptionLabel, uniqueEmissionSourceNameOptions } from './options';
+import {
+  filteredEmissionSourceOptions,
+  sourceOptionLabel,
+  uniqueEmissionSourceNameOptions,
+  uniqueSourceFieldOptions,
+  type EmissionSourceHierarchyFilters
+} from './options';
 
 interface ActivityEntryForm {
+  sourceCompanyName?: string;
+  sourceFactoryName?: string;
+  sourceCategoryKey?: string;
+  scopeName?: string;
+  scopeSubcategory?: string;
+  sourceIdentificationName?: string;
   sourceIdentificationCode?: string;
   selectedPeriod?: string;
   date?: string;
@@ -355,6 +422,13 @@ interface ActivityEntryForm {
 }
 
 type DerivedValueMap = Record<string, string>;
+type SourceHierarchyFormField =
+  | 'sourceCompanyName'
+  | 'sourceFactoryName'
+  | 'sourceCategoryKey'
+  | 'scopeName'
+  | 'scopeSubcategory'
+  | 'sourceIdentificationName';
 type ActivityTableColumn = {
   prop: keyof ActivityDataVO;
   label: string;
@@ -419,6 +493,37 @@ const uploadFileName = ref('');
 const selectedQueryPeriod = ref('');
 const initializingForm = ref(false);
 const emissionSourceNameOptions = computed(() => uniqueEmissionSourceNameOptions(emissionSources.value));
+const sourceCompanyOptions = computed(() => uniqueSourceFieldOptions(emissionSources.value, 'companyName'));
+const sourceFactoryOptions = computed(() =>
+  uniqueSourceFieldOptions(emissionSources.value, 'factoryName', {
+    companyName: form.sourceCompanyName
+  })
+);
+const sourceCategoryCascadeOptions = computed(() =>
+  uniqueSourceFieldOptions(emissionSources.value, 'sourceCategoryKey', {
+    companyName: form.sourceCompanyName,
+    factoryName: form.sourceFactoryName
+  })
+);
+const sourceScopeOptions = computed(() =>
+  uniqueSourceFieldOptions(emissionSources.value, 'scopeName', {
+    companyName: form.sourceCompanyName,
+    factoryName: form.sourceFactoryName,
+    sourceCategoryKey: form.sourceCategoryKey
+  })
+);
+const sourceScopeSubcategoryOptions = computed(() =>
+  uniqueSourceFieldOptions(emissionSources.value, 'scopeSubcategory', {
+    companyName: form.sourceCompanyName,
+    factoryName: form.sourceFactoryName,
+    sourceCategoryKey: form.sourceCategoryKey,
+    scopeName: form.scopeName
+  })
+);
+const sourceIdentificationNameOptions = computed(() =>
+  uniqueSourceFieldOptions(emissionSources.value, 'sourceIdentificationName', sourceHierarchyFilters(true))
+);
+const sourceLeafOptions = computed(() => filteredEmissionSourceOptions(emissionSources.value, sourceHierarchyFilters()));
 
 const formDrawer = reactive({
   open: false,
@@ -451,6 +556,12 @@ const queryParams = reactive<ActivityDataQuery>({
 });
 
 const form = reactive<ActivityEntryForm>({
+  sourceCompanyName: undefined,
+  sourceFactoryName: undefined,
+  sourceCategoryKey: undefined,
+  scopeName: undefined,
+  scopeSubcategory: undefined,
+  sourceIdentificationName: undefined,
   sourceIdentificationCode: undefined,
   selectedPeriod: undefined,
   date: undefined,
@@ -631,6 +742,41 @@ const splitPeriod = (period?: string) => {
   return { year, month };
 };
 
+const sourceHierarchyFilters = (excludeIdentificationName = false): EmissionSourceHierarchyFilters => ({
+  companyName: form.sourceCompanyName,
+  factoryName: form.sourceFactoryName,
+  sourceCategoryKey: form.sourceCategoryKey,
+  scopeName: form.scopeName,
+  scopeSubcategory: form.scopeSubcategory,
+  ...(excludeIdentificationName ? {} : { sourceIdentificationName: form.sourceIdentificationName })
+});
+
+const applySourceHierarchy = (source: EmissionSourceVO | undefined) => {
+  form.sourceCompanyName = source?.companyName;
+  form.sourceFactoryName = source?.factoryName;
+  form.sourceCategoryKey = source?.sourceCategoryKey;
+  form.scopeName = source?.scopeName;
+  form.scopeSubcategory = source?.scopeSubcategory;
+  form.sourceIdentificationName = source?.sourceIdentificationName;
+};
+
+const clearSourceHierarchyAfter = (field: SourceHierarchyFormField) => {
+  const order: SourceHierarchyFormField[] = [
+    'sourceCompanyName',
+    'sourceFactoryName',
+    'sourceCategoryKey',
+    'scopeName',
+    'scopeSubcategory',
+    'sourceIdentificationName'
+  ];
+  const index = order.indexOf(field);
+  order.slice(index + 1).forEach((key) => {
+    form[key] = undefined;
+  });
+  form.sourceIdentificationCode = undefined;
+  clearManualValidation();
+};
+
 const joinPeriod = (year?: number, month?: number) => {
   if (!year || !month) {
     return '';
@@ -740,6 +886,12 @@ const clearManualValidation = (options: { keepDerivedValues?: boolean } = {}) =>
 
 const resetForm = () => {
   Object.assign(form, {
+    sourceCompanyName: undefined,
+    sourceFactoryName: undefined,
+    sourceCategoryKey: undefined,
+    scopeName: undefined,
+    scopeSubcategory: undefined,
+    sourceIdentificationName: undefined,
     sourceIdentificationCode: undefined,
     selectedPeriod: undefined,
     date: undefined,
@@ -764,6 +916,12 @@ const openDetailDrawer = (row: ActivityDataVO) => {
   initializingForm.value = true;
   resetForm();
   Object.assign(form, {
+    sourceCompanyName: row.companyName,
+    sourceFactoryName: row.factoryName,
+    sourceCategoryKey: row.sourceCategoryKey,
+    scopeName: row.scopeName,
+    scopeSubcategory: row.scopeSubcategory,
+    sourceIdentificationName: row.sourceIdentificationName,
     sourceIdentificationCode: row.sourceIdentificationCode,
     selectedPeriod: joinPeriod(row.activityYear, row.activityMonth),
     date: row.activityDate,
@@ -1069,6 +1227,9 @@ watch(
 );
 
 watch(selectedSource, (source) => {
+  if (source) {
+    applySourceHierarchy(source);
+  }
   if (!source || form.responsibleDept || formDrawer.readonly) {
     return;
   }
