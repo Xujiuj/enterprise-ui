@@ -96,40 +96,65 @@
     <el-drawer v-model="formDrawer.open" :title="formDrawer.title" size="680px" append-to-body destroy-on-close>
       <el-form ref="activityFormRef" :model="form" :rules="rules" label-width="112px">
         <el-row :gutter="16">
-          <el-col :xs="24">
-            <el-form-item label="排放源" prop="sourceIdentificationCode">
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="公司" prop="sourceCompanyName">
+              <el-select
+                v-model="form.sourceCompanyName"
+                class="w-full"
+                clearable
+                filterable
+                :disabled="formDrawer.readonly"
+                placeholder="请选择公司"
+                @change="handleCompanyChange"
+              >
+                <el-option v-for="option in sourceCompanyOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="工厂" prop="sourceFactoryName">
+              <el-select
+                v-model="form.sourceFactoryName"
+                class="w-full"
+                clearable
+                filterable
+                :disabled="formDrawer.readonly || !form.sourceCompanyName"
+                placeholder="请选择工厂"
+                @change="handleFactoryChange"
+              >
+                <el-option v-for="option in sourceFactoryOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="排放源分类" prop="sourceCategoryKey">
+              <el-select
+                v-model="form.sourceCategoryKey"
+                class="w-full"
+                clearable
+                filterable
+                :disabled="formDrawer.readonly || !form.sourceFactoryName"
+                placeholder="请选择排放源分类"
+                @change="handleCategoryChange"
+              >
+                <el-option v-for="option in sourceCategoryCascadeOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="排放源识别" prop="sourceIdentificationCode">
               <el-select
                 v-model="form.sourceIdentificationCode"
                 class="w-full"
                 clearable
                 filterable
                 :loading="sourceLoading"
-                :disabled="formDrawer.readonly"
-                placeholder="请选择排放源（选择后自动填充相关信息）"
+                :disabled="formDrawer.readonly || !form.sourceCategoryKey"
+                placeholder="请选择排放源识别"
                 @change="handleSourceSelect"
               >
-                <el-option v-for="option in allSourceOptions" :key="option.value" :label="option.label" :value="option.value">
-                  <div class="source-option">
-                    <span class="source-option-name">{{ option.label }}</span>
-                    <span class="source-option-info">{{ option.info }}</span>
-                  </div>
-                </el-option>
+                <el-option v-for="option in sourceLeafOptions" :key="option.value" :label="option.label" :value="option.value" />
               </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="公司名称">
-              <el-input :model-value="form.sourceCompanyName || derivedFieldValue('f003')" disabled />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="工厂">
-              <el-input :model-value="form.sourceFactoryName || derivedFieldValue('f004')" disabled />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="排放源分类">
-              <el-input :model-value="form.sourceCategoryKey || derivedFieldValue('f005')" disabled />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -140,11 +165,6 @@
           <el-col :xs="24" :sm="12">
             <el-form-item label="范围子类别">
               <el-input :model-value="form.scopeSubcategory || derivedFieldValue('f007')" disabled />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="排放源识别">
-              <el-input :model-value="form.sourceIdentificationName || derivedFieldValue('f008')" disabled />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -646,7 +666,10 @@ const sheetEmptyRow = computed(() =>
 );
 
 const rules: FormRules<ActivityEntryForm> = {
-  sourceIdentificationCode: [{ required: true, message: '请选择排放源', trigger: 'change' }],
+  sourceCompanyName: [{ required: true, message: '请选择公司', trigger: 'change' }],
+  sourceFactoryName: [{ required: true, message: '请选择工厂', trigger: 'change' }],
+  sourceCategoryKey: [{ required: true, message: '请选择排放源分类', trigger: 'change' }],
+  sourceIdentificationCode: [{ required: true, message: '请选择排放源识别', trigger: 'change' }],
   selectedPeriod: [{ required: true, message: '请选择活动期间', trigger: 'change' }],
   date: [{ required: true, message: '请选择日期', trigger: 'change' }],
   activityValue: [{ required: true, message: '请输入活动数据', trigger: 'blur' }],
@@ -718,10 +741,24 @@ const applySourceHierarchy = (source: EmissionSourceVO | undefined) => {
   form.sourceIdentificationName = source?.sourceIdentificationName;
 };
 
+const handleCompanyChange = () => {
+  clearSourceHierarchyAfter('sourceCompanyName');
+};
+
+const handleFactoryChange = () => {
+  clearSourceHierarchyAfter('sourceFactoryName');
+};
+
+const handleCategoryChange = () => {
+  clearSourceHierarchyAfter('sourceCategoryKey');
+};
+
 const handleSourceSelect = (sourceIdentificationCode: string) => {
   const source = emissionSources.value.find((s) => s.sourceIdentificationCode === sourceIdentificationCode);
   if (source) {
-    applySourceHierarchy(source);
+    form.sourceIdentificationName = source.sourceIdentificationName;
+    form.scopeName = source.scopeName;
+    form.scopeSubcategory = source.scopeSubcategory;
     if (!form.responsibleDept && source.responsibleDept) {
       form.responsibleDept = source.responsibleDept;
     }

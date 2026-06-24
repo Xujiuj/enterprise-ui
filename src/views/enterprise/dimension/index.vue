@@ -52,6 +52,16 @@
               v-hasPermi="['enterprise:dimension:remove']"
               >删除</el-button
             >
+            <el-button
+              v-if="isVendorLinked"
+              type="warning"
+              plain
+              icon="Refresh"
+              :loading="syncLoading"
+              @click="handleRefresh()"
+              v-hasPermi="['enterprise:dimension:sync']"
+              >从厂商刷新</el-button
+            >
           </div>
           <span class="select-count" v-if="ids.length > 0">已选 {{ ids.length }} 项</span>
         </div>
@@ -182,8 +192,8 @@
 
 <script setup name="EnterpriseDimension" lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue';
-import { ElMessage, type UploadFile, type UploadRawFile } from 'element-plus';
-import { computed, onMounted, reactive, watch } from 'vue';
+import { ElMessage, ElMessageBox, type UploadFile, type UploadRawFile } from 'element-plus';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   addDimensionRecord,
@@ -192,6 +202,7 @@ import {
   listDimensionRecord,
   updateDimensionRecord
 } from '@/api/enterprise/dimensionRecord';
+import { refreshDimension } from '@/api/enterprise/dimensionSync';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { DimensionRecordForm, DimensionRecordQuery, DimensionRecordVO } from '@/api/enterprise/dimensionRecord/types';
 import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
@@ -535,6 +546,11 @@ const parentCodeOptions = computed(() => {
 });
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
 const isEditable = computed(() => editableDimensionCodes.has(routeKey.value));
+const isVendorLinked = computed(() =>
+  ['admin-division', 'emission-source-category', 'ef-electricity-factor',
+   'ef-electricity-version', 'ef-electricity-scope', 'greenhouse-gas', 'base-year'].includes(routeKey.value)
+);
+const syncLoading = ref(false);
 const readOnlyMessage = '旧维度表已拆分为具体业务表，请到对应页面维护。';
 const sheetColumns = computed<SpreadsheetColumn[]>(() => {
   if (!page.value) return [];
@@ -1058,6 +1074,24 @@ watch(
     resetQuery();
   }
 );
+
+const handleRefresh = async () => {
+  if (!routeKey.value) return;
+  try {
+    await ElMessageBox.confirm('确认从厂商端刷新当前维度数据？本地数据将被覆盖。', '刷新确认', { type: 'warning' });
+    syncLoading.value = true;
+    const res = await refreshDimension(routeKey.value);
+    const count = (res as any).data?.recordCount ?? 0;
+    ElMessage.success(`刷新成功，同步 ${count} 条记录`);
+    await getList();
+  } catch (e: any) {
+    if (e !== 'cancel') {
+      ElMessage.error('刷新失败：' + (e?.message || '未知错误'));
+    }
+  } finally {
+    syncLoading.value = false;
+  }
+};
 
 onMounted(async () => {
   await loadPageFieldOptions();
