@@ -88,7 +88,7 @@
             <div class="el-upload__text">拖拽 License 文件到此处，或点击选择</div>
           </el-upload>
 
-          <el-input v-model="expectedInstallId" class="mt-4" maxlength="128" show-word-limit placeholder="请输入本地部署指纹 expectedInstallId" />
+          <el-input v-model="expectedInstallId" class="mt-4" maxlength="128" show-word-limit placeholder="本机部署指纹由系统自动回填" readonly />
 
           <el-input
             v-model="licenseContent"
@@ -133,7 +133,7 @@
 import { UploadFilled } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import type { UploadRawFile } from 'element-plus';
-import { getCurrentLicenseState, getLicenseGateStatus, importEnterpriseLicense } from '@/api/enterprise/licenseImport';
+import { getCurrentLicenseState, getExpectedInstallId, getLicenseGateStatus, importEnterpriseLicense } from '@/api/enterprise/licenseImport';
 import type {
   EnterpriseLicenseCurrentState,
   EnterpriseLicenseGateStatus,

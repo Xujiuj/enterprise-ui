@@ -13,6 +13,10 @@ export interface EnterpriseLicenseImportRequest {
   expectedInstallId: string;
 }
 
+export interface EnterpriseLicenseInstallIdResponse {
+  expectedInstallId: string;
+}
+
 export interface EnterpriseLicenseState {
   id?: string | number;
   licenseId?: string | number;

@@ -2,12 +2,9 @@ import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import { OnlinePurchaseCreateRequest, OnlinePurchaseOrder } from './types';
 
-const vendorOpenBaseUrl = import.meta.env.VITE_VENDOR_OPEN_API_BASE_URL || 'http://localhost:8080';
-
 export const createOnlinePurchaseOrder = (data: OnlinePurchaseCreateRequest): AxiosPromise<OnlinePurchaseOrder> => {
   return request({
-    baseURL: vendorOpenBaseUrl,
-    url: '/open/purchases',
+    url: '/enterprise/online-purchase',
     method: 'post',
     data
   });
