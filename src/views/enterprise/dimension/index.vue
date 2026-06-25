@@ -374,10 +374,15 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '电力因子编码',
     nameLabel: '电力因子名称',
     fields: [
-      { prop: 'field01', label: '行政区划代码' },
-      { prop: 'field02', label: '因子值', type: 'number' },
-      { prop: 'field03', label: '单位' },
-      { prop: 'field04', label: '版本号' }
+      { prop: 'field01', label: '因子版本' },
+      { prop: 'field02', label: '行政区划代码' },
+      { prop: 'field03', label: '行政区划名称' },
+      { prop: 'field04', label: '区域名称' },
+      { prop: 'field05', label: '省级因子（kgCO2/kWh）', type: 'number', precision: 10 },
+      { prop: 'field06', label: '区域因子（kgCO2/kWh）', type: 'number', precision: 10 },
+      { prop: 'field07', label: '全国因子（kgCO2/kWh）', type: 'number', precision: 10 },
+      { prop: 'field08', label: '不含市场化非化石因子', type: 'number', precision: 10 },
+      { prop: 'field09', label: '全国化石能源电力因子', type: 'number', precision: 10 }
     ]
   },
   'ef-electricity-version': {
@@ -387,7 +392,10 @@ const dimensionPages: Record<string, PageConfig> = {
     mode: '企业确认',
     codeLabel: '因子版本',
     nameLabel: '版本说明',
-    fields: [{ prop: 'field02', label: '生效年份', type: 'number' }]
+    fields: [
+      { prop: 'field01', label: '因子版本' },
+      { prop: 'field02', label: '生效年份', type: 'number' }
+    ]
   },
   'ef-electricity-scope': {
     title: 'EF电力因子口径维度',
