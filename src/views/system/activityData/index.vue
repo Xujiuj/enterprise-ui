@@ -387,9 +387,17 @@ const resetSheetForm = () => {
   lastValidation.value = undefined;
 };
 
-const handleSourceChange = () => {
+const handleSourceChange = async () => {
   resolvedDerivedValues.value = {};
   lastValidation.value = undefined;
+  // 选源后自动调用后端校验，获取公司/工厂等派生字段值
+  try {
+    const res = await validateSheet656Activity(buildValidationRequest());
+    lastValidation.value = res.data;
+    applyResolvedDerivedValues(res.data);
+  } catch {
+    // 校验失败时静默忽略，派生字段由 deriveFromSource 本地映射兜底
+  }
 };
 
 const buildFieldValues = (derivedValues: DerivedValueMap = {}): Sheet656FieldValue[] => {
