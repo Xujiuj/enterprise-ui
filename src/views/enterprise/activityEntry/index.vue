@@ -159,17 +159,17 @@
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="范围">
-              <el-input :model-value="form.scopeName || derivedFieldValue('f006')" disabled />
+              <el-input v-model="form.scopeName" placeholder="选择排放源识别后自动填充" :disabled="formDrawer.readonly" />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="范围子类别">
-              <el-input :model-value="form.scopeSubcategory || derivedFieldValue('f007')" disabled />
+              <el-input v-model="form.scopeSubcategory" placeholder="选择排放源识别后自动填充" :disabled="formDrawer.readonly" />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="排放源名称">
-              <el-input :model-value="form.emissionSourceName || derivedFieldValue('f009')" disabled />
+              <el-input v-model="form.emissionSourceName" placeholder="选择排放源识别后自动填充" :disabled="formDrawer.readonly" />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -196,12 +196,12 @@
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="单位">
-              <el-input :model-value="form.activityUnit || derivedActivityUnit" disabled />
+              <el-input v-model="form.activityUnit" placeholder="选择排放源识别后自动填充" :disabled="formDrawer.readonly" />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="适用因子">
-              <el-input :model-value="form.factorKey || derivedFieldValue('f018')" disabled />
+              <el-input v-model="form.factorKey" placeholder="选择排放源识别后自动填充" :disabled="formDrawer.readonly" />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
