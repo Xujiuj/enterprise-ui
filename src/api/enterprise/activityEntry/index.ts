@@ -4,6 +4,7 @@ import { ActivityDataQuery, ActivityDataVO } from '@/api/enterprise/activityData
 import { listEmissionSource } from '@/api/enterprise/emissionSource';
 import { EmissionSourceQuery, EmissionSourceVO } from '@/api/enterprise/emissionSource/types';
 import {
+  Sheet656ResolvedRow,
   Sheet656ImportValidationRequest,
   Sheet656ImportValidationResult,
   Sheet656ValidationRequest
@@ -57,6 +58,13 @@ export const saveLocalSheet656Activity = (data: Sheet656ValidationRequest): Prom
     url: '/enterprise/activity-import/sheet-656/save',
     method: 'post',
     data
+  });
+};
+
+export const resolveLocalSheet656Source = (sourceIdentificationCode: string): Promise<{ data: Sheet656ResolvedRow }> => {
+  return request({
+    url: `/enterprise/activity-import/sheet-656/source/${encodeURIComponent(sourceIdentificationCode)}`,
+    method: 'get'
   });
 };
 

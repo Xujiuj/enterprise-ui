@@ -18,6 +18,20 @@ export interface Sheet656ValidationRequest {
   fieldValues: Sheet656FieldValue[];
 }
 
+export interface Sheet656ResolvedRow {
+  emissionSourceCode?: string;
+  companyCode?: string;
+  companyName?: string;
+  factoryName?: string;
+  emissionSourceCategoryCode?: string;
+  scope?: string;
+  scopeSubcategory?: string;
+  emissionSourceIdentity?: string;
+  emissionSourceName?: string;
+  unit?: string;
+  emissionFactorCode?: string;
+}
+
 export interface Sheet656ImportValidationRequest {
   headerFields: Sheet656FieldDescriptor[];
   rows: Sheet656ValidationRequest[];
