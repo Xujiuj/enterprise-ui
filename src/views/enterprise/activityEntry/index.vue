@@ -133,7 +133,7 @@
                 class="w-full"
                 clearable
                 filterable
-                :disabled="formDrawer.readonly || !form.sourceFactoryName"
+                :disabled="formDrawer.readonly"
                 placeholder="请选择排放源分类"
                 @change="handleCategoryChange"
               >
@@ -706,8 +706,7 @@ const loadSourceFactoryOptions = async () => {
 };
 
 const loadSourceCategoryCascadeOptions = async () => {
-  sourceCategoryCascadeOptions.value =
-    form.sourceCompanyName && form.sourceFactoryName ? await loadActivityEntrySourceCategoryOptions(sourceHierarchyFilters()) : [];
+  sourceCategoryCascadeOptions.value = await loadActivityEntrySourceCategoryOptions();
 };
 
 const loadSourceLeafOptions = async () => {
@@ -724,18 +723,23 @@ const loadSourceLeafOptions = async () => {
 
 const refreshSourceCascadeOptions = async () => {
   await loadSourceFactoryOptions();
-  await loadSourceCategoryCascadeOptions();
   await loadSourceLeafOptions();
 };
 
 const handleCompanyChange = async () => {
-  clearSourceHierarchyAfter('sourceCompanyName');
+  form.sourceFactoryName = undefined;
+  form.sourceIdentificationCode = undefined;
+  form.sourceIdentificationName = undefined;
+  form.scopeName = undefined;
+  form.scopeSubcategory = undefined;
   await refreshSourceCascadeOptions();
 };
 
 const handleFactoryChange = async () => {
-  clearSourceHierarchyAfter('sourceFactoryName');
-  await loadSourceCategoryCascadeOptions();
+  form.sourceIdentificationCode = undefined;
+  form.sourceIdentificationName = undefined;
+  form.scopeName = undefined;
+  form.scopeSubcategory = undefined;
   await loadSourceLeafOptions();
 };
 
@@ -1233,7 +1237,9 @@ watch(
 
 watch(selectedSource, (source) => {
   if (source) {
-    applySourceHierarchy(source);
+    form.sourceIdentificationName = source.sourceIdentificationName;
+    form.scopeName = source.scopeName;
+    form.scopeSubcategory = source.scopeSubcategory;
   }
   if (!source || form.responsibleDept || formDrawer.readonly) {
     return;
@@ -1248,7 +1254,7 @@ watch(selectedSource, (source) => {
 
 onMounted(async () => {
   applyRouteQuery();
-  await Promise.all([loadEmissionSourceOptions(), loadControlledOptions()]);
+  await Promise.all([loadEmissionSourceOptions(), loadControlledOptions(), loadSourceCategoryCascadeOptions()]);
   await loadActivities();
 });
 
