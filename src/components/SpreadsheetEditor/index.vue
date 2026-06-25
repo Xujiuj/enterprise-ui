@@ -33,6 +33,7 @@
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import type { SpreadsheetColumn, SpreadsheetValue } from './types';
+import { loadUniverSheetsCore } from './univerLoader';
 
 type UniverApi = {
   createWorkbook: (data: Record<string, any>) => unknown;
@@ -154,10 +155,13 @@ const buildWorkbookData = () => {
         columnCount: Math.max(props.columns.length + 1, 12),
         freeze: { xSplit: 0, ySplit: 1, startRow: 1, startColumn: 0 },
         cellData,
-        columnData: props.columns.reduce<Record<number, { w: number }>>((data, column, index) => {
-          data[index] = { w: column.width ?? 160 };
-          return data;
-        }, { [props.columns.length]: { w: 0 } })
+        columnData: props.columns.reduce<Record<number, { w: number }>>(
+          (data, column, index) => {
+            data[index] = { w: column.width ?? 160 };
+            return data;
+          },
+          { [props.columns.length]: { w: 0 } }
+        )
       }
     }
   };
@@ -178,12 +182,7 @@ const initWorkbook = async () => {
   validationErrors.value = new Map();
   disposeWorkbook();
   await nextTick();
-  const [{ Univer, LocaleType }, { FUniver }, { UniverSheetsCorePreset }, zhCN] = await Promise.all([
-    import('@univerjs/preset-sheets-core/lib/index.css').then(() => import('@univerjs/core')),
-    import('@univerjs/core/facade'),
-    import('@univerjs/preset-sheets-core'),
-    import('@univerjs/preset-sheets-core/locales/zh-CN')
-  ]);
+  const { Univer, LocaleType, FUniver, UniverSheetsCorePreset, zhCN } = await loadUniverSheetsCore();
   const univer = new Univer({
     locale: LocaleType.ZH_CN,
     locales: {

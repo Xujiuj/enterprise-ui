@@ -337,6 +337,7 @@ import { ElMessage, type FormInstance, type FormRules, type UploadFile, type Upl
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
+import { loadUniverSheetsCore } from '@/components/SpreadsheetEditor/univerLoader';
 import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
 import {
   importLocalSheet656Activity,
@@ -645,8 +646,10 @@ const rules: FormRules<ActivityEntryForm> = {
 const optionRecordAsSource = (option?: SelectOption): EmissionSourceVO | undefined => option?.record as EmissionSourceVO | undefined;
 const selectedSource = computed(() => {
   const sourceCode = form.sourceIdentificationCode;
-  return optionRecordAsSource(sourceLeafOptions.value.find((option) => option.value === sourceCode)) ??
-    optionRecordAsSource(allSourceOptions.value.find((option) => option.value === sourceCode));
+  return (
+    optionRecordAsSource(sourceLeafOptions.value.find((option) => option.value === sourceCode)) ??
+    optionRecordAsSource(allSourceOptions.value.find((option) => option.value === sourceCode))
+  );
 });
 const manualIssues = computed(() => collectIssues(manualValidation.value));
 const manualBlockingIssues = computed(() => manualIssues.value.filter((issue) => isBlockingIssue(issue)));
@@ -857,7 +860,8 @@ const fieldValueFromSource = (source: EmissionSourceVO | undefined, code: string
 
 const currentDerivedValues = () =>
   FIELD_DESCRIPTORS.filter((field) => field.derivedField).reduce<DerivedValueMap>((values, field) => {
-    values[field.sourceColumnCode] = manualResolvedDerivedValues.value[field.sourceColumnCode] ?? fieldValueFromSource(selectedSource.value, field.sourceColumnCode);
+    values[field.sourceColumnCode] =
+      manualResolvedDerivedValues.value[field.sourceColumnCode] ?? fieldValueFromSource(selectedSource.value, field.sourceColumnCode);
     return values;
   }, {});
 
@@ -1018,7 +1022,22 @@ const openUploadDialog = () => {
   uploadDialog.open = true;
 };
 
+const preloadSpreadsheetEditor = () => {
+  const run = () => {
+    void loadUniverSheetsCore();
+  };
+  const idleWindow = window as Window & {
+    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+  };
+  if (idleWindow.requestIdleCallback) {
+    idleWindow.requestIdleCallback(run, { timeout: 3000 });
+    return;
+  }
+  globalThis.setTimeout(run, 300);
+};
+
 const openSheetDrawer = () => {
+  void loadUniverSheetsCore();
   sheetDrawer.open = true;
 };
 
@@ -1212,12 +1231,15 @@ const saveSheetRows = async (rows: Record<string, any>[]) => {
       ElMessage.error('在线填报存在错误，不能保存');
       return;
     }
-    for (const row of request.rows) {
-      const saveRes = await saveLocalSheet656Activity(row);
-      if (saveRes.data?.validationResult?.blocking) {
-        ElMessage.error(`第 ${row.rowNumber} 行保存失败，请按校验结果修正`);
-        return;
-      }
+    const importRes = await importLocalSheet656Activity(request);
+    if (importRes.data?.validationResult?.blocking) {
+      ElMessage.error('在线填报保存失败，请按校验结果修正');
+      return;
+    }
+    const persisted = importRes.data?.persisted === true || (importRes.data?.persistedRowCount ?? 0) > 0;
+    if (!persisted) {
+      ElMessage.warning('在线填报未持久化，请根据校验结果复核后重试');
+      return;
     }
     ElMessage.success('在线填报已保存');
     sheetDrawer.open = false;
@@ -1319,6 +1341,7 @@ onMounted(async () => {
   applyRouteQuery();
   await loadActivities();
   await Promise.all([loadEmissionSourceOptions(), loadControlledOptions(), loadSourceCategoryCascadeOptions()]);
+  preloadSpreadsheetEditor();
 });
 
 useAutoQuery(queryParams, () => handleQuery());
