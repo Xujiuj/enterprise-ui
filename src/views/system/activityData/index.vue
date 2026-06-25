@@ -14,10 +14,10 @@
 
     <div class="panel">
       <!-- 搜索栏 -->
-      <div class="search-bar wide" v-show="showSearch">
+      <el-form ref="queryFormRef" :model="queryParams" class="search-bar wide" v-show="showSearch">
         <div class="search-item">
           <label>排放源ID</label>
-          <el-input v-model="queryParams.sourceId" placeholder="请输入排放源ID" clearable @keyup.enter="handleQuery" />
+          <el-input-number v-model="queryParams.sourceId" :controls="false" placeholder="请输入排放源ID" clearable @keyup.enter="handleQuery" class="w-full" />
         </div>
         <div class="search-item">
           <label>数据期间</label>
@@ -25,7 +25,7 @@
         </div>
         <div class="search-item">
           <label>数据年份</label>
-          <el-input v-model="queryParams.dataYear" placeholder="请输入数据年份" clearable @keyup.enter="handleQuery" />
+          <el-input-number v-model="queryParams.dataYear" :controls="false" placeholder="请输入数据年份" clearable @keyup.enter="handleQuery" class="w-full" />
         </div>
         <div class="search-item">
           <label>数据类型</label>
@@ -41,7 +41,7 @@
             <el-icon><ArrowUp /></el-icon>
           </el-button>
         </div>
-      </div>
+      </el-form>
 
       <!-- 工具栏(搜索收起时) -->
       <div class="toolbar" v-show="!showSearch">
@@ -317,13 +317,8 @@ const data = reactive<PageData<ActivityDataForm, ActivityDataQuery>>({
     sourceId: undefined,
     dataPeriod: undefined,
     dataYear: undefined,
-    activityValue: undefined,
-    activityUnit: undefined,
     dataType: undefined,
-    calculationFormula: undefined,
-    emissionResult: undefined,
     verificationStatus: undefined,
-    extendJson: undefined,
     params: {}
   },
   rules: {
@@ -523,10 +518,21 @@ const cancel = () => {
 
 /** 表单重置 */
 const reset = () => {
-  form.value = { ...initFormData };
+  form.value.id = undefined;
+  form.value.sourceId = undefined;
+  form.value.dataPeriod = undefined;
+  form.value.dataYear = undefined;
+  form.value.activityValue = undefined;
+  form.value.activityUnit = undefined;
+  form.value.dataType = undefined;
+  form.value.calculationFormula = undefined;
+  form.value.emissionResult = undefined;
+  form.value.verificationStatus = undefined;
+  form.value.extendJson = undefined;
+  form.value.remark = undefined;
   resetSheetForm();
   activityDataFormRef.value?.resetFields();
-};
+}
 
 /** 搜索按钮操作 */
 const handleQuery = () => {

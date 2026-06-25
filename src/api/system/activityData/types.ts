@@ -129,7 +129,7 @@ export interface ActivityDataQuery extends PageQuery {
   /**
    * 鎺掓斁婧怚D
    */
-  sourceId?: string | number;
+  sourceId?: number;
 
   /**
    * 鏁版嵁鏈熼棿(YYYY-MM)
@@ -142,29 +142,9 @@ export interface ActivityDataQuery extends PageQuery {
   dataYear?: number;
 
   /**
-   * 娲诲姩鏁版嵁鍊
-   */
-  activityValue?: number;
-
-  /**
-   * 娲诲姩鏁版嵁鍗曚綅
-   */
-  activityUnit?: string;
-
-  /**
    * 鏁版嵁绫诲瀷(鍘熷?鏁版嵁/璁＄畻鍊?
    */
   dataType?: string;
-
-  /**
-   * 璁＄畻鍏?紡
-   */
-  calculationFormula?: string;
-
-  /**
-   * 鎺掓斁閲忚?绠楃粨鏋?tCO2e)
-   */
-  emissionResult?: number;
 
   /**
    * 鏍搁獙鐘舵?(0寰呮牳楠?1宸叉牳楠?2宸查?鍥?
@@ -172,12 +152,12 @@ export interface ActivityDataQuery extends PageQuery {
   verificationStatus?: string;
 
   /**
-   * 鎵╁睍瀛楁?JSON
-   */
-  extendJson?: string;
-
-  /**
    * 日期范围参数
    */
   params?: any;
+}
+
+export interface ActivityDataPageResult {
+  rows: ActivityDataVO[];
+  total: number;
 }

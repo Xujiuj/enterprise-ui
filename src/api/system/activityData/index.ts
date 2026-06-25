@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { ActivityDataVO, ActivityDataForm, ActivityDataQuery } from '@/api/system/activityData/types';
+import { ActivityDataVO, ActivityDataForm, ActivityDataQuery, ActivityDataPageResult } from '@/api/system/activityData/types';
 
 /**
  * 查询娲诲姩鏁版嵁琛列表
@@ -8,7 +8,7 @@ import { ActivityDataVO, ActivityDataForm, ActivityDataQuery } from '@/api/syste
  * @returns {*}
  */
 
-export const listActivityData = (query?: ActivityDataQuery): AxiosPromise<ActivityDataVO[]> => {
+export const listActivityData = (query?: ActivityDataQuery): AxiosPromise<ActivityDataPageResult> => {
   return request({
     url: '/system/activityData/list',
     method: 'get',
