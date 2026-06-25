@@ -195,8 +195,8 @@
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="单位" prop="activityUnit">
-              <el-input v-model="form.activityUnit" placeholder="请输入单位" :disabled="formDrawer.readonly" />
+            <el-form-item label="单位">
+              <el-input :model-value="form.activityUnit || derivedActivityUnit" disabled />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -766,6 +766,7 @@ const handleSourceSelect = (sourceIdentificationCode: string) => {
     form.scopeSubcategory = source.scopeSubcategory;
     form.emissionSourceName = source.emissionSourceName;
     form.factorKey = source.factorKey;
+    form.activityUnit = source.sourceUnit;
     if (!form.responsibleDept && source.responsibleDept) {
       form.responsibleDept = source.responsibleDept;
     }
@@ -821,6 +822,7 @@ const fieldValueFromSource = (source: EmissionSourceVO | undefined, code: string
     f007: source.scopeSubcategory ?? '',
     f008: source.sourceIdentificationName ?? '',
     f009: source.emissionSourceName ?? '',
+    f010: source.sourceUnit ?? '',
     f018: source.factorKey ?? ''
   };
   return values[code] ?? '';

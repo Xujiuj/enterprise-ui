@@ -12,6 +12,7 @@ export interface EmissionSourceVO {
   responsibleDept?: string;
   dataSource?: string;
   factorKey?: string;
+  sourceUnit?: string;
   enabledFlag?: boolean;
   createTime?: string;
   updateTime?: string;
