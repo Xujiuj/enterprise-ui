@@ -771,13 +771,14 @@ const handleCategoryChange = async () => {
 };
 
 const handleSourceSelect = (sourceIdentificationCode: string) => {
-  const source = optionRecordAsSource(sourceLeafOptions.value.find((option) => option.value === sourceIdentificationCode));
+  const option = sourceLeafOptions.value.find((opt) => opt.value === sourceIdentificationCode);
+  const source = optionRecordAsSource(option);
   if (source) {
     form.sourceIdentificationName = source.sourceIdentificationName;
     form.scopeName = source.scopeName;
     form.scopeSubcategory = source.scopeSubcategory;
     form.emissionSourceName = source.emissionSourceName;
-    form.factorKey = source.factorKey;
+    form.factorKey = source.factorDisplayName || source.factorKey;
     form.activityUnit = source.sourceUnit;
     if (!form.responsibleDept && source.responsibleDept) {
       form.responsibleDept = source.responsibleDept;
@@ -1275,6 +1276,9 @@ watch(selectedSource, (source) => {
     form.sourceIdentificationName = source.sourceIdentificationName;
     form.scopeName = source.scopeName;
     form.scopeSubcategory = source.scopeSubcategory;
+    form.emissionSourceName = source.emissionSourceName;
+    form.factorKey = source.factorDisplayName || source.factorKey;
+    form.activityUnit = source.sourceUnit;
   }
   if (!source || form.responsibleDept || formDrawer.readonly) {
     return;

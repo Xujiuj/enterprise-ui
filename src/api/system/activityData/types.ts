@@ -58,7 +58,6 @@ export interface ActivityDataVO {
    * 澶囨敞
    */
   remark: string;
-
 }
 
 export interface ActivityDataForm extends BaseEntity {
@@ -121,11 +120,9 @@ export interface ActivityDataForm extends BaseEntity {
    * 澶囨敞
    */
   remark?: string;
-
 }
 
 export interface ActivityDataQuery extends PageQuery {
-
   /**
    * 鎺掓斁婧怚D
    */
