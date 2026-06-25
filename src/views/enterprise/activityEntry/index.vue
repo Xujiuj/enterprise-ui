@@ -643,7 +643,11 @@ const rules: FormRules<ActivityEntryForm> = {
 };
 
 const optionRecordAsSource = (option?: SelectOption): EmissionSourceVO | undefined => option?.record as EmissionSourceVO | undefined;
-const selectedSource = computed(() => optionRecordAsSource(sourceLeafOptions.value.find((option) => option.value === form.sourceIdentificationCode)));
+const selectedSource = computed(() => {
+  const sourceCode = form.sourceIdentificationCode;
+  return optionRecordAsSource(sourceLeafOptions.value.find((option) => option.value === sourceCode)) ??
+    optionRecordAsSource(allSourceOptions.value.find((option) => option.value === sourceCode));
+});
 const manualIssues = computed(() => collectIssues(manualValidation.value));
 const manualBlockingIssues = computed(() => manualIssues.value.filter((issue) => isBlockingIssue(issue)));
 const manualWarningIssues = computed(() => manualIssues.value.filter((issue) => !isBlockingIssue(issue)));
@@ -770,20 +774,30 @@ const handleCategoryChange = async () => {
   await loadSourceLeafOptions();
 };
 
-const handleSourceSelect = (sourceIdentificationCode: string) => {
-  const option = sourceLeafOptions.value.find((opt) => opt.value === sourceIdentificationCode);
-  const source = optionRecordAsSource(option);
-  if (source) {
-    form.sourceIdentificationName = source.sourceIdentificationName;
-    form.scopeName = source.scopeName;
-    form.scopeSubcategory = source.scopeSubcategory;
-    form.emissionSourceName = source.emissionSourceName;
-    form.factorKey = source.factorDisplayName || source.factorKey;
-    form.activityUnit = source.sourceUnit;
-    if (!form.responsibleDept && source.responsibleDept) {
-      form.responsibleDept = source.responsibleDept;
-    }
+const applySourceToForm = (source?: EmissionSourceVO) => {
+  if (!source) return;
+  form.sourceCompanyName = source.companyName;
+  form.sourceFactoryName = source.factoryName;
+  form.sourceCategoryKey = source.sourceCategoryKey;
+  form.sourceIdentificationName = source.sourceIdentificationName;
+  form.scopeName = source.scopeName;
+  form.scopeSubcategory = source.scopeSubcategory;
+  form.emissionSourceName = source.emissionSourceName;
+  form.factorKey = source.factorDisplayName || source.factorKey;
+  form.activityUnit = source.sourceUnit;
+  if (!form.responsibleDept && source.responsibleDept) {
+    form.responsibleDept = source.responsibleDept;
   }
+  if (!form.dataSource && source.dataSource) {
+    form.dataSource = source.dataSource;
+  }
+};
+
+const handleSourceSelect = (sourceIdentificationCode: string) => {
+  const option =
+    sourceLeafOptions.value.find((opt) => opt.value === sourceIdentificationCode) ??
+    allSourceOptions.value.find((opt) => opt.value === sourceIdentificationCode);
+  applySourceToForm(optionRecordAsSource(option));
   clearManualValidation();
 };
 
@@ -841,8 +855,14 @@ const fieldValueFromSource = (source: EmissionSourceVO | undefined, code: string
   return values[code] ?? '';
 };
 
+const currentDerivedValues = () =>
+  FIELD_DESCRIPTORS.filter((field) => field.derivedField).reduce<DerivedValueMap>((values, field) => {
+    values[field.sourceColumnCode] = manualResolvedDerivedValues.value[field.sourceColumnCode] ?? fieldValueFromSource(selectedSource.value, field.sourceColumnCode);
+    return values;
+  }, {});
+
 const derivedFieldValue = (code: string) => {
-  return manualResolvedDerivedValues.value[code] ?? fieldValueFromSource(selectedSource.value, code);
+  return currentDerivedValues()[code] ?? '';
 };
 
 const collectIssues = (result?: Sheet656ImportValidationResult): Sheet656ValidationIssue[] => [
@@ -866,15 +886,14 @@ const buildFieldValues = (): Sheet656FieldValue[] => {
   const { year, month } = splitPeriod(form.selectedPeriod);
   const values: DerivedValueMap = {
     f001: form.sourceIdentificationCode ?? '',
-    f010: form.activityUnit ?? '',
+    ...currentDerivedValues(),
     f011: year,
     f012: month,
     f013: form.date ?? '',
     f014: valueToString(roundToTwoDecimal(form.activityValue)),
     f015: form.responsibleDept ?? '',
     f016: form.dataSource ?? '',
-    f017: form.remark ?? '',
-    ...manualResolvedDerivedValues.value
+    f017: form.remark ?? ''
   };
 
   return FIELD_DESCRIPTORS.map((field) => ({
@@ -1019,6 +1038,18 @@ const applyManualResolvedDerivedValues = (result: Sheet656ImportValidationResult
     }
     return acc;
   }, {});
+  form.sourceCompanyName = manualResolvedDerivedValues.value.f003 || form.sourceCompanyName;
+  form.sourceFactoryName = manualResolvedDerivedValues.value.f004 || form.sourceFactoryName;
+  form.sourceCategoryKey = manualResolvedDerivedValues.value.f005 || form.sourceCategoryKey;
+  form.scopeName = manualResolvedDerivedValues.value.f006 || form.scopeName;
+  form.scopeSubcategory = manualResolvedDerivedValues.value.f007 || form.scopeSubcategory;
+  form.sourceIdentificationName = manualResolvedDerivedValues.value.f008 || form.sourceIdentificationName;
+  form.emissionSourceName = manualResolvedDerivedValues.value.f009 || form.emissionSourceName;
+  form.activityUnit = manualResolvedDerivedValues.value.f010 || form.activityUnit;
+  const factorKey = manualResolvedDerivedValues.value.f018;
+  if (factorKey) {
+    form.factorKey = selectedSource.value?.factorKey === factorKey ? selectedSource.value?.factorDisplayName || factorKey : factorKey;
+  }
 };
 
 const validateFormFields = async () => {
@@ -1272,14 +1303,7 @@ watch(
 );
 
 watch(selectedSource, (source) => {
-  if (source) {
-    form.sourceIdentificationName = source.sourceIdentificationName;
-    form.scopeName = source.scopeName;
-    form.scopeSubcategory = source.scopeSubcategory;
-    form.emissionSourceName = source.emissionSourceName;
-    form.factorKey = source.factorDisplayName || source.factorKey;
-    form.activityUnit = source.sourceUnit;
-  }
+  applySourceToForm(source);
   if (!source || form.responsibleDept || formDrawer.readonly) {
     return;
   }
@@ -1293,8 +1317,8 @@ watch(selectedSource, (source) => {
 
 onMounted(async () => {
   applyRouteQuery();
-  await Promise.all([loadEmissionSourceOptions(), loadControlledOptions(), loadSourceCategoryCascadeOptions()]);
   await loadActivities();
+  await Promise.all([loadEmissionSourceOptions(), loadControlledOptions(), loadSourceCategoryCascadeOptions()]);
 });
 
 useAutoQuery(queryParams, () => handleQuery());
