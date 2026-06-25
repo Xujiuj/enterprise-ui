@@ -35,6 +35,9 @@ async function handleSync(refresh: () => Promise<void>) {
     const version = result?.versionCode ? `，版本 ${result.versionCode}` : '';
     await refresh();
     ElMessage.success(`厂商因子同步完成：${changedText} ${count} 条${version}`);
+  } catch (error: any) {
+    const message = error?.response?.data?.msg || error?.message || '因子同步失败';
+    ElMessage.error(message);
   } finally {
     syncing.value = false;
   }
