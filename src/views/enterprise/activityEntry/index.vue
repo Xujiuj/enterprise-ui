@@ -754,7 +754,19 @@ const handleFactoryChange = async () => {
 };
 
 const handleCategoryChange = async () => {
-  clearSourceHierarchyAfter('sourceCategoryKey');
+  const categoryOption = sourceCategoryCascadeOptions.value.find((opt) => opt.value === form.sourceCategoryKey);
+  if (categoryOption?.record) {
+    form.scopeName = categoryOption.record.scopeName;
+    form.scopeSubcategory = categoryOption.record.scopeSubcategory;
+  } else {
+    form.scopeName = undefined;
+    form.scopeSubcategory = undefined;
+  }
+  form.sourceIdentificationCode = undefined;
+  form.sourceIdentificationName = undefined;
+  form.emissionSourceName = undefined;
+  form.factorKey = undefined;
+  form.activityUnit = undefined;
   await loadSourceLeafOptions();
 };
 
