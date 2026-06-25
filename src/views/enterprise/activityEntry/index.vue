@@ -169,7 +169,7 @@
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="排放源名称">
-              <el-input :model-value="derivedFieldValue('f009')" disabled />
+              <el-input :model-value="form.emissionSourceName || derivedFieldValue('f009')" disabled />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -195,13 +195,13 @@
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="单位">
-              <el-input :model-value="derivedActivityUnit" disabled />
+            <el-form-item label="单位" prop="activityUnit">
+              <el-input v-model="form.activityUnit" placeholder="请输入单位" :disabled="formDrawer.readonly" />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="适用因子">
-              <el-input :model-value="derivedFieldValue('f018')" disabled />
+              <el-input :model-value="form.factorKey || derivedFieldValue('f018')" disabled />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -377,6 +377,9 @@ interface ActivityEntryForm {
   scopeSubcategory?: string;
   sourceIdentificationName?: string;
   sourceIdentificationCode?: string;
+  emissionSourceName?: string;
+  factorKey?: string;
+  activityUnit?: string;
   selectedPeriod?: string;
   date?: string;
   activityValue?: number;
@@ -500,6 +503,9 @@ const form = reactive<ActivityEntryForm>({
   scopeSubcategory: undefined,
   sourceIdentificationName: undefined,
   sourceIdentificationCode: undefined,
+  emissionSourceName: undefined,
+  factorKey: undefined,
+  activityUnit: undefined,
   selectedPeriod: undefined,
   date: undefined,
   activityValue: undefined,
@@ -732,6 +738,8 @@ const handleCompanyChange = async () => {
   form.sourceIdentificationName = undefined;
   form.scopeName = undefined;
   form.scopeSubcategory = undefined;
+  form.emissionSourceName = undefined;
+  form.factorKey = undefined;
   await refreshSourceCascadeOptions();
 };
 
@@ -740,6 +748,8 @@ const handleFactoryChange = async () => {
   form.sourceIdentificationName = undefined;
   form.scopeName = undefined;
   form.scopeSubcategory = undefined;
+  form.emissionSourceName = undefined;
+  form.factorKey = undefined;
   await loadSourceLeafOptions();
 };
 
@@ -754,6 +764,8 @@ const handleSourceSelect = (sourceIdentificationCode: string) => {
     form.sourceIdentificationName = source.sourceIdentificationName;
     form.scopeName = source.scopeName;
     form.scopeSubcategory = source.scopeSubcategory;
+    form.emissionSourceName = source.emissionSourceName;
+    form.factorKey = source.factorKey;
     if (!form.responsibleDept && source.responsibleDept) {
       form.responsibleDept = source.responsibleDept;
     }
@@ -775,6 +787,8 @@ const clearSourceHierarchyAfter = (field: SourceHierarchyFormField) => {
     form[key] = undefined;
   });
   form.sourceIdentificationCode = undefined;
+  form.emissionSourceName = undefined;
+  form.factorKey = undefined;
   clearManualValidation();
 };
 
@@ -837,6 +851,7 @@ const buildFieldValues = (): Sheet656FieldValue[] => {
   const { year, month } = splitPeriod(form.selectedPeriod);
   const values: DerivedValueMap = {
     f001: form.sourceIdentificationCode ?? '',
+    f010: form.activityUnit ?? '',
     f011: year,
     f012: month,
     f013: form.date ?? '',
@@ -894,6 +909,9 @@ const resetForm = () => {
     scopeSubcategory: undefined,
     sourceIdentificationName: undefined,
     sourceIdentificationCode: undefined,
+    emissionSourceName: undefined,
+    factorKey: undefined,
+    activityUnit: undefined,
     selectedPeriod: undefined,
     date: undefined,
     activityValue: undefined,
@@ -925,6 +943,9 @@ const openDetailDrawer = async (row: ActivityDataVO) => {
     scopeSubcategory: row.scopeSubcategory,
     sourceIdentificationName: row.sourceIdentificationName,
     sourceIdentificationCode: row.sourceIdentificationCode,
+    emissionSourceName: row.emissionSourceName,
+    factorKey: row.factorKey,
+    activityUnit: row.activityUnit,
     selectedPeriod: joinPeriod(row.activityYear, row.activityMonth),
     date: row.activityDate,
     activityValue: roundToTwoDecimal(row.activityValue),
