@@ -1132,9 +1132,11 @@ const saveActivity = async () => {
     }
 
     const saveRes = await saveLocalSheet656Activity(request.rows[0]);
-    if (saveRes.data?.validationResult) {
-      manualValidation.value = saveRes.data.validationResult;
-      applyManualResolvedDerivedValues(saveRes.data.validationResult);
+
+    // 检查后端返回的验证结果
+    if (saveRes.data?.validationResult?.blocking) {
+      ElMessage.error('保存失败：存在验证错误，请检查数据');
+      return;
     }
 
     const persisted = saveRes.data?.persisted === true || (saveRes.data?.persistedRowCount ?? 0) > 0;
@@ -1146,6 +1148,11 @@ const saveActivity = async () => {
     ElMessage.success(manualWarningIssues.value.length ? '已保存，存在警告请复核' : '保存成功');
     formDrawer.open = false;
     await loadActivities();
+  } catch (error) {
+    // 异常处理：确保用户能看到错误消息
+    console.error('保存失败:', error);
+    const errorMsg = error?.message || '服务器异常，请稍后重试';
+    ElMessage.error('保存失败：' + errorMsg);
   } finally {
     saving.value = false;
   }
