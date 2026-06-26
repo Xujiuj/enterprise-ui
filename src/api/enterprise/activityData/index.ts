@@ -47,6 +47,17 @@ export const updateActivityData = (data: ActivityDataForm) => {
   });
 };
 
+export const updateActivityDataStatus = (ids: Array<string | number>, dataStatus: string) => {
+  return request({
+    url: '/enterprise/activity-data/status',
+    method: 'put',
+    data: {
+      ids,
+      dataStatus
+    }
+  });
+};
+
 export const delActivityData = (id: string | number | Array<string | number>) => {
   return request({
     url: '/enterprise/activity-data/' + id,

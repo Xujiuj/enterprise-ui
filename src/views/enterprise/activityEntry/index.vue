@@ -58,10 +58,42 @@
           <el-button v-hasPermi="['enterprise:activityImport:import']" icon="Upload" @click="openUploadDialog">Excel 上传</el-button>
           <el-button v-hasPermi="['enterprise:activityImport:import']" icon="Grid" @click="openSheetDrawer">在线填报</el-button>
           <el-button v-hasPermi="['enterprise:activityImport:import']" type="primary" icon="Plus" @click="openCreateDrawer">新增</el-button>
+          <el-button
+            v-hasPermi="['enterprise:activityDataRaw:edit']"
+            icon="CircleCheck"
+            :disabled="!selectedActivityIds.length"
+            @click="submitSelectedActivities"
+          >
+            提交选中
+          </el-button>
+          <el-button
+            v-hasPermi="['enterprise:activityDataRaw:edit']"
+            icon="Finished"
+            :disabled="!activityList.length"
+            @click="submitCurrentPageActivities"
+          >
+            提交本页
+          </el-button>
+          <el-button
+            v-hasPermi="['enterprise:activityDataRaw:remove']"
+            type="danger"
+            plain
+            icon="Delete"
+            :disabled="!selectedActivityIds.length"
+            @click="deleteSelectedActivities"
+          >
+            删除选中
+          </el-button>
         </div>
       </div>
 
-      <el-table v-loading="listLoading" :data="activityList" border>
+      <el-table v-loading="listLoading" :data="activityList" border @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="48" align="center" />
+        <el-table-column label="序号" width="72" align="center">
+          <template #default="{ $index }">
+            {{ (Number(queryParams.pageNum || 1) - 1) * Number(queryParams.pageSize || 10) + $index + 1 }}
+          </template>
+        </el-table-column>
         <el-table-column
           v-for="column in visibleActivityTableColumns"
           :key="column.prop"
@@ -76,10 +108,12 @@
             {{ formatActivityCell(row, column.prop) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="170" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" icon="View" @click="openDetailDrawer(row)">查看</el-button>
             <el-button link type="primary" icon="Edit" @click="openEditDrawer(row)" v-hasPermi="['enterprise:activityImport:import']">编辑</el-button>
+            <el-button link type="success" icon="CircleCheck" @click="submitActivity(row)" v-hasPermi="['enterprise:activityDataRaw:edit']">提交</el-button>
+            <el-button link type="danger" icon="Delete" @click="deleteActivity(row)" v-hasPermi="['enterprise:activityDataRaw:remove']">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -255,9 +289,19 @@
             type="primary"
             icon="Check"
             :loading="saving"
-            @click="saveActivity"
+            @click="saveActivity()"
           >
             保存
+          </el-button>
+          <el-button
+            v-if="!formDrawer.readonly && form.id"
+            v-hasPermi="['enterprise:activityDataRaw:edit']"
+            type="success"
+            icon="CircleCheck"
+            :loading="saving"
+            @click="saveActivity({ submitAfterSave: true })"
+          >
+            保存并提交
           </el-button>
         </div>
       </template>
@@ -322,6 +366,7 @@
         :rows="sheetRows"
         :empty-row="sheetEmptyRow"
         :saving="sheetSaving"
+        allow-empty-save
         hint="字段名称严格保持 sheet_656 原始表头。维度字段通过排放源下拉选择，保存前会调用服务端校验并自动带出公司、分类、单位和因子。"
         @save="saveSheetRows"
       />
@@ -333,7 +378,7 @@
 import { UploadFilled } from '@element-plus/icons-vue';
 import { computed, nextTick, onActivated, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { ElMessage, type FormInstance, type FormRules, type UploadFile, type UploadRawFile } from 'element-plus';
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadFile, type UploadRawFile } from 'element-plus';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
 import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
@@ -362,6 +407,7 @@ import {
   type SelectOption
 } from '@/utils/enterpriseFieldOptions';
 import type { ActivityDataQuery, ActivityDataVO } from '@/api/enterprise/activityData/types';
+import { delActivityData, updateActivityData, updateActivityDataStatus } from '@/api/enterprise/activityData';
 import type { EmissionSourceVO } from '@/api/enterprise/emissionSource/types';
 import type {
   Sheet656FieldDescriptor,
@@ -373,6 +419,7 @@ import type {
 } from '@/api/enterprise/sheet656ActivityValidation/types';
 
 interface ActivityEntryForm {
+  id?: string | number;
   sourceCompanyName?: string;
   sourceFactoryName?: string;
   sourceCategoryKey?: string;
@@ -388,6 +435,7 @@ interface ActivityEntryForm {
   activityValue?: number;
   responsibleDept?: string;
   dataSource?: string;
+  dataStatus?: string;
   remark?: string;
 }
 
@@ -441,6 +489,7 @@ const uploadParsing = ref(false);
 const uploadImporting = ref(false);
 const total = ref(0);
 const activityList = ref<ActivityDataVO[]>([]);
+const selectedActivities = ref<ActivityDataVO[]>([]);
 const companyOptions = ref<SelectOption[]>([]);
 const factoryOptions = ref<SelectOption[]>([]);
 const sourceCategoryOptions = ref<SelectOption[]>([]);
@@ -463,6 +512,7 @@ const selectedQueryPeriod = ref('');
 const initializingForm = ref(false);
 const hasMounted = ref(false);
 const latestActivityRequestId = ref(0);
+const selectedActivityIds = computed(() => selectedActivities.value.map((row) => row.id).filter((id): id is string | number => id !== undefined && id !== null));
 
 const formDrawer = reactive({
   open: false,
@@ -477,6 +527,7 @@ const sheetDrawer = reactive({
   open: false
 });
 const sheetSaving = ref(false);
+const sheetBaselineIds = ref<Array<string | number>>([]);
 
 const queryParams = reactive<ActivityDataQuery>({
   pageNum: 1,
@@ -495,6 +546,7 @@ const queryParams = reactive<ActivityDataQuery>({
 });
 
 const form = reactive<ActivityEntryForm>({
+  id: undefined,
   sourceCompanyName: undefined,
   sourceFactoryName: undefined,
   sourceCategoryKey: undefined,
@@ -510,6 +562,7 @@ const form = reactive<ActivityEntryForm>({
   activityValue: undefined,
   responsibleDept: undefined,
   dataSource: undefined,
+  dataStatus: undefined,
   remark: undefined
 });
 
@@ -527,6 +580,7 @@ const activityTableColumns: ActivityTableColumn[] = [
   { prop: 'activityValue', label: '活动数据', width: 130, align: 'right' },
   { prop: 'responsibleDept', label: '负责部门', width: 130 },
   { prop: 'dataSource', label: '数据来源', width: 130 },
+  { prop: 'dataStatus', label: '数据状态', width: 110 },
   { prop: 'sourceRemark', label: '备注', minWidth: 160 }
 ];
 const activityColumnOptions = ref<FieldOption[]>(
@@ -596,12 +650,14 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
       prop: field.sourceColumnCode,
       label: field.sourceColumnName,
       required: field.rowValueRequired,
+      readonly: field.derivedField,
       width: field.derivedField ? 170 : 160
     };
   })
 );
 const sheetRows = computed(() =>
   activityList.value.map((row) => ({
+    id: row.id,
     f001: row.sourceIdentificationCode,
     f002: row.companyCode,
     f003: row.companyName,
@@ -681,6 +737,9 @@ const formatActivityCell = (row: ActivityDataVO, prop: keyof ActivityDataVO) => 
   const value = row[prop];
   if (prop === 'activityValue') {
     return formatDecimal2(value as string | number | undefined);
+  }
+  if (prop === 'dataStatus') {
+    return activityDataStatusOptions.value.find((option) => option.value === value)?.label ?? value ?? '-';
   }
   return value === undefined || value === null || value === '' ? '-' : String(value);
 };
@@ -893,6 +952,34 @@ const buildFieldValues = (): Sheet656FieldValue[] => {
   }));
 };
 
+const buildActivityDataForm = (dataStatus?: string) => {
+  const { year, month } = splitPeriod(form.selectedPeriod);
+  return {
+    id: form.id,
+    sourceSheetCode: 'sheet_656',
+    sourceIdentificationCode: form.sourceIdentificationCode,
+    companyCode: currentDerivedValues().f002,
+    companyName: form.sourceCompanyName,
+    factoryName: form.sourceFactoryName,
+    sourceCategoryKey: form.sourceCategoryKey,
+    scopeName: form.scopeName,
+    scopeSubcategory: form.scopeSubcategory,
+    sourceIdentificationName: form.sourceIdentificationName,
+    emissionSourceName: form.emissionSourceName,
+    activityUnit: form.activityUnit,
+    activityYear: year ? Number(year) : undefined,
+    activityMonth: month ? Number(month) : undefined,
+    activityDate: form.date,
+    activityValue: roundToTwoDecimal(form.activityValue),
+    responsibleDept: form.responsibleDept,
+    dataSource: form.dataSource,
+    sourceRemark: form.remark,
+    factorKey: form.factorKey,
+    dataStatus: dataStatus ?? form.dataStatus ?? 'draft',
+    remark: form.remark
+  };
+};
+
 const buildManualValidationRequest = (): Sheet656ImportValidationRequest => ({
   headerFields: cloneFieldDescriptors(FIELD_DESCRIPTORS),
   rows: [
@@ -926,6 +1013,7 @@ const clearManualValidation = (options: { keepDerivedValues?: boolean } = {}) =>
 
 const resetForm = () => {
   Object.assign(form, {
+    id: undefined,
     sourceCompanyName: undefined,
     sourceFactoryName: undefined,
     sourceCategoryKey: undefined,
@@ -941,6 +1029,7 @@ const resetForm = () => {
     activityValue: undefined,
     responsibleDept: undefined,
     dataSource: undefined,
+    dataStatus: undefined,
     remark: undefined
   });
   resolvedSource.value = undefined;
@@ -964,6 +1053,7 @@ const openDetailDrawer = async (row: ActivityDataVO) => {
   initializingForm.value = true;
   resetForm();
   Object.assign(form, {
+    id: row.id,
     sourceCompanyName: row.companyName,
     sourceFactoryName: row.factoryName,
     sourceCategoryKey: row.sourceCategoryKey,
@@ -979,6 +1069,7 @@ const openDetailDrawer = async (row: ActivityDataVO) => {
     activityValue: roundToTwoDecimal(row.activityValue),
     responsibleDept: row.responsibleDept,
     dataSource: row.dataSource,
+    dataStatus: row.dataStatus,
     remark: row.sourceRemark ?? row.remark
   });
   manualResolvedDerivedValues.value = {
@@ -1041,6 +1132,7 @@ const preloadSpreadsheetEditor = () => {
 
 const openSheetDrawer = () => {
   void loadUniverSheetsCore();
+  sheetBaselineIds.value = activityList.value.map((row) => row.id);
   sheetDrawer.open = true;
 };
 
@@ -1048,7 +1140,12 @@ const downloadImportTemplate = () => {
   downloadXlsxTemplate({
     fileName: `sheet_656_activity_template_${new Date().getTime()}.xlsx`,
     sheetName: 'sheet_656',
-    headers: FIELD_DESCRIPTORS.map((field) => field.sourceColumnName)
+    headers: FIELD_DESCRIPTORS.map((field) => field.sourceColumnName),
+    validations: {
+      PK_排放源识别编号: allSourceOptions.value.map((option) => String(option.value)),
+      负责部门: deptOptions.value.map((option) => String(option.value)),
+      数据来源: dataSourceOptions.value.map((option) => String(option.value))
+    }
   });
 };
 
@@ -1111,7 +1208,7 @@ const handleValidate = async () => {
   ElMessage.success(result.valid ? '校验通过' : '校验完成，存在警告');
 };
 
-const saveActivity = async () => {
+const saveActivity = async (options: { submitAfterSave?: boolean } = {}) => {
   const valid = await validateFormFields();
   if (!valid) return;
   if (!form.sourceIdentificationCode) {
@@ -1128,6 +1225,15 @@ const saveActivity = async () => {
     const result = await runManualServerValidation(request);
     if (result.blocking) {
       ElMessage.error('存在错误，不能保存');
+      return;
+    }
+
+    if (form.id) {
+      const updatePayload = buildActivityDataForm(options.submitAfterSave ? 'submitted' : undefined);
+      await updateActivityData(updatePayload);
+      ElMessage.success(options.submitAfterSave ? '保存并提交成功' : manualWarningIssues.value.length ? '已保存，存在警告请复核' : '保存成功');
+      formDrawer.open = false;
+      await loadActivities();
       return;
     }
 
@@ -1226,6 +1332,55 @@ const importUploadedRows = async () => {
   }
 };
 
+const handleSelectionChange = (rows: ActivityDataVO[]) => {
+  selectedActivities.value = rows;
+};
+
+const confirmAction = (message: string, title = '确认操作') =>
+  ElMessageBox.confirm(message, title, {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  });
+
+const deleteActivitiesByIds = async (ids: Array<string | number>) => {
+  if (!ids.length) {
+    ElMessage.warning('请选择要删除的数据');
+    return;
+  }
+  await confirmAction(`确认删除选中的 ${ids.length} 条活动数据吗？删除后不可恢复。`, '删除确认');
+  await delActivityData(ids);
+  ElMessage.success('删除成功');
+  selectedActivities.value = [];
+  await loadActivities();
+};
+
+const deleteSelectedActivities = () => deleteActivitiesByIds(selectedActivityIds.value);
+
+const deleteActivity = (row: ActivityDataVO) => deleteActivitiesByIds([row.id]);
+
+const submitActivitiesByIds = async (ids: Array<string | number>, message: string) => {
+  if (!ids.length) {
+    ElMessage.warning('请选择要提交的数据');
+    return;
+  }
+  await confirmAction(message, '提交确认');
+  await updateActivityDataStatus(ids, 'submitted');
+  ElMessage.success('提交成功');
+  selectedActivities.value = [];
+  await loadActivities();
+};
+
+const submitSelectedActivities = () => submitActivitiesByIds(selectedActivityIds.value, `确认提交选中的 ${selectedActivityIds.value.length} 条活动数据吗？`);
+
+const submitCurrentPageActivities = () =>
+  submitActivitiesByIds(
+    activityList.value.map((row) => row.id),
+    `确认提交当前页 ${activityList.value.length} 条活动数据吗？`
+  );
+
+const submitActivity = (row: ActivityDataVO) => submitActivitiesByIds([row.id], '确认提交这条活动数据吗？');
+
 const buildSheetRowRequest = (rows: Record<string, any>[]): Sheet656ImportValidationRequest => ({
   headerFields: cloneFieldDescriptors(FIELD_DESCRIPTORS),
   rows: rows.map((row, index) => ({
@@ -1238,24 +1393,90 @@ const buildSheetRowRequest = (rows: Record<string, any>[]): Sheet656ImportValida
   }))
 });
 
+const applySheetValidationResolvedValues = (rows: Record<string, any>[], result?: Sheet656ImportValidationResult) =>
+  rows.map((row, index) => {
+    const resolved = result?.rowResults?.[index]?.resolvedDerivedFieldValues ?? [];
+    if (!resolved.length) {
+      return row;
+    }
+    const nextRow = { ...row };
+    resolved.forEach((field) => {
+      if (field.sourceColumnCode) {
+        nextRow[field.sourceColumnCode] = field.value;
+      }
+    });
+    return nextRow;
+  });
+
+const sheetRowToActivityDataForm = (row: Record<string, any>, dataStatus = 'draft') => ({
+  id: row.id,
+  sourceSheetCode: 'sheet_656',
+  sourceIdentificationCode: valueToString(row.f001),
+  companyCode: valueToString(row.f002),
+  companyName: valueToString(row.f003),
+  factoryName: valueToString(row.f004),
+  sourceCategoryKey: valueToString(row.f005),
+  scopeName: valueToString(row.f006),
+  scopeSubcategory: valueToString(row.f007),
+  sourceIdentificationName: valueToString(row.f008),
+  emissionSourceName: valueToString(row.f009),
+  activityUnit: valueToString(row.f010),
+  activityYear: row.f011 === undefined || row.f011 === '' ? undefined : Number(row.f011),
+  activityMonth: row.f012 === undefined || row.f012 === '' ? undefined : Number(row.f012),
+  activityDate: valueToString(row.f013),
+  activityValue: roundToTwoDecimal(row.f014),
+  responsibleDept: valueToString(row.f015),
+  dataSource: valueToString(row.f016),
+  sourceRemark: valueToString(row.f017),
+  factorKey: valueToString(row.f018),
+  dataStatus,
+  remark: valueToString(row.f017)
+});
+
 const saveSheetRows = async (rows: Record<string, any>[]) => {
   sheetSaving.value = true;
   try {
+    if (!rows.length) {
+      if (sheetBaselineIds.value.length) {
+        await confirmAction(`确认删除当前在线填报中的 ${sheetBaselineIds.value.length} 条活动数据吗？删除后不可恢复。`, '删除确认');
+        await delActivityData(sheetBaselineIds.value);
+        ElMessage.success('在线填报已删除全部已有数据');
+        sheetDrawer.open = false;
+        await loadActivities();
+      }
+      return;
+    }
     const request = buildSheetRowRequest(rows);
     const validation = await validateLocalSheet656Activity(request);
     if (validation.data?.blocking) {
       ElMessage.error('在线填报存在错误，不能保存');
       return;
     }
-    const importRes = await importLocalSheet656Activity(request);
-    if (importRes.data?.validationResult?.blocking) {
-      ElMessage.error('在线填报保存失败，请按校验结果修正');
-      return;
+
+    const resolvedRows = applySheetValidationResolvedValues(rows, validation.data);
+    const currentIds = resolvedRows.map((row) => row.id).filter((id): id is string | number => id !== undefined && id !== null && id !== '');
+    const removedIds = sheetBaselineIds.value.filter((id) => !currentIds.some((currentId) => String(currentId) === String(id)));
+    const existingRows = resolvedRows.filter((row) => row.id);
+    const newRows = resolvedRows.filter((row) => !row.id);
+
+    if (existingRows.length) {
+      await Promise.all(existingRows.map((row) => updateActivityData(sheetRowToActivityDataForm(row))));
     }
-    const persisted = importRes.data?.persisted === true || (importRes.data?.persistedRowCount ?? 0) > 0;
-    if (!persisted) {
-      ElMessage.warning('在线填报未持久化，请根据校验结果复核后重试');
-      return;
+    if (removedIds.length) {
+      await delActivityData(removedIds);
+    }
+    if (newRows.length) {
+      const importRequest = buildSheetRowRequest(newRows);
+      const importRes = await importLocalSheet656Activity(importRequest);
+      if (importRes.data?.validationResult?.blocking) {
+        ElMessage.error('在线填报保存失败，请按校验结果修正');
+        return;
+      }
+      const persisted = importRes.data?.persisted === true || (importRes.data?.persistedRowCount ?? 0) > 0;
+      if (!persisted) {
+        ElMessage.warning('在线填报新增数据未持久化，请根据校验结果复核后重试');
+        return;
+      }
     }
     ElMessage.success('在线填报已保存');
     sheetDrawer.open = false;

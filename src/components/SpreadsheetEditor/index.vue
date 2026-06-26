@@ -8,6 +8,10 @@
         <el-tag v-else type="success" size="small">可保存</el-tag>
       </div>
       <div class="spreadsheet-actions">
+        <el-radio-group v-model="editorMode" size="small">
+          <el-radio-button value="table">表格编辑</el-radio-button>
+          <el-radio-button value="sheet">Excel 编辑</el-radio-button>
+        </el-radio-group>
         <el-button icon="Plus" @click="addRows">增加 10 行</el-button>
         <el-button icon="Refresh" @click="reloadWorkbook">重载表格</el-button>
         <el-button type="primary" icon="Check" :loading="saving" :disabled="!canSave" @click="emitSave">保存表格</el-button>
@@ -18,9 +22,55 @@
       <template #title>{{ hint }}</template>
     </el-alert>
 
-    <div class="univer-shell">
+    <div v-show="editorMode === 'sheet'" class="univer-shell">
       <div ref="containerRef" class="univer-container" />
       <div v-if="loading" class="univer-loading">正在加载在线 Excel 编辑器...</div>
+    </div>
+
+    <div v-show="editorMode === 'table'" class="table-editor-shell">
+      <el-table :data="cachedRows" border height="620">
+        <el-table-column label="序号" type="index" width="62" align="center" fixed />
+        <el-table-column
+          v-for="column in columns"
+          :key="column.prop"
+          :label="column.required ? `${column.label} *` : column.label"
+          :min-width="column.width ?? 160"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            <el-select
+              v-if="column.type === 'select' && !column.readonly"
+              v-model="row[column.prop]"
+              filterable
+              clearable
+              class="cell-control"
+            >
+              <el-option v-for="option in column.options ?? []" :key="String(option.value)" :label="option.label" :value="option.value" />
+            </el-select>
+            <el-input-number
+              v-else-if="column.type === 'number' && !column.readonly"
+              v-model="row[column.prop]"
+              :min="column.min"
+              :precision="column.precision"
+              controls-position="right"
+              class="cell-control"
+            />
+            <el-date-picker
+              v-else-if="column.type === 'date' && !column.readonly"
+              v-model="row[column.prop]"
+              value-format="YYYY-MM-DD"
+              type="date"
+              class="cell-control"
+            />
+            <el-input v-else v-model="row[column.prop]" :disabled="column.readonly" class="cell-control" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="82" fixed="right" align="center">
+          <template #default="{ $index }">
+            <el-button link type="danger" icon="Delete" @click="removeRow($index)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
 
     <div v-if="errorCount" class="spreadsheet-errors">
@@ -64,10 +114,12 @@ const props = withDefaults(
     emptyRow: Record<string, any>;
     saving?: boolean;
     hint?: string;
+    allowEmptySave?: boolean;
   }>(),
   {
     saving: false,
-    hint: ''
+    hint: '',
+    allowEmptySave: false
   }
 );
 
@@ -81,6 +133,7 @@ const workbookRef = shallowRef<UniverWorkbook>();
 const univerRef = shallowRef<UniverInstance>();
 const cachedRows = ref<SpreadsheetRow[]>([]);
 const validationErrors = ref<Map<number, Record<string, string>>>(new Map());
+const editorMode = ref<'table' | 'sheet'>('table');
 let workbookSeed = 1;
 const rowIdProp = '__row_id';
 
@@ -116,6 +169,14 @@ const normalizeValue = (column: SpreadsheetColumn, value: SpreadsheetValue) => {
 };
 
 const cloneRows = () => (props.rows ?? []).map((row) => ({ ...props.emptyRow, ...row }));
+
+const rowHasValue = (row: SpreadsheetRow) =>
+  props.columns.some((column) => {
+    const value = row[column.prop];
+    return !isBlank(value);
+  });
+
+const compactRows = (rows: SpreadsheetRow[]) => rows.filter(rowHasValue);
 
 const buildWorkbookData = () => {
   const sheetId = `sheet-${workbookSeed}`;
@@ -216,12 +277,20 @@ const reloadWorkbook = () => {
 };
 
 const addRows = () => {
+  if (editorMode.value === 'table') {
+    cachedRows.value = [...cachedRows.value, ...Array.from({ length: 10 }, () => ({ ...props.emptyRow }))];
+    return;
+  }
   const worksheet = workbookRef.value?.getActiveSheet();
   if (!worksheet) {
     ElMessage.warning('在线 Excel 尚未加载完成');
     return;
   }
   worksheet.insertRowsAfter(visibleRowCount.value - 1, 10);
+};
+
+const removeRow = (index: number) => {
+  cachedRows.value.splice(index, 1);
 };
 
 const getFirstSheet = () => {
@@ -289,8 +358,12 @@ const validateRows = (rows: SpreadsheetRow[]) => {
 };
 
 const emitSave = () => {
-  const rows = extractRows();
+  const rows = editorMode.value === 'table' ? compactRows(cachedRows.value) : extractRows();
   if (!rows.length) {
+    if (props.allowEmptySave) {
+      emit('save', []);
+      return;
+    }
     ElMessage.warning('没有可保存的数据');
     return;
   }

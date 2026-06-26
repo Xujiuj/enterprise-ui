@@ -4,6 +4,7 @@ interface XlsxTemplateOptions {
   fileName: string;
   sheetName: string;
   headers: string[];
+  validations?: Record<string, string[]>;
 }
 
 interface ZipEntry {
@@ -43,6 +44,19 @@ function columnName(index: number) {
     value = Math.floor((value - 1) / 26);
   }
   return name;
+}
+
+function normalizeOptions(options: string[] = []) {
+  const seen = new Set<string>();
+  return options
+    .map((option) => String(option ?? '').trim())
+    .filter((option) => {
+      if (!option || seen.has(option)) {
+        return false;
+      }
+      seen.add(option);
+      return true;
+    });
 }
 
 function crc32(bytes: Uint8Array) {
@@ -130,7 +144,24 @@ function createZip(entries: ZipEntry[]) {
   });
 }
 
-function buildWorksheet(headers: string[]) {
+function buildDataValidations(headers: string[], validations?: Record<string, string[]>) {
+  const rules = headers
+    .map((header, index) => {
+      const options = normalizeOptions(validations?.[header]);
+      if (!options.length) {
+        return '';
+      }
+      const column = columnName(index);
+      const optionColumn = columnName(index);
+      const optionRange = `'__options'!$${optionColumn}$1:$${optionColumn}$${options.length}`;
+      return `<dataValidation type="list" allowBlank="1" showErrorMessage="1" sqref="${column}2:${column}1001"><formula1>${escapeXml(optionRange)}</formula1></dataValidation>`;
+    })
+    .filter(Boolean)
+    .join('');
+  return rules ? `<dataValidations count="${(rules.match(/<dataValidation /g) ?? []).length}">${rules}</dataValidations>` : '';
+}
+
+function buildWorksheet(headers: string[], validations?: Record<string, string[]>) {
   const cols = headers
     .map((header, index) => {
       const width = Math.min(Math.max(header.length + 4, 12), 28);
@@ -144,6 +175,7 @@ function buildWorksheet(headers: string[]) {
     })
     .join('');
   const lastColumn = columnName(Math.max(headers.length - 1, 0));
+  const dataValidations = buildDataValidations(headers, validations);
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -154,11 +186,40 @@ function buildWorksheet(headers: string[]) {
   <sheetData>
     <row r="1">${cells}</row>
   </sheetData>
+  ${dataValidations}
   <pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
 </worksheet>`;
 }
 
-export function createXlsxTemplateBlob(options: Pick<XlsxTemplateOptions, 'sheetName' | 'headers'>) {
+function buildOptionsWorksheet(headers: string[], validations?: Record<string, string[]>) {
+  const optionColumns = headers.map((header) => normalizeOptions(validations?.[header]));
+  const maxRows = Math.max(1, ...optionColumns.map((items) => items.length));
+  const rows = Array.from({ length: maxRows }, (_, rowIndex) => {
+    const cells = optionColumns
+      .map((items, columnIndex) => {
+        const value = items[rowIndex];
+        if (!value) {
+          return '';
+        }
+        const ref = `${columnName(columnIndex)}${rowIndex + 1}`;
+        return `<c r="${ref}" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
+      })
+      .join('');
+    return `<row r="${rowIndex + 1}">${cells}</row>`;
+  }).join('');
+  const lastColumn = columnName(Math.max(headers.length - 1, 0));
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <dimension ref="A1:${lastColumn}${maxRows}"/>
+  <sheetViews><sheetView workbookViewId="0"/></sheetViews>
+  <sheetFormatPr defaultRowHeight="18"/>
+  <sheetData>${rows}</sheetData>
+  <pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
+</worksheet>`;
+}
+
+export function createXlsxTemplateBlob(options: Pick<XlsxTemplateOptions, 'sheetName' | 'headers' | 'validations'>) {
   const safeSheetName = escapeXml(options.sheetName.slice(0, 31) || 'Sheet1');
   const entries: ZipEntry[] = [
     {
@@ -169,6 +230,7 @@ export function createXlsxTemplateBlob(options: Pick<XlsxTemplateOptions, 'sheet
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
   <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
   <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
 </Types>`
     },
@@ -183,7 +245,10 @@ export function createXlsxTemplateBlob(options: Pick<XlsxTemplateOptions, 'sheet
       path: 'xl/workbook.xml',
       content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets><sheet name="${safeSheetName}" sheetId="1" r:id="rId1"/></sheets>
+  <sheets>
+    <sheet name="${safeSheetName}" sheetId="1" r:id="rId1"/>
+    <sheet name="__options" sheetId="2" state="hidden" r:id="rId3"/>
+  </sheets>
 </workbook>`
     },
     {
@@ -192,6 +257,7 @@ export function createXlsxTemplateBlob(options: Pick<XlsxTemplateOptions, 'sheet
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
 </Relationships>`
     },
     {
@@ -207,7 +273,11 @@ export function createXlsxTemplateBlob(options: Pick<XlsxTemplateOptions, 'sheet
     },
     {
       path: 'xl/worksheets/sheet1.xml',
-      content: buildWorksheet(options.headers)
+      content: buildWorksheet(options.headers, options.validations)
+    },
+    {
+      path: 'xl/worksheets/sheet2.xml',
+      content: buildOptionsWorksheet(options.headers, options.validations)
     }
   ];
 
