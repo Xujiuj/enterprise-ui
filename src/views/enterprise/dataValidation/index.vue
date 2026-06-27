@@ -80,13 +80,13 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="ruleName" label="规则" width="130" />
+        <el-table-column prop="ruleName" label="规则" width="140" />
         <el-table-column prop="objectName" label="对象" min-width="220" show-overflow-tooltip />
         <el-table-column label="期间" width="100">
           <template #default="scope">{{ formatPeriod(scope.row.activityYear, scope.row.activityMonth) }}</template>
         </el-table-column>
         <el-table-column prop="description" label="问题描述" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="suggestion" label="建议" min-width="170" show-overflow-tooltip />
+        <el-table-column prop="suggestion" label="建议" min-width="180" show-overflow-tooltip />
         <el-table-column label="状态" width="105">
           <template #default="scope">
             <el-tag :type="issueTag(scope.row.issueStatus)" effect="plain">{{ issueLabel(scope.row.issueStatus) }}</el-tag>
@@ -115,12 +115,7 @@ const router = useRouter();
 const loading = ref(false);
 const dashboard = ref<ActivityDataValidationDashboard>({});
 const selectedPeriod = ref('');
-const currentLocalMonth = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-};
 const queryParams = reactive<ActivityDataQuery>({});
-selectedPeriod.value = currentLocalMonth();
 
 const submissions = computed(() => dashboard.value.submissions ?? []);
 const issues = computed(() => dashboard.value.issues ?? []);
@@ -160,7 +155,6 @@ const loadDashboard = async () => {
     dashboard.value = res.data ?? {};
     if (!selectedPeriod.value && dashboard.value.activityYear && dashboard.value.activityMonth) {
       selectedPeriod.value = formatPeriod(dashboard.value.activityYear, dashboard.value.activityMonth);
-      applyPeriodToQuery(selectedPeriod.value);
     }
   } finally {
     loading.value = false;
@@ -168,7 +162,7 @@ const loadDashboard = async () => {
 };
 
 const resetQuery = () => {
-  selectedPeriod.value = currentLocalMonth();
+  selectedPeriod.value = '';
   applyPeriodToQuery(selectedPeriod.value);
   loadDashboard();
 };
@@ -325,6 +319,10 @@ useAutoQuery(queryParams, () => loadDashboard());
 
 .metric-card strong.is-primary {
   color: var(--el-color-primary);
+}
+
+.metric-card strong.is-danger {
+  color: var(--el-color-danger);
 }
 
 @media (max-width: 768px) {
