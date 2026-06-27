@@ -199,6 +199,22 @@
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
+            <el-form-item label="排放源识别" prop="sourceIdentificationName">
+              <el-select
+                v-model="form.sourceIdentificationName"
+                class="w-full"
+                clearable
+                filterable
+                :loading="sourceIdentificationLoading"
+                :disabled="formDrawer.readonly || !form.scopeSubcategory"
+                placeholder="请选择排放源识别"
+                @change="handleSourceIdentificationChange"
+              >
+                <el-option v-for="option in sourceIdentificationOptions" :key="option.value" :label="option.label" :value="option.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
             <el-form-item label="排放源名称" prop="emissionSourceName">
               <el-select
                 v-model="form.emissionSourceName"
@@ -389,6 +405,7 @@ import {
   loadActivityEntryEmissionSourceNameOptions,
   loadActivityEntrySourceCompanyOptions,
   loadActivityEntrySourceFactoryOptions,
+  loadActivityEntrySourceIdentificationOptions,
   loadActivityEntrySourceScopeOptions,
   loadActivityEntrySourceSubcategoryOptions,
   loadCompanyNameOptions,
@@ -456,7 +473,7 @@ const ALL_FIELD_DESCRIPTORS: EmissionActivityFieldDescriptor[] = [
   { fieldOrder: 5, fieldCode: 'sourceCategoryKey', fieldName: '排放源分类', sourceRequired: false, rowValueRequired: false, derivedField: true },
   { fieldOrder: 6, fieldCode: 'scopeName', fieldName: '范围', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 7, fieldCode: 'scopeSubcategory', fieldName: '范围子类别', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 8, fieldCode: 'sourceIdentificationName', fieldName: '排放源识别', sourceRequired: false, rowValueRequired: false, derivedField: true },
+  { fieldOrder: 8, fieldCode: 'sourceIdentificationName', fieldName: '排放源识别', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 9, fieldCode: 'emissionSourceName', fieldName: '排放源名称', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 10, fieldCode: 'activityUnit', fieldName: '单位', sourceRequired: false, rowValueRequired: false, derivedField: true },
   { fieldOrder: 11, fieldCode: 'activityPeriod', fieldName: '活动期间', sourceRequired: false, rowValueRequired: true, derivedField: false },
@@ -474,12 +491,13 @@ const ENTRY_FIELD_DESCRIPTORS: EmissionActivityFieldDescriptor[] = [
   { fieldOrder: 2, fieldCode: 'factoryName', fieldName: '工厂', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 3, fieldCode: 'scopeName', fieldName: '范围', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 4, fieldCode: 'scopeSubcategory', fieldName: '范围子类别', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 5, fieldCode: 'emissionSourceName', fieldName: '排放源名称', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 6, fieldCode: 'activityPeriod', fieldName: '活动期间', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 7, fieldCode: 'activityDate', fieldName: '日期', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 8, fieldCode: 'activityValue', fieldName: '活动数据', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 9, fieldCode: 'responsibleDept', fieldName: '负责部门', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 10, fieldCode: 'dataSource', fieldName: '数据来源', sourceRequired: false, rowValueRequired: true, derivedField: false }
+  { fieldOrder: 5, fieldCode: 'sourceIdentificationName', fieldName: '排放源识别', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 6, fieldCode: 'emissionSourceName', fieldName: '排放源名称', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 7, fieldCode: 'activityPeriod', fieldName: '活动期间', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 8, fieldCode: 'activityDate', fieldName: '日期', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 9, fieldCode: 'activityValue', fieldName: '活动数据', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 10, fieldCode: 'responsibleDept', fieldName: '负责部门', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 11, fieldCode: 'dataSource', fieldName: '数据来源', sourceRequired: false, rowValueRequired: true, derivedField: false }
 ];
 
 const queryFormRef = ref<FormInstance>();
@@ -491,6 +509,7 @@ const sourceCompanyLoading = ref(false);
 const sourceFactoryLoading = ref(false);
 const sourceScopeLoading = ref(false);
 const sourceSubcategoryLoading = ref(false);
+const sourceIdentificationLoading = ref(false);
 const sourceNameLoading = ref(false);
 const validating = ref(false);
 const saving = ref(false);
@@ -510,10 +529,12 @@ const sourceCompanyOptions = ref<SelectOption[]>([]);
 const sourceFactoryOptions = ref<SelectOption[]>([]);
 const sourceScopeOptions = ref<SelectOption[]>([]);
 const sourceSubcategoryOptions = ref<SelectOption[]>([]);
+const sourceIdentificationOptions = ref<SelectOption[]>([]);
 const sourceNameOptions = ref<SelectOption[]>([]);
 const allSourceFactoryOptions = ref<SelectOption[]>([]);
 const allSourceScopeOptions = ref<SelectOption[]>([]);
 const allSourceSubcategoryOptions = ref<SelectOption[]>([]);
+const allSourceIdentificationOptions = ref<SelectOption[]>([]);
 const manualValidation = ref<EmissionActivityImportValidationResult>();
 const uploadValidation = ref<EmissionActivityImportValidationResult>();
 const manualResolvedDerivedValues = ref<DerivedValueMap>({});
@@ -618,7 +639,8 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         type: 'select',
         required: true,
         width: 180,
-        options: sourceCompanyOptions.value
+        options: sourceCompanyOptions.value,
+        clearsOnChange: ['factoryName', 'scopeName', 'scopeSubcategory', 'sourceIdentificationName', 'emissionSourceName']
       };
     }
     if (field.fieldCode === 'factoryName') {
@@ -628,7 +650,9 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         type: 'select',
         required: true,
         width: 170,
-        options: allSourceFactoryOptions.value
+        options: allSourceFactoryOptions.value,
+        getOptions: (row) => sheetFactoryOptions(row),
+        clearsOnChange: ['scopeName', 'scopeSubcategory', 'sourceIdentificationName', 'emissionSourceName']
       };
     }
     if (field.fieldCode === 'scopeName') {
@@ -638,7 +662,9 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         type: 'select',
         required: true,
         width: 140,
-        options: allSourceScopeOptions.value
+        options: allSourceScopeOptions.value,
+        getOptions: (row) => sheetScopeOptions(row),
+        clearsOnChange: ['scopeSubcategory', 'sourceIdentificationName', 'emissionSourceName']
       };
     }
     if (field.fieldCode === 'scopeSubcategory') {
@@ -648,7 +674,21 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         type: 'select',
         required: true,
         width: 190,
-        options: allSourceSubcategoryOptions.value
+        options: allSourceSubcategoryOptions.value,
+        getOptions: (row) => sheetSubcategoryOptions(row),
+        clearsOnChange: ['sourceIdentificationName', 'emissionSourceName']
+      };
+    }
+    if (field.fieldCode === 'sourceIdentificationName') {
+      return {
+        prop: field.fieldCode,
+        label: field.fieldName,
+        type: 'select',
+        required: field.rowValueRequired,
+        width: 190,
+        options: allSourceIdentificationOptions.value,
+        getOptions: (row) => sheetSourceIdentificationOptions(row),
+        clearsOnChange: ['emissionSourceName']
       };
     }
     if (field.fieldCode === 'emissionSourceName') {
@@ -658,7 +698,8 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         type: 'select',
         required: true,
         width: 190,
-        options: emissionSourceNameOptions.value
+        options: emissionSourceNameOptions.value,
+        getOptions: (row) => sheetEmissionSourceNameOptions(row)
       };
     }
     if (field.fieldCode === 'activityPeriod') {
@@ -731,6 +772,7 @@ const rules: FormRules<ActivityEntryForm> = {
   sourceFactoryName: [{ required: true, message: '请选择工厂', trigger: 'change' }],
   scopeName: [{ required: true, message: '请选择范围', trigger: 'change' }],
   scopeSubcategory: [{ required: true, message: '请选择范围子类别', trigger: 'change' }],
+  sourceIdentificationName: [{ required: true, message: '请选择排放源识别', trigger: 'change' }],
   emissionSourceName: [{ required: true, message: '请选择排放源名称', trigger: 'change' }],
   selectedPeriod: [{ required: true, message: '请选择活动期间', trigger: 'change' }],
   date: [{ required: true, message: '请选择日期', trigger: 'change' }],
@@ -759,6 +801,40 @@ const uploadStatusText = computed(() => {
 
 const isBlockingIssue = (issue: EmissionActivityValidationIssue) => issue.severity === 'ERROR';
 const valueToString = (value?: string | number) => (value === undefined || value === null ? '' : String(value));
+const sameOptionValue = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '');
+const filterOptionsByRecord = (options: SelectOption[], filters: Record<string, unknown>) =>
+  options.filter((option) =>
+    Object.entries(filters).every(([key, value]) => {
+      if (value === undefined || value === null || value === '') {
+        return true;
+      }
+      return sameOptionValue(option.record?.record?.[key] ?? option.record?.[key], value);
+    })
+  );
+const sheetFactoryOptions = (row: Record<string, any>) => filterOptionsByRecord(allSourceFactoryOptions.value, { companyName: row.companyName });
+const sheetScopeOptions = (row: Record<string, any>) =>
+  filterOptionsByRecord(allSourceScopeOptions.value, { companyName: row.companyName, factoryName: row.factoryName });
+const sheetSubcategoryOptions = (row: Record<string, any>) =>
+  filterOptionsByRecord(allSourceSubcategoryOptions.value, {
+    companyName: row.companyName,
+    factoryName: row.factoryName,
+    scopeName: row.scopeName
+  });
+const sheetSourceIdentificationOptions = (row: Record<string, any>) =>
+  filterOptionsByRecord(allSourceIdentificationOptions.value, {
+    companyName: row.companyName,
+    factoryName: row.factoryName,
+    scopeName: row.scopeName,
+    scopeSubcategory: row.scopeSubcategory
+  });
+const sheetEmissionSourceNameOptions = (row: Record<string, any>) =>
+  filterOptionsByRecord(emissionSourceNameOptions.value, {
+    companyName: row.companyName,
+    factoryName: row.factoryName,
+    scopeName: row.scopeName,
+    scopeSubcategory: row.scopeSubcategory,
+    sourceIdentificationName: row.sourceIdentificationName
+  });
 const roundToTwoDecimal = (value?: string | number) => {
   if (value === undefined || value === null || value === '') {
     return undefined;
@@ -788,13 +864,12 @@ const splitPeriod = (period?: string) => {
 
 const clearResolvedSourceFields = () => {
   resolvedSource.value = undefined;
-  form.sourceIdentificationName = undefined;
   form.sourceIdentificationCode = undefined;
   form.activityUnit = undefined;
   form.factorKey = undefined;
 };
 
-const resetSourceCascadeOptions = (level: 'factory' | 'scope' | 'subcategory' | 'sourceName') => {
+const resetSourceCascadeOptions = (level: 'factory' | 'scope' | 'subcategory' | 'identification' | 'sourceName') => {
   if (level === 'factory') {
     sourceFactoryOptions.value = [];
   }
@@ -804,7 +879,10 @@ const resetSourceCascadeOptions = (level: 'factory' | 'scope' | 'subcategory' | 
   if (level === 'factory' || level === 'scope' || level === 'subcategory') {
     sourceSubcategoryOptions.value = [];
   }
-  if (level === 'factory' || level === 'scope' || level === 'subcategory' || level === 'sourceName') {
+  if (level === 'factory' || level === 'scope' || level === 'subcategory' || level === 'identification') {
+    sourceIdentificationOptions.value = [];
+  }
+  if (level === 'factory' || level === 'scope' || level === 'subcategory' || level === 'identification' || level === 'sourceName') {
     sourceNameOptions.value = [];
   }
 };
@@ -897,7 +975,8 @@ const loadSourceNameOptions = async (requestId = latestCascadeRequestId.value) =
             companyName: form.sourceCompanyName,
             factoryName: form.sourceFactoryName,
             scopeName: form.scopeName,
-            scopeSubcategory: form.scopeSubcategory
+            scopeSubcategory: form.scopeSubcategory,
+            sourceIdentificationName: form.sourceIdentificationName
           });
     if (isLatestCascadeRequest(requestId)) {
       sourceNameOptions.value = options;
@@ -909,11 +988,35 @@ const loadSourceNameOptions = async (requestId = latestCascadeRequestId.value) =
   }
 };
 
+const loadSourceIdentificationOptions = async (requestId = latestCascadeRequestId.value) => {
+  if (!form.sourceCompanyName || !form.sourceFactoryName || !form.scopeName || !form.scopeSubcategory) {
+    resetSourceCascadeOptions('identification');
+    return;
+  }
+  sourceIdentificationLoading.value = true;
+  try {
+    const options = await loadActivityEntrySourceIdentificationOptions({
+      companyName: form.sourceCompanyName,
+      factoryName: form.sourceFactoryName,
+      scopeName: form.scopeName,
+      scopeSubcategory: form.scopeSubcategory
+    });
+    if (isLatestCascadeRequest(requestId)) {
+      sourceIdentificationOptions.value = options;
+    }
+  } finally {
+    if (isLatestCascadeRequest(requestId)) {
+      sourceIdentificationLoading.value = false;
+    }
+  }
+};
+
 const refreshSourceCascadeOptions = async () => {
   const requestId = nextCascadeRequestId();
   await loadSourceFactoryOptions(requestId);
   await loadSourceScopeOptions(requestId);
   await loadSourceSubcategoryOptions(requestId);
+  await loadSourceIdentificationOptions(requestId);
   await loadSourceNameOptions(requestId);
 };
 
@@ -922,6 +1025,7 @@ const handleCompanyChange = async () => {
   form.sourceFactoryName = undefined;
   form.scopeName = undefined;
   form.scopeSubcategory = undefined;
+  form.sourceIdentificationName = undefined;
   form.emissionSourceName = undefined;
   form.sourceIdentificationCode = undefined;
   resetSourceCascadeOptions('factory');
@@ -934,6 +1038,7 @@ const handleFactoryChange = async () => {
   const requestId = nextCascadeRequestId();
   form.scopeName = undefined;
   form.scopeSubcategory = undefined;
+  form.sourceIdentificationName = undefined;
   form.emissionSourceName = undefined;
   form.sourceIdentificationCode = undefined;
   resetSourceCascadeOptions('scope');
@@ -945,6 +1050,7 @@ const handleFactoryChange = async () => {
 const handleScopeChange = async () => {
   const requestId = nextCascadeRequestId();
   form.scopeSubcategory = undefined;
+  form.sourceIdentificationName = undefined;
   form.emissionSourceName = undefined;
   form.sourceIdentificationCode = undefined;
   resetSourceCascadeOptions('subcategory');
@@ -954,6 +1060,18 @@ const handleScopeChange = async () => {
 };
 
 const handleSubcategoryChange = async () => {
+  const requestId = nextCascadeRequestId();
+  form.sourceIdentificationName = undefined;
+  form.emissionSourceName = undefined;
+  form.sourceIdentificationCode = undefined;
+  resetSourceCascadeOptions('identification');
+  clearResolvedSourceFields();
+  clearManualValidation();
+  await loadSourceIdentificationOptions(requestId);
+  await loadSourceNameOptions(requestId);
+};
+
+const handleSourceIdentificationChange = async () => {
   const requestId = nextCascadeRequestId();
   form.emissionSourceName = undefined;
   form.sourceIdentificationCode = undefined;
@@ -1039,6 +1157,7 @@ const buildFieldValues = (): EmissionActivityFieldValue[] => {
     factoryName: form.sourceFactoryName ?? '',
     scopeName: form.scopeName ?? '',
     scopeSubcategory: form.scopeSubcategory ?? '',
+    sourceIdentificationName: form.sourceIdentificationName ?? '',
     emissionSourceName: form.emissionSourceName ?? '',
     activityPeriod: form.selectedPeriod ?? '',
     activityDate: form.date ?? '',
@@ -1250,6 +1369,7 @@ const downloadImportTemplate = () => {
       [headerName('factoryName')]: allSourceFactoryOptions.value.map((option) => String(option.value)),
       [headerName('scopeName')]: allSourceScopeOptions.value.map((option) => String(option.value)),
       [headerName('scopeSubcategory')]: allSourceSubcategoryOptions.value.map((option) => String(option.value)),
+      [headerName('sourceIdentificationName')]: allSourceIdentificationOptions.value.map((option) => String(option.value)),
       [headerName('emissionSourceName')]: emissionSourceNameOptions.value.map((option) => String(option.value)),
       [headerName('responsibleDept')]: deptOptions.value.map((option) => String(option.value)),
       [headerName('dataSource')]: dataSourceOptions.value.map((option) => String(option.value))
@@ -1528,12 +1648,13 @@ const saveSheetRows = async (rows: Record<string, any>[]) => {
 const loadEmissionSourceOptions = async () => {
   sourceLoading.value = true;
   try {
-    const [sourceNames, companies, factories, scopes, subcategories] = await Promise.all([
+    const [sourceNames, companies, factories, scopes, subcategories, identifications] = await Promise.all([
       loadActivityEntryEmissionSourceNameOptions(),
       loadActivityEntrySourceCompanyOptions(),
       loadActivityEntrySourceFactoryOptions(),
       loadActivityEntrySourceScopeOptions(),
-      loadActivityEntrySourceSubcategoryOptions()
+      loadActivityEntrySourceSubcategoryOptions(),
+      loadActivityEntrySourceIdentificationOptions()
     ]);
     emissionSourceNameOptions.value = sourceNames;
     sourceCompanyOptions.value = companies;
@@ -1544,6 +1665,7 @@ const loadEmissionSourceOptions = async () => {
     allSourceFactoryOptions.value = factories;
     allSourceScopeOptions.value = scopes;
     allSourceSubcategoryOptions.value = subcategories;
+    allSourceIdentificationOptions.value = identifications;
   } finally {
     sourceLoading.value = false;
   }

@@ -6,6 +6,7 @@ const emissionActivityEntryHeaders = [
   '工厂',
   '范围',
   '范围子类别',
+  '排放源识别',
   '排放源名称',
   '活动期间',
   '日期',

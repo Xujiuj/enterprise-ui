@@ -43,8 +43,9 @@
               filterable
               clearable
               class="cell-control"
+              @change="handleCellChange(row, column)"
             >
-              <el-option v-for="option in column.options ?? []" :key="String(option.value)" :label="option.label" :value="option.value" />
+              <el-option v-for="option in selectOptions(column, row)" :key="String(option.value)" :label="option.label" :value="option.value" />
             </el-select>
             <el-input-number
               v-else-if="column.type === 'number' && !column.readonly"
@@ -278,6 +279,14 @@ const reloadWorkbook = () => {
   void initWorkbook();
 };
 
+const selectOptions = (column: SpreadsheetColumn, row: SpreadsheetRow) => column.getOptions?.(row) ?? column.options ?? [];
+
+const handleCellChange = (row: SpreadsheetRow, column: SpreadsheetColumn) => {
+  column.clearsOnChange?.forEach((prop) => {
+    row[prop] = undefined;
+  });
+};
+
 const addRow = () => {
   if (editorMode.value === 'table') {
     cachedRows.value = [...cachedRows.value, { ...props.emptyRow }];
@@ -344,8 +353,9 @@ const validateRows = (rows: SpreadsheetRow[]) => {
         rowErrors[column.prop] = `${column.label}不能为空`;
       } else if (column.type === 'number' && !isBlank(value) && !Number.isFinite(Number(value))) {
         rowErrors[column.prop] = `${column.label}必须是数字`;
-      } else if (column.type === 'select' && !isBlank(value) && column.options?.length) {
-        const valid = column.options.some((option) => option.value === value || String(option.value) === String(value));
+      } else if (column.type === 'select' && !isBlank(value)) {
+        const options = selectOptions(column, row);
+        const valid = !options.length || options.some((option) => option.value === value || String(option.value) === String(value));
         if (!valid) {
           rowErrors[column.prop] = `${column.label}不在可选范围内`;
         }

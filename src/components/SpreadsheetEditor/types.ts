@@ -16,4 +16,6 @@ export interface SpreadsheetColumn {
   precision?: number;
   placeholder?: string;
   options?: SpreadsheetOption[];
+  getOptions?: (row: Record<string, any>) => SpreadsheetOption[];
+  clearsOnChange?: string[];
 }
