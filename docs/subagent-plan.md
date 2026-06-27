@@ -75,14 +75,14 @@ This plan decomposes enterprise-ui missing work into route cleanup, License UI, 
 
 ## Phase 3: Activity Data UX
 
-### Task EU-4: `sheet_656` Normal Entry Form
+### Task EU-4: `emission_activity` Normal Entry Form
 
-**Description:** Build the first activity data form for `天然气` / `sheet_656`.
+**Description:** Build the activity data form for the semantic emission activity contract.
 
 **Acceptance criteria:**
-- [ ] `f001` is selected from master data.
-- [ ] `f002-f010` and `f018` are read-only derived displays.
-- [ ] Editable fields match the frozen mapping.
+- [ ] Online entry exposes only entry fields.
+- [ ] Derived fields are resolved by the backend and not shown as editable/importable fields.
+- [ ] Editable fields match the entry contract.
 - [ ] Strong errors and weak warnings render distinctly.
 
 **Verification:**

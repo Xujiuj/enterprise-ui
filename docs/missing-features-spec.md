@@ -11,7 +11,7 @@ Current baseline:
 - The project is a split `enterprise-ui` repository.
 - Frontend portal ownership has been frozen.
 - Backend License import/current state and License gate APIs exist.
-- Activity `sheet_656` field mapping is frozen for the first validation/import slice.
+- Activity `emission_activity` entry-field contract is frozen for validation/import.
 - Power BI connection runbook is frozen at backend/root-doc level.
 
 ## Tech Stack
@@ -93,21 +93,13 @@ Requirements:
   - install ID mismatch
 - Do not allow users to upload public keys or choose verification keys.
 
-### EU-3: Activity `sheet_656` Entry and Validation UX
+### EU-3: Activity `emission_activity` Entry and Validation UX
 
 Requirements:
 
-- Implement first activity template UX for `03-活动数据` / `天然气` / `sheet_656`.
-- `f001` is selected from emission-source master data.
-- Derived fields `f002-f010` and `f018` are display-only.
-- Editable fields:
-  - `f011` year
-  - `f012` month
-  - `f013` date
-  - `f014` activity data
-  - `f015` responsible department
-  - `f016` data source
-  - `f017` remark
+- Implement activity entry UX for `03-活动数据` / `emission_activity`.
+- Online entry and downloaded Excel templates expose only company, factory, scope, scope subcategory, emission source name, activity period, date, activity data, responsible department, and data source.
+- Backend resolves emission-source identity, company code, unit, factor key, and period-derived year/month.
 - Strong errors block submit.
 - Weak warnings are visible but do not block draft save.
 
@@ -115,7 +107,7 @@ Requirements:
 
 Requirements:
 
-- Accept Excel files with the frozen 18-column `sheet_656` shape.
+- Accept Excel files with the compact `emission_activity` entry-field shape.
 - Show row and column names for validation failures.
 - Show derived-field mismatch as strong errors.
 - Do not let the browser overwrite server-derived fields.
@@ -185,7 +177,7 @@ Conventions:
 
 - Vendor-owned routes are removed or hidden from enterprise menus.
 - License import/status page works against enterprise backend APIs.
-- `sheet_656` normal form and import UX reflect the frozen mapping.
+- `emission_activity` normal form and import UX reflect the entry-field contract.
 - Report template page downloads templates and displays safe connection guidance.
 - `npm run build:prod` passes.
 

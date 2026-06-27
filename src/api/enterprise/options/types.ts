@@ -13,4 +13,5 @@ export interface EnterpriseOptionQuery {
   scopeName?: string;
   scopeSubcategory?: string;
   sourceIdentificationName?: string;
+  emissionSourceName?: string;
 }

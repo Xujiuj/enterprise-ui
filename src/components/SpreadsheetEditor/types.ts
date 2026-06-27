@@ -8,7 +8,7 @@ export interface SpreadsheetOption {
 export interface SpreadsheetColumn {
   prop: string;
   label: string;
-  type?: 'text' | 'number' | 'select' | 'date';
+  type?: 'text' | 'number' | 'select' | 'date' | 'month';
   required?: boolean;
   readonly?: boolean;
   width?: number;

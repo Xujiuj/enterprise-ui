@@ -12,7 +12,6 @@
           <el-radio-button value="table">表格编辑</el-radio-button>
           <el-radio-button value="sheet">Excel 编辑</el-radio-button>
         </el-radio-group>
-        <el-button icon="Plus" @click="addRows">增加 10 行</el-button>
         <el-button icon="Refresh" @click="reloadWorkbook">重载表格</el-button>
         <el-button type="primary" icon="Check" :loading="saving" :disabled="!canSave" @click="emitSave">保存表格</el-button>
       </div>
@@ -56,10 +55,10 @@
               class="cell-control"
             />
             <el-date-picker
-              v-else-if="column.type === 'date' && !column.readonly"
+              v-else-if="(column.type === 'date' || column.type === 'month') && !column.readonly"
               v-model="row[column.prop]"
-              value-format="YYYY-MM-DD"
-              type="date"
+              :value-format="column.type === 'month' ? 'YYYY-MM' : 'YYYY-MM-DD'"
+              :type="column.type === 'month' ? 'month' : 'date'"
               class="cell-control"
             />
             <el-input v-else v-model="row[column.prop]" :disabled="column.readonly" class="cell-control" />
@@ -71,6 +70,9 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="table-row-add">
+        <el-button circle icon="Plus" @click="addRow" />
+      </div>
     </div>
 
     <div v-if="errorCount" class="spreadsheet-errors">
@@ -276,9 +278,9 @@ const reloadWorkbook = () => {
   void initWorkbook();
 };
 
-const addRows = () => {
+const addRow = () => {
   if (editorMode.value === 'table') {
-    cachedRows.value = [...cachedRows.value, ...Array.from({ length: 10 }, () => ({ ...props.emptyRow }))];
+    cachedRows.value = [...cachedRows.value, { ...props.emptyRow }];
     return;
   }
   const worksheet = workbookRef.value?.getActiveSheet();
@@ -286,7 +288,7 @@ const addRows = () => {
     ElMessage.warning('在线 Excel 尚未加载完成');
     return;
   }
-  worksheet.insertRowsAfter(visibleRowCount.value - 1, 10);
+  worksheet.insertRowsAfter(visibleRowCount.value - 1, 1);
 };
 
 const removeRow = (index: number) => {
@@ -461,5 +463,13 @@ onBeforeUnmount(() => {
   color: var(--el-color-danger);
   font-size: 12px;
   line-height: 1.4;
+}
+
+.table-row-add {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+  border: 1px solid var(--carbon-soft-line);
+  border-top: 0;
 }
 </style>

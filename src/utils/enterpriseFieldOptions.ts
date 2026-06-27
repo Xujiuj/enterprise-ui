@@ -96,6 +96,9 @@ export const loadActivityEntrySourceCompanyOptions = (params?: EnterpriseOptionQ
   loadEnterpriseOptions('activity-entry-source-company', params);
 export const loadActivityEntrySourceFactoryOptions = (params?: EnterpriseOptionQuery) =>
   loadEnterpriseOptions('activity-entry-source-factory', params);
+export const loadActivityEntrySourceScopeOptions = (params?: EnterpriseOptionQuery) => loadEnterpriseOptions('activity-entry-source-scope', params);
+export const loadActivityEntrySourceSubcategoryOptions = (params?: EnterpriseOptionQuery) =>
+  loadEnterpriseOptions('activity-entry-source-subcategory', params);
 export const loadActivityEntrySourceCategoryOptions = (params?: EnterpriseOptionQuery) =>
   loadEnterpriseOptions('activity-entry-source-category', params);
 export const loadActivityEntrySourceLeafOptions = (params?: EnterpriseOptionQuery) => loadEnterpriseOptions('activity-entry-source-leaf', params);

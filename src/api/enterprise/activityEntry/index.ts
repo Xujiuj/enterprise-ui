@@ -3,12 +3,7 @@ import { listActivityData } from '@/api/enterprise/activityData';
 import { ActivityDataQuery, ActivityDataVO } from '@/api/enterprise/activityData/types';
 import { listEmissionSource } from '@/api/enterprise/emissionSource';
 import { EmissionSourceQuery, EmissionSourceVO } from '@/api/enterprise/emissionSource/types';
-import {
-  Sheet656ResolvedRow,
-  Sheet656ImportValidationRequest,
-  Sheet656ImportValidationResult,
-  Sheet656ValidationRequest
-} from '@/api/enterprise/sheet656ActivityValidation/types';
+import { EmissionActivityImportValidationRequest, EmissionActivityImportValidationResult, EmissionActivityValidationRequest } from '@/api/enterprise/emissionActivityValidation/types';
 
 export interface LocalListResponse<T> {
   rows?: T[];
@@ -24,19 +19,19 @@ export const listLocalEmissionSource = (query?: EmissionSourceQuery): Promise<Lo
   return listEmissionSource(query);
 };
 
-export const validateLocalSheet656Activity = (data: Sheet656ImportValidationRequest): Promise<{ data: Sheet656ImportValidationResult }> => {
+export const validateLocalEmissionActivity = (data: EmissionActivityImportValidationRequest): Promise<{ data: EmissionActivityImportValidationResult }> => {
   return request({
-    url: '/enterprise/activity-import/sheet-656/validate',
+    url: '/enterprise/activity-import/emission-activity/validate',
     method: 'post',
     data
   });
 };
 
-export const parseLocalSheet656ActivityFile = (file: File): Promise<{ data: Sheet656ImportValidationRequest }> => {
+export const parseLocalEmissionActivityFile = (file: File): Promise<{ data: EmissionActivityImportValidationRequest }> => {
   const formData = new FormData();
   formData.append('file', file);
   return request({
-    url: '/enterprise/activity-import/sheet-656/parse-file',
+    url: '/enterprise/activity-import/emission-activity/parse-file',
     method: 'post',
     data: formData,
     headers: {
@@ -46,31 +41,24 @@ export const parseLocalSheet656ActivityFile = (file: File): Promise<{ data: Shee
   });
 };
 
-export interface Sheet656ActivityImportResult {
+export interface EmissionActivityImportResult {
   persisted?: boolean;
   batchId?: number;
   persistedRowCount?: number;
-  validationResult?: Sheet656ImportValidationResult;
+  validationResult?: EmissionActivityImportValidationResult;
 }
 
-export const saveLocalSheet656Activity = (data: Sheet656ValidationRequest): Promise<{ data: Sheet656ActivityImportResult }> => {
+export const saveLocalEmissionActivity = (data: EmissionActivityValidationRequest): Promise<{ data: EmissionActivityImportResult }> => {
   return request({
-    url: '/enterprise/activity-import/sheet-656/save',
+    url: '/enterprise/activity-import/emission-activity/save',
     method: 'post',
     data
   });
 };
 
-export const resolveLocalSheet656Source = (sourceIdentificationCode: string): Promise<{ data: Sheet656ResolvedRow }> => {
+export const importLocalEmissionActivity = (data: EmissionActivityImportValidationRequest): Promise<{ data: EmissionActivityImportResult }> => {
   return request({
-    url: `/enterprise/activity-import/sheet-656/source/${encodeURIComponent(sourceIdentificationCode)}`,
-    method: 'get'
-  });
-};
-
-export const importLocalSheet656Activity = (data: Sheet656ImportValidationRequest): Promise<{ data: Sheet656ActivityImportResult }> => {
-  return request({
-    url: '/enterprise/activity-import/sheet-656/import',
+    url: '/enterprise/activity-import/emission-activity/import',
     method: 'post',
     data
   });
