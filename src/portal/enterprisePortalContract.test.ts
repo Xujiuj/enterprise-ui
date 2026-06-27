@@ -27,7 +27,7 @@ describe('enterprise dynamic router guard', () => {
           },
           {
             path: 'tool-gen',
-            component: 'tool/gen/index',
+            component: 'legacy/tool-gen/index',
             meta: { title: 'code generation' },
             permissions: ['tool:gen:list']
           },
@@ -269,7 +269,7 @@ describe('enterprise dynamic router guard', () => {
               },
               {
                 path: 'online',
-                component: 'monitor/online/index',
+                component: 'legacy/monitor-online/index',
                 meta: { title: '在线用户' },
                 permissions: ['monitor:online:list']
               }
@@ -302,7 +302,7 @@ describe('enterprise dynamic router guard', () => {
         children: [
           {
             path: 'customer',
-            component: 'system/tenant/index',
+            component: 'legacy/customer/index',
             meta: { title: 'customer archive' },
             permissions: ['vendor:customer:list']
           }
@@ -360,12 +360,12 @@ describe('enterprise dynamic router guard', () => {
     );
     expect(components).not.toEqual(
       expect.arrayContaining([
-        'tool/gen/index',
+        'legacy/tool-gen/index',
         'vendor/templateScope/index',
-        'system/tenant/index',
+        'legacy/customer/index',
         'system/dept/index',
         'system/post/index',
-        'monitor/online/index',
+        'legacy/monitor-online/index',
         'system/license/index',
         'system/factorLibrary/index',
         'system/reportTemplate/index'

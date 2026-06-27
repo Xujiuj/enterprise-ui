@@ -156,7 +156,7 @@
           :rows="sheetRows"
           :empty-row="sheetEmptyRow"
           :saving="sheetSaving"
-          hint="支持从 Excel 复制多行粘贴。编码、名称和状态必填；带下拉的维度字段必须选择已有选项。"
+          hint="在线填报仅用于新增数据。编码、名称和状态必填；带下拉的维度字段必须选择已有选项。"
           @save="saveSheetRows"
         />
       </el-drawer>
@@ -555,8 +555,15 @@ const parentCodeOptions = computed(() => {
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
 const isEditable = computed(() => editableDimensionCodes.has(routeKey.value));
 const isVendorLinked = computed(() =>
-  ['admin-division', 'emission-source-category', 'ef-electricity-factor',
-   'ef-electricity-version', 'ef-electricity-scope', 'greenhouse-gas', 'base-year'].includes(routeKey.value)
+  [
+    'admin-division',
+    'emission-source-category',
+    'ef-electricity-factor',
+    'ef-electricity-version',
+    'ef-electricity-scope',
+    'greenhouse-gas',
+    'base-year'
+  ].includes(routeKey.value)
 );
 const syncLoading = ref(false);
 const readOnlyMessage = '旧维度表已拆分为具体业务表，请到对应页面维护。';
@@ -620,41 +627,6 @@ const uploadDialog = reactive({
 const sheetSaving = ref(false);
 const uploadParsing = ref(false);
 
-const sheetRows = computed(() =>
-  recordList.value.map((row) => ({
-    id: row.id,
-    dimensionCode: routeKey.value,
-    recordCode: row.recordCode,
-    recordName: row.recordName,
-    parentCode: row.parentCode,
-    field01: row.field01,
-    field02: row.field02,
-    field03: row.field03,
-    field04: row.field04,
-    field05: row.field05,
-    field06: row.field06,
-    field07: row.field07,
-    field08: row.field08,
-    field09: row.field09,
-    field10: row.field10,
-    field11: row.field11,
-    field12: row.field12,
-    field13: row.field13,
-    field14: row.field14,
-    field15: row.field15,
-    field16: row.field16,
-    field17: row.field17,
-    field18: row.field18,
-    field19: row.field19,
-    field20: row.field20,
-    field21: row.field21,
-    field22: row.field22,
-    status: row.status || '0',
-    sortOrder: row.sortOrder ?? 0,
-    remark: row.remark
-  }))
-);
-
 const sheetEmptyRow = computed(() => ({
   dimensionCode: routeKey.value,
   recordCode: undefined,
@@ -686,6 +658,7 @@ const sheetEmptyRow = computed(() => ({
   sortOrder: 0,
   remark: undefined
 }));
+const sheetRows = computed(() => Array.from({ length: 10 }, () => ({ ...sheetEmptyRow.value })));
 
 const initFormData: DimensionRecordForm = {
   id: undefined,
@@ -970,10 +943,16 @@ const openUploadDialog = () => {
 
 const downloadDimensionTemplate = () => {
   if (!isEditable.value || !page.value) return;
+  const validations = Object.fromEntries(
+    sheetColumns.value
+      .filter((column) => column.type === 'select')
+      .map((column) => [column.label, (column.options ?? []).map((option) => String(option.value))])
+  );
   downloadXlsxTemplate({
     fileName: `${routeKey.value}_dimension_template_${new Date().getTime()}.xlsx`,
     sheetName: page.value.title,
-    headers: sheetColumns.value.map((column) => column.label)
+    headers: sheetColumns.value.map((column) => column.label),
+    validations
   });
 };
 
@@ -1013,17 +992,15 @@ const persistDimensionRows = async (rows: Record<string, any>[], successMessage:
   sheetSaving.value = true;
   try {
     for (const row of rows) {
+      const entryRow = { ...row };
+      delete entryRow.id;
       const payload: DimensionRecordForm = {
         ...sheetEmptyRow.value,
-        ...row,
+        ...entryRow,
         dimensionCode: routeKey.value,
-        sortOrder: Number(row.sortOrder ?? 0)
+        sortOrder: Number(entryRow.sortOrder ?? 0)
       };
-      if (payload.id) {
-        await updateDimensionRecord(payload);
-      } else {
-        await addDimensionRecord(payload);
-      }
+      await addDimensionRecord(payload);
     }
     proxy?.$modal.msgSuccess(successMessage);
     await getList();
