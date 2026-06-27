@@ -96,6 +96,7 @@ jobs:
               }
 
               location $PUBLIC_PATH {
+                  add_header Cache-Control "no-store";
                   try_files \$uri \$uri/ ${PUBLIC_PATH}index.html;
               }
 
@@ -113,6 +114,7 @@ jobs:
           echo "$SUDO_PASSWORD" | sudo -S mkdir -p /etc/nginx/fx-locations
           cat > "/tmp/$DEPLOY_SERVICE-public.conf" <<NGINX
           location $PUBLIC_PATH {
+              add_header Cache-Control "no-store";
               root $DEPLOY_PATH/www;
               try_files \$uri \$uri/ ${PUBLIC_PATH}index.html;
           }
