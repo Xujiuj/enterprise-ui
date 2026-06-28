@@ -10,7 +10,7 @@
       <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-card">
         <div class="login-header">
           <h2>企业碳数据管理平台</h2>
-          <p>Enterprise Carbon Data Management</p>
+          <p>企业碳数据管理</p>
         </div>
 
         <div v-if="showExpiryNotice" class="login-expiry-alert">

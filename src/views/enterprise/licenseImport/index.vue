@@ -106,7 +106,7 @@
 
           <div class="import-actions">
             <el-button icon="Delete" :disabled="!licenseContent" @click="clearLicenseContent">清空</el-button>
-            <el-button type="primary" icon="Upload" :loading="importLoading" :disabled="!canImport" @click="submitLicense">导入License</el-button>
+            <el-button type="primary" icon="Upload" :loading="importLoading" :disabled="!canImport" @click="submitLicense">导入授权</el-button>
           </div>
 
           <el-alert class="mt-4" title="导入后将重新读取当前授权和网关状态。" type="info" :closable="false" show-icon />
