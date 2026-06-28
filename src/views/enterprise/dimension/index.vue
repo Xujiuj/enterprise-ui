@@ -341,17 +341,16 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'provinceCode', label: '省份编码', optionSource: 'dimension-field' },
       { prop: 'provinceName', label: '所在省份', optionSource: 'dimension-field' },
       { prop: 'factoryType', label: '工厂类型', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入工厂类型' },
-      { prop: 'industrySectionCode', label: '行业门类代码', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业门类代码' },
-      { prop: 'industrySectionName', label: '行业门类名称', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业门类名称' },
-      { prop: 'industryDivisionCode', label: '行业大类代码', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业大类代码' },
-      { prop: 'industryDivisionName', label: '行业大类名称', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业大类名称' },
-      { prop: 'industryGroupCode', label: '行业中类代码', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业中类代码' },
-      { prop: 'industryGroupName', label: '行业中类名称', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业中类名称' },
-      { prop: 'industryClassCode', label: '行业小类代码', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业小类代码' },
-      { prop: 'industryClassName', label: '行业小类名称', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业小类名称' },
+      { prop: 'industrySectionCode', label: '行业门类代码', optionSource: 'dimension-field', placeholder: '请选择行业门类代码' },
+      { prop: 'industrySectionName', label: '行业门类名称', optionSource: 'dimension-field', placeholder: '请选择行业门类名称' },
+      { prop: 'industryDivisionCode', label: '行业大类代码', optionSource: 'dimension-field', placeholder: '请选择行业大类代码' },
+      { prop: 'industryDivisionName', label: '行业大类名称', optionSource: 'dimension-field', placeholder: '请选择行业大类名称' },
+      { prop: 'industryGroupCode', label: '行业中类代码', optionSource: 'dimension-field', placeholder: '请选择行业中类代码' },
+      { prop: 'industryGroupName', label: '行业中类名称', optionSource: 'dimension-field', placeholder: '请选择行业中类名称' },
+      { prop: 'industryClassCode', label: '行业小类代码', optionSource: 'dimension-field', placeholder: '请选择行业小类代码' },
+      { prop: 'industryClassName', label: '行业小类名称', optionSource: 'dimension-field', placeholder: '请选择行业小类名称' },
       { prop: 'effectiveDate', label: '生效日期', type: 'date' },
-      { prop: 'expiryDate', label: '失效日期', type: 'date' },
-      { prop: 'activeFlag', label: '是否有效', optionSource: 'dimension-field' }
+      { prop: 'expiryDate', label: '失效日期', type: 'date' }
     ]
   },
   'emission-source-category': {
