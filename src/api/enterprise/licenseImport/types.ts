@@ -40,6 +40,7 @@ export interface EnterpriseLicenseImportResult {
   valid: boolean;
   status?: string;
   message?: string;
+  syncMessage?: string;
   licenseState?: EnterpriseLicenseState;
 }
 

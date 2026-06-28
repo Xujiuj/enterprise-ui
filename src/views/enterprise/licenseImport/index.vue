@@ -32,8 +32,8 @@
               <el-descriptions :column="2" border>
                 <el-descriptions-item label="客户标识">{{ currentState.customerId || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="授权编号">{{ currentState.licenseId || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="当前套餐">{{ formatPackage(currentState) }}</el-descriptions-item>
-                <el-descriptions-item label="套餐ID">{{ currentState.packageId || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="当前授权套餐">{{ formatPackage(currentState) }}</el-descriptions-item>
+                <el-descriptions-item label="授权套餐编号">{{ currentState.packageId || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="导入状态/持久状态">
                   <el-tag :type="stateTagType">{{ stateText }}</el-tag>
                 </el-descriptions-item>
@@ -46,7 +46,7 @@
                 <el-descriptions-item label="部署指纹">{{ currentState.installId || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="最近校验">{{ formatTime(currentState.lastVerifiedTime) }}</el-descriptions-item>
                 <el-descriptions-item label="最大观测时间">{{ formatTime(currentState.maxObservedTime) }}</el-descriptions-item>
-                <el-descriptions-item label="套餐权益" :span="2">{{ currentState.featureCodes || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="授权权益" :span="2">{{ currentState.featureCodes || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="授权摘要" :span="2">{{ currentState.currentSummary || '-' }}</el-descriptions-item>
               </el-descriptions>
             </template>
@@ -89,7 +89,7 @@
 
           <el-upload drag action="#" accept=".lic,text/plain" :auto-upload="false" :show-file-list="false" :before-upload="readLicenseFile">
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-            <div class="el-upload__text">拖拽 License 文件到此处，或点击选择</div>
+            <div class="el-upload__text">拖拽授权文件到此处，或点击选择</div>
           </el-upload>
 
           <el-input v-model="expectedInstallId" class="mt-4" maxlength="128" show-word-limit placeholder="本机部署指纹由系统自动回填" readonly />
@@ -122,12 +122,13 @@
           <el-descriptions :column="1" border>
             <el-descriptions-item label="授权编号">{{ lastImportResult.licenseState?.licenseId || '-' }}</el-descriptions-item>
             <el-descriptions-item label="客户标识">{{ lastImportResult.licenseState?.customerId || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="当前套餐">{{ formatPackage(lastImportResult.licenseState) }}</el-descriptions-item>
-            <el-descriptions-item label="套餐权益">{{ lastImportResult.licenseState?.featureCodes || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="当前授权套餐">{{ formatPackage(lastImportResult.licenseState) }}</el-descriptions-item>
+            <el-descriptions-item label="授权权益">{{ lastImportResult.licenseState?.featureCodes || '-' }}</el-descriptions-item>
             <el-descriptions-item label="有效期起">{{ formatTime(lastImportResult.licenseState?.validFrom) }}</el-descriptions-item>
             <el-descriptions-item label="有效期止">{{ formatTime(lastImportResult.licenseState?.validTo) }}</el-descriptions-item>
             <el-descriptions-item label="导入校验">{{ formatTime(lastImportResult.licenseState?.lastVerifiedTime) }}</el-descriptions-item>
             <el-descriptions-item label="结果说明">{{ lastImportResult.message || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="同步结果">{{ lastImportResult.syncMessage || '-' }}</el-descriptions-item>
           </el-descriptions>
         </el-card>
       </el-col>
@@ -137,7 +138,7 @@
 
 <script setup name="EnterpriseLicenseImport" lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import type { UploadRawFile } from 'element-plus';
 import { getCurrentLicenseState, getExpectedInstallId, getLicenseGateStatus, importEnterpriseLicense } from '@/api/enterprise/licenseImport';
 import type {
@@ -341,7 +342,7 @@ function readLicenseFile(file: UploadRawFile): false {
     licenseContent.value = String(reader.result || '').trim();
   };
   reader.onerror = () => {
-    ElMessage.error('License 文件读取失败');
+    ElMessage.error('授权文件读取失败');
   };
   reader.readAsText(file);
   return false;
@@ -381,12 +382,28 @@ async function submitLicense() {
       expectedInstallId: expectedInstallId.value.trim()
     });
     lastImportResult.value = unwrapResponse<EnterpriseLicenseImportResult>(response);
-    ElMessage.success(lastImportResult.value.message || 'License导入成功');
+    await showImportResultDialog(lastImportResult.value);
     licenseContent.value = '';
     await refreshStatus();
   } finally {
     importLoading.value = false;
   }
+}
+
+async function showImportResultDialog(result: EnterpriseLicenseImportResult) {
+  const title = result.valid ? '授权导入成功' : '授权导入失败';
+  const message = [
+    result.message || (result.valid ? '授权文件校验通过' : '授权导入失败'),
+    result.licenseState ? `授权套餐：${formatPackage(result.licenseState)}` : '',
+    result.syncMessage || ''
+  ]
+    .filter(Boolean)
+    .join('<br />');
+  await ElMessageBox.alert(message, title, {
+    type: result.valid ? 'success' : 'error',
+    dangerouslyUseHTMLString: true,
+    confirmButtonText: '知道了'
+  });
 }
 
 onMounted(() => {

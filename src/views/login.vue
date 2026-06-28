@@ -55,7 +55,7 @@
         </el-form-item>
 
         <div class="login-field license-file-field">
-          <label>License 文件</label>
+          <label>授权文件</label>
           <label class="file-picker compact">
             <input type="file" accept=".lic" @change="handleLicenseFileChange" />
             <span>选择 .lic 文件</span>
