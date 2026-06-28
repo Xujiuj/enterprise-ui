@@ -3,7 +3,7 @@ export interface TemplateFieldVO {
   sheetId?: string | number;
   fieldOrder?: number;
   originalFieldName?: string;
-  targetColumnCode?: string;
+  businessFieldCode?: string;
   valueType?: string;
   requiredFlag?: boolean;
   originalFieldFlag?: boolean;

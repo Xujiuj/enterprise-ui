@@ -210,29 +210,7 @@ import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
 import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
 import { loadDimensionFieldOptions, loadRecordStatusOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
 
-type FieldProp =
-  | 'field01'
-  | 'field02'
-  | 'field03'
-  | 'field04'
-  | 'field05'
-  | 'field06'
-  | 'field07'
-  | 'field08'
-  | 'field09'
-  | 'field10'
-  | 'field11'
-  | 'field12'
-  | 'field13'
-  | 'field14'
-  | 'field15'
-  | 'field16'
-  | 'field17'
-  | 'field18'
-  | 'field19'
-  | 'field20'
-  | 'field21'
-  | 'field22';
+type FieldProp = keyof DimensionRecordForm;
 
 interface FieldConfig {
   prop: FieldProp;
@@ -278,9 +256,8 @@ const dimensionPages: Record<string, PageConfig> = {
     nameLabel: '行政区划名称',
     showParent: true,
     fields: [
-      { prop: 'field01', label: '区划层级', optionSource: 'dimension-field' },
-      { prop: 'field02', label: '适用电网区域' },
-      { prop: 'field03', label: '国家/地区', optionSource: 'dimension-field' }
+      { prop: 'divisionCode', label: '区划代码' },
+      { prop: 'divisionName', label: '区划名称' }
     ]
   },
   company: {
@@ -292,22 +269,22 @@ const dimensionPages: Record<string, PageConfig> = {
     nameLabel: '公司',
     showParent: true,
     fields: [
-      { prop: 'field01', label: 'SK_公司' },
-      { prop: 'field02', label: '工厂' },
-      { prop: 'field03', label: '省份编码', optionSource: 'dimension-field' },
-      { prop: 'field04', label: '所在省份', optionSource: 'dimension-field' },
-      { prop: 'field05', label: '工厂类型' },
-      { prop: 'field06', label: '行业门类代码' },
-      { prop: 'field07', label: '行业门类名称' },
-      { prop: 'field08', label: '行业大类代码' },
-      { prop: 'field09', label: '行业大类名称' },
-      { prop: 'field10', label: '行业中类代码' },
-      { prop: 'field11', label: '行业中类名称' },
-      { prop: 'field12', label: '行业小类代码' },
-      { prop: 'field13', label: '行业小类名称' },
-      { prop: 'field14', label: '生效日期', type: 'date' },
-      { prop: 'field15', label: '失效日期', type: 'date' },
-      { prop: 'field16', label: '是否有效', optionSource: 'dimension-field' }
+      { prop: 'companySk', label: 'SK_公司' },
+      { prop: 'factoryName', label: '工厂' },
+      { prop: 'provinceCode', label: '省份编码', optionSource: 'dimension-field' },
+      { prop: 'provinceName', label: '所在省份', optionSource: 'dimension-field' },
+      { prop: 'factoryType', label: '工厂类型' },
+      { prop: 'industrySectionCode', label: '行业门类代码' },
+      { prop: 'industrySectionName', label: '行业门类名称' },
+      { prop: 'industryDivisionCode', label: '行业大类代码' },
+      { prop: 'industryDivisionName', label: '行业大类名称' },
+      { prop: 'industryGroupCode', label: '行业中类代码' },
+      { prop: 'industryGroupName', label: '行业中类名称' },
+      { prop: 'industryClassCode', label: '行业小类代码' },
+      { prop: 'industryClassName', label: '行业小类名称' },
+      { prop: 'effectiveDate', label: '生效日期', type: 'date' },
+      { prop: 'expiryDate', label: '失效日期', type: 'date' },
+      { prop: 'activeFlag', label: '是否有效', optionSource: 'dimension-field' }
     ]
   },
   'emission-source-category': {
@@ -319,9 +296,12 @@ const dimensionPages: Record<string, PageConfig> = {
     nameLabel: '分类名称',
     showParent: true,
     fields: [
-      { prop: 'field01', label: '核算范围', optionSource: 'dimension-field' },
-      { prop: 'field02', label: '默认活动单位' },
-      { prop: 'field03', label: '默认因子口径' }
+      { prop: 'categorySk', label: 'SK_排放源分类' },
+      { prop: 'ghgScope', label: 'GHG Protocol范围', optionSource: 'dimension-field' },
+      { prop: 'ghgScopeCategory', label: 'GHG Protocol范围子类别' },
+      { prop: 'isoCategory', label: 'ISO 14064-1类别' },
+      { prop: 'gbScopeCategory', label: 'GB/T 32150-2025范围分类' },
+      { prop: 'unifiedStandardCategory', label: '统一标准分类' }
     ]
   },
   'base-year': {
@@ -332,8 +312,8 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '工厂编号',
     nameLabel: '工厂名称',
     fields: [
-      { prop: 'field01', label: '基准年', type: 'number' },
-      { prop: 'field02', label: '是否当前基准', optionSource: 'dimension-field' }
+      { prop: 'baseYear', label: '基准年', type: 'number' },
+      { prop: 'currentBaseFlag', label: '是否当前基准', optionSource: 'dimension-field' }
     ]
   },
   'ef-factor': {
@@ -344,26 +324,26 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: 'SK_排放因子',
     nameLabel: '排放源名称',
     fields: [
-      { prop: 'field01', label: '排放源英文名' },
-      { prop: 'field02', label: '燃料/物料类别' },
-      { prop: 'field03', label: '源单位' },
-      { prop: 'field04', label: 'CO2', type: 'number' },
-      { prop: 'field05', label: 'CH4', type: 'number' },
-      { prop: 'field06', label: 'N2O', type: 'number' },
-      { prop: 'field07', label: 'HFCs', type: 'number' },
-      { prop: 'field08', label: 'PFCs', type: 'number' },
-      { prop: 'field09', label: 'SF6', type: 'number' },
-      { prop: 'field10', label: 'NF3', type: 'number' },
-      { prop: 'field11', label: '适用范围' },
-      { prop: 'field12', label: '因子来源' },
-      { prop: 'field13', label: 'GWP_CH4', type: 'number' },
-      { prop: 'field14', label: 'GWP_N2O', type: 'number' },
-      { prop: 'field15', label: 'GWP_HFCs', type: 'number' },
-      { prop: 'field16', label: 'GWP_PFCs', type: 'number' },
-      { prop: 'field17', label: 'GWP_SF6', type: 'number' },
-      { prop: 'field18', label: 'GWP_NF3', type: 'number' },
-      { prop: 'field19', label: '因子GWP', type: 'number' },
-      { prop: 'field20', label: '因子单位' }
+      { prop: 'emissionSourceNameEn', label: '排放源英文名' },
+      { prop: 'fuelMaterialCategory', label: '燃料/物料类别' },
+      { prop: 'sourceUnit', label: '源单位' },
+      { prop: 'co2', label: 'CO2', type: 'number' },
+      { prop: 'ch4', label: 'CH4', type: 'number' },
+      { prop: 'n2o', label: 'N2O', type: 'number' },
+      { prop: 'hfcs', label: 'HFCs', type: 'number' },
+      { prop: 'pfcs', label: 'PFCs', type: 'number' },
+      { prop: 'sf6', label: 'SF6', type: 'number' },
+      { prop: 'nf3', label: 'NF3', type: 'number' },
+      { prop: 'applicableScope', label: '适用范围' },
+      { prop: 'factorSource', label: '因子来源' },
+      { prop: 'gwpCh4', label: 'GWP_CH4', type: 'number' },
+      { prop: 'gwpN2o', label: 'GWP_N2O', type: 'number' },
+      { prop: 'gwpHfcs', label: 'GWP_HFCs', type: 'number' },
+      { prop: 'gwpPfcs', label: 'GWP_PFCs', type: 'number' },
+      { prop: 'gwpSf6', label: 'GWP_SF6', type: 'number' },
+      { prop: 'gwpNf3', label: 'GWP_NF3', type: 'number' },
+      { prop: 'factorGwp', label: '因子GWP', type: 'number' },
+      { prop: 'factorUnit', label: '因子单位' }
     ]
   },
   'ef-electricity-factor': {
@@ -374,15 +354,15 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '电力因子编码',
     nameLabel: '电力因子名称',
     fields: [
-      { prop: 'field01', label: '因子版本' },
-      { prop: 'field02', label: '行政区划代码' },
-      { prop: 'field03', label: '行政区划名称' },
-      { prop: 'field04', label: '区域名称' },
-      { prop: 'field05', label: '省级因子（kgCO2/kWh）', type: 'number', precision: 10 },
-      { prop: 'field06', label: '区域因子（kgCO2/kWh）', type: 'number', precision: 10 },
-      { prop: 'field07', label: '全国因子（kgCO2/kWh）', type: 'number', precision: 10 },
-      { prop: 'field08', label: '不含市场化非化石因子', type: 'number', precision: 10 },
-      { prop: 'field09', label: '全国化石能源电力因子', type: 'number', precision: 10 }
+      { prop: 'factorVersion', label: '因子版本' },
+      { prop: 'divisionCode', label: '行政区划代码' },
+      { prop: 'divisionName', label: '行政区划名称' },
+      { prop: 'regionName', label: '区域名称' },
+      { prop: 'provinceFactor', label: '省级因子（kgCO2/kWh）', type: 'number', precision: 10 },
+      { prop: 'regionFactor', label: '区域因子（kgCO2/kWh）', type: 'number', precision: 10 },
+      { prop: 'nationalFactor', label: '全国因子（kgCO2/kWh）', type: 'number', precision: 10 },
+      { prop: 'nonFossilExcludedFactor', label: '不含市场化非化石因子', type: 'number', precision: 10 },
+      { prop: 'nationalFossilPowerFactor', label: '全国化石能源电力因子', type: 'number', precision: 10 }
     ]
   },
   'ef-electricity-version': {
@@ -393,8 +373,8 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '因子版本',
     nameLabel: '版本说明',
     fields: [
-      { prop: 'field01', label: '因子版本' },
-      { prop: 'field02', label: '生效年份', type: 'number' }
+      { prop: 'factorVersion', label: '因子版本' },
+      { prop: 'effectiveYear', label: '生效年份', type: 'number' }
     ]
   },
   'ef-electricity-scope': {
@@ -405,8 +385,8 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '口径编码',
     nameLabel: '口径名称',
     fields: [
-      { prop: 'field01', label: '口径类型', optionSource: 'dimension-field' },
-      { prop: 'field02', label: '适用说明', width: 220 }
+      { prop: 'scopeKey', label: '口径类型', optionSource: 'dimension-field' },
+      { prop: 'scopeName', label: '适用说明', width: 220 }
     ]
   },
   'greenhouse-gas': {
@@ -417,9 +397,7 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '气体编码',
     nameLabel: '气体名称',
     fields: [
-      { prop: 'field01', label: 'GWP值', type: 'number' },
-      { prop: 'field02', label: 'GWP版本' },
-      { prop: 'field03', label: '化学式' }
+      { prop: 'gasNameEn', label: '气体英文名' }
     ]
   },
   'intensity-denominator': {
@@ -433,11 +411,10 @@ const dimensionPages: Record<string, PageConfig> = {
     showSort: false,
     showRemark: false,
     fields: [
-      { prop: 'field02', label: '分母类型' },
-      { prop: 'field03', label: '分母度量名称' },
-      { prop: 'field04', label: '强度单位展示' },
-      { prop: 'field05', label: '是否启用', optionSource: 'dimension-field' },
-      { prop: 'field06', label: '备注', width: 220 }
+      { prop: 'denominatorType', label: '分母类型' },
+      { prop: 'denominatorMetricName', label: '分母度量名称' },
+      { prop: 'intensityUnitDisplay', label: '强度单位展示' },
+      { prop: 'enabledText', label: '是否启用', optionSource: 'dimension-field' }
     ]
   },
   'intensity-target': {
@@ -451,8 +428,8 @@ const dimensionPages: Record<string, PageConfig> = {
     showSort: false,
     showRemark: false,
     fields: [
-      { prop: 'field03', label: '强度目标值', type: 'number' },
-      { prop: 'field04', label: '单位' }
+      { prop: 'targetValue', label: '强度目标值', type: 'number' },
+      { prop: 'unitName', label: '单位' }
     ]
   },
   'denominator-fact': {
@@ -466,15 +443,14 @@ const dimensionPages: Record<string, PageConfig> = {
     showSort: false,
     showRemark: false,
     fields: [
-      { prop: 'field02', label: '工厂类型' },
-      { prop: 'field03', label: '年份', type: 'number' },
-      { prop: 'field04', label: '月份', type: 'number' },
-      { prop: 'field05', label: '分母类型' },
-      { prop: 'field06', label: '分母度量名称' },
-      { prop: 'field07', label: '分母值', type: 'number' },
-      { prop: 'field08', label: '单位' },
-      { prop: 'field09', label: '数据来源', optionSource: 'dimension-field' },
-      { prop: 'field10', label: '备注', width: 220 }
+      { prop: 'factoryType', label: '工厂类型' },
+      { prop: 'factYear', label: '年份', type: 'number' },
+      { prop: 'factMonth', label: '月份', type: 'number' },
+      { prop: 'denominatorType', label: '分母类型' },
+      { prop: 'denominatorMetricName', label: '分母度量名称' },
+      { prop: 'denominatorValue', label: '分母值', type: 'number' },
+      { prop: 'unitName', label: '单位' },
+      { prop: 'dataSource', label: '数据来源', optionSource: 'dimension-field' }
     ]
   },
   'intensity-tolerance': {
@@ -488,23 +464,8 @@ const dimensionPages: Record<string, PageConfig> = {
     showSort: false,
     showRemark: false,
     fields: [
-      { prop: 'field02', label: '容忍率', type: 'number' },
-      { prop: 'field03', label: '是否启用', optionSource: 'dimension-field' },
-      { prop: 'field04', label: '备注', width: 220 }
-    ]
-  },
-  'report-template-download': {
-    title: '报表模板下载',
-    stage: '报表管理',
-    owner: '链接厂商',
-    mode: '模板维护',
-    codeLabel: '模板编码',
-    nameLabel: '模板名称',
-    fields: [
-      { prop: 'field01', label: '模板类型', optionSource: 'dimension-field' },
-      { prop: 'field02', label: '版本号' },
-      { prop: 'field03', label: '文件路径', width: 220 },
-      { prop: 'field04', label: '发布时间', type: 'date' }
+      { prop: 'toleranceRate', label: '容忍率', type: 'number' },
+      { prop: 'enabledText', label: '是否启用', optionSource: 'dimension-field' }
     ]
   }
 };
@@ -520,8 +481,7 @@ const vendorOnlyDimensionCodes = new Set([
   'emission-source-category',
   'ef-electricity-factor',
   'ef-electricity-scope',
-  'greenhouse-gas',
-  'report-template-download'
+  'greenhouse-gas'
 ]);
 
 const editableDimensionCodes = new Set([
@@ -632,33 +592,11 @@ const sheetEmptyRow = computed(() => ({
   recordCode: undefined,
   recordName: undefined,
   parentCode: undefined,
-  field01: undefined,
-  field02: undefined,
-  field03: undefined,
-  field04: undefined,
-  field05: undefined,
-  field06: undefined,
-  field07: undefined,
-  field08: undefined,
-  field09: undefined,
-  field10: undefined,
-  field11: undefined,
-  field12: undefined,
-  field13: undefined,
-  field14: undefined,
-  field15: undefined,
-  field16: undefined,
-  field17: undefined,
-  field18: undefined,
-  field19: undefined,
-  field20: undefined,
-  field21: undefined,
-  field22: undefined,
   status: '0',
   sortOrder: 0,
   remark: undefined
 }));
-const sheetRows = computed(() => Array.from({ length: 10 }, () => ({ ...sheetEmptyRow.value })));
+const sheetRows = computed(() => [{ ...sheetEmptyRow.value }]);
 
 const initFormData: DimensionRecordForm = {
   id: undefined,
@@ -666,28 +604,6 @@ const initFormData: DimensionRecordForm = {
   recordCode: undefined,
   recordName: undefined,
   parentCode: undefined,
-  field01: undefined,
-  field02: undefined,
-  field03: undefined,
-  field04: undefined,
-  field05: undefined,
-  field06: undefined,
-  field07: undefined,
-  field08: undefined,
-  field09: undefined,
-  field10: undefined,
-  field11: undefined,
-  field12: undefined,
-  field13: undefined,
-  field14: undefined,
-  field15: undefined,
-  field16: undefined,
-  field17: undefined,
-  field18: undefined,
-  field19: undefined,
-  field20: undefined,
-  field21: undefined,
-  field22: undefined,
   sortOrder: 0,
   status: '0',
   remark: undefined
