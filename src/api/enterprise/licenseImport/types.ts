@@ -21,6 +21,8 @@ export interface EnterpriseLicenseState {
   id?: string | number;
   licenseId?: string | number;
   customerId?: string | number;
+  packageId?: string | number;
+  packageName?: string;
   installId?: string | number;
   keyId?: string;
   algorithm?: string;
@@ -29,6 +31,8 @@ export interface EnterpriseLicenseState {
   validTo?: string;
   lastVerifiedTime?: string;
   maxObservedTime?: string;
+  featureCodes?: string;
+  currentSummary?: string;
   licenseStatus?: string;
 }
 

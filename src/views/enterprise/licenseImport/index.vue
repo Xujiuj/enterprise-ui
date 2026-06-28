@@ -32,6 +32,8 @@
               <el-descriptions :column="2" border>
                 <el-descriptions-item label="客户标识">{{ currentState.customerId || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="授权编号">{{ currentState.licenseId || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="当前套餐">{{ formatPackage(currentState) }}</el-descriptions-item>
+                <el-descriptions-item label="套餐ID">{{ currentState.packageId || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="导入状态/持久状态">
                   <el-tag :type="stateTagType">{{ stateText }}</el-tag>
                 </el-descriptions-item>
@@ -44,6 +46,8 @@
                 <el-descriptions-item label="部署指纹">{{ currentState.installId || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="最近校验">{{ formatTime(currentState.lastVerifiedTime) }}</el-descriptions-item>
                 <el-descriptions-item label="最大观测时间">{{ formatTime(currentState.maxObservedTime) }}</el-descriptions-item>
+                <el-descriptions-item label="套餐权益" :span="2">{{ currentState.featureCodes || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="授权摘要" :span="2">{{ currentState.currentSummary || '-' }}</el-descriptions-item>
               </el-descriptions>
             </template>
           </el-skeleton>
@@ -118,6 +122,8 @@
           <el-descriptions :column="1" border>
             <el-descriptions-item label="授权编号">{{ lastImportResult.licenseState?.licenseId || '-' }}</el-descriptions-item>
             <el-descriptions-item label="客户标识">{{ lastImportResult.licenseState?.customerId || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="当前套餐">{{ formatPackage(lastImportResult.licenseState) }}</el-descriptions-item>
+            <el-descriptions-item label="套餐权益">{{ lastImportResult.licenseState?.featureCodes || '-' }}</el-descriptions-item>
             <el-descriptions-item label="有效期起">{{ formatTime(lastImportResult.licenseState?.validFrom) }}</el-descriptions-item>
             <el-descriptions-item label="有效期止">{{ formatTime(lastImportResult.licenseState?.validTo) }}</el-descriptions-item>
             <el-descriptions-item label="导入校验">{{ formatTime(lastImportResult.licenseState?.lastVerifiedTime) }}</el-descriptions-item>
@@ -138,6 +144,7 @@ import type {
   EnterpriseLicenseCurrentState,
   EnterpriseLicenseGateStatus,
   EnterpriseLicenseImportResult,
+  EnterpriseLicenseState,
   LicenseGateDenialReason
 } from '@/api/enterprise/licenseImport/types';
 
@@ -310,6 +317,18 @@ function formatTime(value?: string): string {
     return '-';
   }
   return proxy?.parseTime(value) || value;
+}
+
+function formatPackage(state?: EnterpriseLicenseState): string {
+  if (!state) {
+    return '-';
+  }
+  const name = String(state.packageName ?? '').trim();
+  const id = state.packageId == null ? '' : String(state.packageId).trim();
+  if (name && id) {
+    return `${name}（${id}）`;
+  }
+  return name || id || '-';
 }
 
 function readLicenseFile(file: UploadRawFile): false {
