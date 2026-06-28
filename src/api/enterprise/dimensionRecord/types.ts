@@ -20,8 +20,10 @@ export interface DimensionRecordVO {
   effectiveDate?: string;
   expiryDate?: string;
   activeFlag?: string;
+  levelType?: string;
   categorySk?: string;
   businessKey?: string;
+  categoryNameEn?: string;
   ghgScope?: string;
   ghgScopeCategorySort?: string;
   ghgScopeCategory?: string;
@@ -38,6 +40,9 @@ export interface DimensionRecordVO {
   versionNo?: string;
   unifiedStandardCategory?: string;
   baseYear?: string;
+  baseYearKey?: string;
+  description?: string;
+  isCurrent?: string;
   currentBaseFlag?: string;
   emissionSourceNameEn?: string;
   fuelMaterialCategory?: string;
@@ -72,6 +77,9 @@ export interface DimensionRecordVO {
   scopeKey?: string;
   scopeName?: string;
   gasNameEn?: string;
+  gwpValue?: string;
+  gwpVersion?: string;
+  chemicalFormula?: string;
   denominatorType?: string;
   denominatorMetricName?: string;
   intensityUnitDisplay?: string;
@@ -114,7 +122,12 @@ export interface DimensionRecordForm extends BaseEntity {
   effectiveDate?: string;
   expiryDate?: string;
   activeFlag?: string;
+  levelType?: string;
+  categoryNameEn?: string;
   baseYear?: string;
+  baseYearKey?: string;
+  description?: string;
+  isCurrent?: string;
   currentBaseFlag?: string;
   emissionSourceNameEn?: string;
   fuelMaterialCategory?: string;
@@ -137,6 +150,9 @@ export interface DimensionRecordForm extends BaseEntity {
   factorGwp?: string;
   factorUnit?: string;
   effectiveYear?: string;
+  gwpValue?: string;
+  gwpVersion?: string;
+  chemicalFormula?: string;
   denominatorType?: string;
   denominatorMetricName?: string;
   intensityUnitDisplay?: string;

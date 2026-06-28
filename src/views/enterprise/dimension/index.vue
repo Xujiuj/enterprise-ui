@@ -79,7 +79,11 @@
             :prop="field.prop"
             :min-width="field.width ?? 140"
             :show-overflow-tooltip="true"
-          />
+          >
+            <template #default="scope">
+              {{ formatDisplayValue(scope.row[field.prop]) }}
+            </template>
+          </el-table-column>
           <el-table-column v-if="page.showStatus !== false" label="状态" align="center" prop="status" width="100">
             <template #default="scope">
               <span class="tag" :class="scope.row.status === '0' ? 'ok' : 'gray'">
@@ -257,7 +261,8 @@ const dimensionPages: Record<string, PageConfig> = {
     showParent: true,
     fields: [
       { prop: 'divisionCode', label: '区划代码' },
-      { prop: 'divisionName', label: '区划名称' }
+      { prop: 'divisionName', label: '区划名称' },
+      { prop: 'levelType', label: '区划层级' }
     ]
   },
   company: {
@@ -297,10 +302,24 @@ const dimensionPages: Record<string, PageConfig> = {
     showParent: true,
     fields: [
       { prop: 'categorySk', label: 'SK_排放源分类' },
+      { prop: 'businessKey', label: '业务编码' },
+      { prop: 'categoryNameEn', label: '分类英文名' },
       { prop: 'ghgScope', label: 'GHG Protocol范围', optionSource: 'dimension-field' },
+      { prop: 'ghgScopeCategorySort', label: 'GHG范围分类排序', type: 'number' },
       { prop: 'ghgScopeCategory', label: 'GHG Protocol范围子类别' },
+      { prop: 'ghgScopeEn', label: 'GHG范围英文' },
+      { prop: 'ghgScopeCategoryEn', label: 'GHG范围子类别英文' },
       { prop: 'isoCategory', label: 'ISO 14064-1类别' },
+      { prop: 'isoCategoryEn', label: 'ISO类别英文' },
+      { prop: 'isoCategoryDescription', label: 'ISO类别描述', width: 220 },
+      { prop: 'isoCategoryDescriptionEn', label: 'ISO类别英文描述', width: 240 },
+      { prop: 'isoCustomSubcategory', label: 'ISO自定义子分类', width: 180 },
       { prop: 'gbScopeCategory', label: 'GB/T 32150-2025范围分类' },
+      { prop: 'gbSubcategory', label: '国标子分类' },
+      { prop: 'effectiveDate', label: '生效日期', type: 'date' },
+      { prop: 'expiryDate', label: '失效日期', type: 'date' },
+      { prop: 'currentFlag', label: '是否当前版本' },
+      { prop: 'versionNo', label: '版本号' },
       { prop: 'unifiedStandardCategory', label: '统一标准分类' }
     ]
   },
@@ -312,7 +331,10 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '工厂编号',
     nameLabel: '工厂名称',
     fields: [
+      { prop: 'baseYearKey', label: '基准年业务键' },
+      { prop: 'description', label: '说明', width: 220 },
       { prop: 'baseYear', label: '基准年', type: 'number' },
+      { prop: 'isCurrent', label: '厂商当前标识', type: 'number' },
       { prop: 'currentBaseFlag', label: '是否当前基准', optionSource: 'dimension-field' }
     ]
   },
@@ -397,7 +419,10 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '气体编码',
     nameLabel: '气体名称',
     fields: [
-      { prop: 'gasNameEn', label: '气体英文名' }
+      { prop: 'gasNameEn', label: '气体英文名' },
+      { prop: 'gwpValue', label: 'GWP值', type: 'number' },
+      { prop: 'gwpVersion', label: 'GWP版本' },
+      { prop: 'chemicalFormula', label: '化学式' }
     ]
   },
   'intensity-denominator': {
@@ -629,6 +654,23 @@ const data = reactive<PageData<DimensionRecordForm, DimensionRecordQuery>>({
 const { queryParams, form, rules } = toRefs(data);
 
 const statusLabel = (value?: string) => statusOptions.value.find((item) => item.value === value)?.label ?? value ?? '-';
+
+const formatDisplayValue = (value: unknown) => {
+  if (value === undefined || value === null || value === '') {
+    return '-';
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? String(Number(value.toFixed(10))) : value;
+  }
+  if (typeof value !== 'string') {
+    return value;
+  }
+  const text = value.trim();
+  if (!/^-?\d+(\.\d+)?$/.test(text) || !text.includes('.')) {
+    return value;
+  }
+  return text.replace(/(\.\d*?[1-9])0+$/, '$1').replace(/\.0+$/, '');
+};
 
 const fieldOptionKey = (dimensionCode: string, field: FieldConfig) => `${dimensionCode}:${field.prop}`;
 const fieldOptions = (field: FieldConfig) => (page.value ? (dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] ?? []) : []);

@@ -715,10 +715,30 @@ const submitExtensionValues = async () => {
   }
 };
 
+const trimDecimalZeros = (value: CrudValue) => {
+  if (value === undefined || value === null || value === '') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? String(Number(value.toFixed(10))) : value;
+  }
+  if (typeof value !== 'string') {
+    return value;
+  }
+  const text = value.trim();
+  if (!/^-?\d+(\.\d+)?$/.test(text)) {
+    return value;
+  }
+  if (!text.includes('.')) {
+    return value;
+  }
+  return text.replace(/(\.\d*?[1-9])0+$/, '$1').replace(/\.0+$/, '');
+};
+
 const formatValue = (column: ColumnConfig, value: CrudValue) => {
   const key = String(value ?? '');
   const optionLabel = dynamicOptions[column.prop]?.find((option) => String(option.value) === key)?.label;
-  return optionLabel ?? column.valueMap?.[key] ?? value ?? '-';
+  return optionLabel ?? column.valueMap?.[key] ?? trimDecimalZeros(value) ?? '-';
 };
 
 const resolveTagType = (column: ColumnConfig, value: CrudValue): any => {
