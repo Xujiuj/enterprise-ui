@@ -113,7 +113,7 @@
 
     <el-drawer v-model="dialog.visible" :title="dialog.title" size="620px" append-to-body>
       <el-form ref="crudFormRef" :model="form" :rules="rules" label-width="132px">
-        <el-form-item v-for="field in config.formFields" :key="field.prop" :label="field.label" :prop="field.required ? field.prop : undefined">
+        <el-form-item v-for="field in config.formFields" :key="field.prop" :label="field.label" :prop="field.required ? field.prop : undefined" :required="field.required">
           <component
             :is="controlComponent(field)"
             v-bind="controlProps(field)"

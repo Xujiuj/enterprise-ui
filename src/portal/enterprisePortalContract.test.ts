@@ -177,9 +177,10 @@ describe('enterprise dynamic router guard', () => {
         children: [
           {
             path: 'intensity-target',
-            component: 'enterprise/intensityMetric/index',
+            component: 'enterprise/dimension/index',
+            query: '{"code":"intensity-target"}',
             meta: { title: 'intensity metric' },
-            permissions: ['enterprise:intensityMetric:list']
+            permissions: ['enterprise:dimension:list']
           },
           {
             path: 'intensity-denominator',
@@ -352,7 +353,6 @@ describe('enterprise dynamic router guard', () => {
         'enterprise/licenseImport/index',
         'enterprise/activityData/index',
         'enterprise/greenPowerCertificate/index',
-        'enterprise/intensityMetric/index',
         'enterprise/dataValidation/index',
         'enterprise/reportTemplateFile/index',
         'system/user/index',

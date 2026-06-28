@@ -81,7 +81,7 @@
             :show-overflow-tooltip="true"
           >
             <template #default="scope">
-              {{ formatDisplayValue(scope.row[field.prop]) }}
+              {{ formatDisplayValue(scope.row[field.prop], field) }}
             </template>
           </el-table-column>
           <el-table-column v-if="page.showStatus !== false" label="状态" align="center" prop="status" width="100">
@@ -123,7 +123,7 @@
           <el-form-item :label="page.nameLabel" prop="recordName">
             <el-input v-model="form.recordName" :placeholder="`请输入${page.nameLabel}`" />
           </el-form-item>
-          <el-form-item v-if="page.showParent" :label="page.parentLabel ?? '上级编码'" prop="parentCode">
+          <el-form-item v-if="page.showParent" :label="page.parentLabel ?? '上级编码'" :prop="page.parentRequired ? 'parentCode' : undefined" :required="page.parentRequired">
             <el-select
               v-model="form.parentCode"
               :placeholder="page.parentPlaceholder ?? `请选择${page.parentLabel ?? '上级编码'}`"
@@ -136,7 +136,7 @@
               <el-option v-for="item in parentCodeOptions" :key="String(item.value)" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
-          <el-form-item v-for="field in visibleFormFields" :key="field.prop" :label="field.label" :prop="field.prop">
+          <el-form-item v-for="field in visibleFormFields" :key="field.prop" :label="field.label" :prop="field.required ? field.prop : undefined" :required="field.required">
             <el-select
               v-if="field.optionSource"
               v-model="form[field.prop]"
@@ -266,6 +266,7 @@ interface FieldConfig {
   optionSource?: 'dimension-field';
   width?: number;
   hidden?: boolean;
+  required?: boolean;
   allowCreate?: boolean;
   filterable?: boolean;
   placeholder?: string;
@@ -286,6 +287,7 @@ interface PageConfig {
   parentLabel?: string;
   parentPlaceholder?: string;
   showParent?: boolean;
+  parentRequired?: boolean;
   showStatus?: boolean;
   showSort?: boolean;
   showRemark?: boolean;
@@ -333,11 +335,12 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '公司编号',
     nameLabel: '公司',
     showParent: true,
+    parentRequired: true,
     parentLabel: '工厂编号',
     parentPlaceholder: '请选择或输入工厂编号',
     fields: [
       { prop: 'companySk', label: 'SK_公司', hidden: true },
-      { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称' },
+      { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称', required: true },
       { prop: 'provinceCode', label: '省份编码', optionSource: 'dimension-field' },
       { prop: 'provinceName', label: '所在省份', optionSource: 'dimension-field' },
       { prop: 'factoryType', label: '工厂类型', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入工厂类型' },
@@ -394,7 +397,7 @@ const dimensionPages: Record<string, PageConfig> = {
     fields: [
       { prop: 'baseYearKey', label: '基准年业务键' },
       { prop: 'description', label: '说明', width: 220 },
-      { prop: 'baseYear', label: '基准年', type: 'number' },
+      { prop: 'baseYear', label: '基准年', type: 'number', required: true },
       { prop: 'isCurrent', label: '厂商当前标识', type: 'number' },
       { prop: 'currentBaseFlag', label: '是否当前基准', optionSource: 'dimension-field' }
     ]
@@ -457,7 +460,7 @@ const dimensionPages: Record<string, PageConfig> = {
     nameLabel: '版本说明',
     fields: [
       { prop: 'factorVersion', label: '因子版本' },
-      { prop: 'effectiveYear', label: '生效年份', type: 'number' }
+      { prop: 'effectiveYear', label: '生效年份', type: 'number', required: true }
     ]
   },
   'ef-electricity-scope': {
@@ -497,10 +500,10 @@ const dimensionPages: Record<string, PageConfig> = {
     showSort: false,
     showRemark: false,
     fields: [
-      { prop: 'denominatorType', label: '分母类型' },
-      { prop: 'denominatorMetricName', label: '分母度量名称' },
-      { prop: 'intensityUnitDisplay', label: '强度单位展示' },
-      { prop: 'enabledText', label: '是否启用', optionSource: 'dimension-field' }
+      { prop: 'denominatorType', label: '分母类型', required: true },
+      { prop: 'denominatorMetricName', label: '分母度量名称', required: true },
+      { prop: 'intensityUnitDisplay', label: '强度单位展示', required: true },
+      { prop: 'enabledText', label: '是否启用', optionSource: 'dimension-field', required: true }
     ]
   },
   'intensity-target': {
@@ -514,8 +517,8 @@ const dimensionPages: Record<string, PageConfig> = {
     showSort: false,
     showRemark: false,
     fields: [
-      { prop: 'targetValue', label: '强度目标值', type: 'number' },
-      { prop: 'unitName', label: '单位' }
+      { prop: 'targetValue', label: '强度目标值', type: 'number', required: true },
+      { prop: 'unitName', label: '单位', required: true }
     ]
   },
   'denominator-fact': {
@@ -530,11 +533,11 @@ const dimensionPages: Record<string, PageConfig> = {
     showRemark: false,
     fields: [
       { prop: 'factoryType', label: '工厂类型' },
-      { prop: 'factYear', label: '年份', type: 'number' },
+      { prop: 'factYear', label: '年份', type: 'number', required: true },
       { prop: 'factMonth', label: '月份', type: 'number' },
-      { prop: 'denominatorType', label: '分母类型' },
-      { prop: 'denominatorMetricName', label: '分母度量名称' },
-      { prop: 'denominatorValue', label: '分母值', type: 'number' },
+      { prop: 'denominatorType', label: '分母类型', required: true },
+      { prop: 'denominatorMetricName', label: '分母度量名称', required: true },
+      { prop: 'denominatorValue', label: '分母值', type: 'number', required: true },
       { prop: 'unitName', label: '单位' },
       { prop: 'dataSource', label: '数据来源', optionSource: 'dimension-field' }
     ]
@@ -550,7 +553,7 @@ const dimensionPages: Record<string, PageConfig> = {
     showSort: false,
     showRemark: false,
     fields: [
-      { prop: 'toleranceRate', label: '容忍率', type: 'number' },
+      { prop: 'toleranceRate', label: '容忍率', type: 'number', required: true },
       { prop: 'enabledText', label: '是否启用', optionSource: 'dimension-field' }
     ]
   }
@@ -591,6 +594,11 @@ const dimensionExtensionOwnerTables: Record<string, string> = {
   'denominator-fact': 'ce_intensity_denominator_fact',
   'intensity-tolerance': 'ce_intensity_tolerance'
 };
+
+const enabledFlagOptions: SelectOption[] = [
+  { label: '启用', value: '1' },
+  { label: '停用', value: '0' }
+];
 
 const routeKey = computed(() => {
   const queryCode = typeof route.query.code === 'string' ? route.query.code : '';
@@ -648,7 +656,7 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
     { prop: 'recordName', label: page.value.nameLabel, required: true, width: 190 }
   ];
   if (page.value.showParent) {
-    columns.push({ prop: 'parentCode', label: page.value.parentLabel ?? '上级编码', width: 150 });
+    columns.push({ prop: 'parentCode', label: page.value.parentLabel ?? '上级编码', required: page.value.parentRequired, width: 150 });
   }
   visibleFields.value.forEach((field) => {
     columns.push({
@@ -656,6 +664,7 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
       label: field.label,
       type: field.optionSource ? 'select' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text',
       options: field.optionSource ? fieldOptions(field) : undefined,
+      required: field.required,
       width: field.width ?? 150,
       precision: field.type === 'number' ? 2 : undefined
     });
@@ -745,7 +754,20 @@ const data = reactive<PageData<DimensionRecordForm, DimensionRecordQuery>>({
   },
   rules: {
     recordCode: [{ required: true, message: '编码不能为空', trigger: 'blur' }],
-    recordName: [{ required: true, message: '名称不能为空', trigger: 'blur' }]
+    recordName: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
+    parentCode: [{ required: true, message: '工厂编号不能为空', trigger: 'change' }],
+    factoryName: [{ required: true, message: '工厂名称不能为空', trigger: 'blur' }],
+    baseYear: [{ required: true, message: '基准年不能为空', trigger: 'blur' }],
+    effectiveYear: [{ required: true, message: '生效年份不能为空', trigger: 'blur' }],
+    denominatorType: [{ required: true, message: '分母类型不能为空', trigger: 'blur' }],
+    denominatorMetricName: [{ required: true, message: '分母度量名称不能为空', trigger: 'blur' }],
+    intensityUnitDisplay: [{ required: true, message: '强度单位展示不能为空', trigger: 'blur' }],
+    enabledText: [{ required: true, message: '请选择是否启用', trigger: 'change' }],
+    targetValue: [{ required: true, message: '强度目标值不能为空', trigger: 'blur' }],
+    unitName: [{ required: true, message: '单位不能为空', trigger: 'blur' }],
+    factYear: [{ required: true, message: '年份不能为空', trigger: 'blur' }],
+    denominatorValue: [{ required: true, message: '分母值不能为空', trigger: 'blur' }],
+    toleranceRate: [{ required: true, message: '容忍率不能为空', trigger: 'blur' }]
   }
 });
 
@@ -753,9 +775,12 @@ const { queryParams, form, rules } = toRefs(data);
 
 const statusLabel = (value?: string) => statusOptions.value.find((item) => item.value === value)?.label ?? value ?? '-';
 
-const formatDisplayValue = (value: unknown) => {
+const formatDisplayValue = (value: unknown, field?: FieldConfig) => {
   if (value === undefined || value === null || value === '') {
     return '-';
+  }
+  if (field?.prop === 'enabledText') {
+    return enabledFlagOptions.find((option) => String(option.value) === String(value))?.label ?? String(value);
   }
   if (typeof value === 'number') {
     return Number.isFinite(value) ? String(Number(value.toFixed(10))) : value;
@@ -771,7 +796,12 @@ const formatDisplayValue = (value: unknown) => {
 };
 
 const fieldOptionKey = (dimensionCode: string, field: FieldConfig) => `${dimensionCode}:${field.prop}`;
-const fieldOptions = (field: FieldConfig) => (page.value ? (dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] ?? []) : []);
+const fieldOptions = (field: FieldConfig) => {
+  if (field.prop === 'enabledText') {
+    return enabledFlagOptions;
+  }
+  return page.value ? (dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] ?? []) : [];
+};
 const extensionFieldKey = (field: ExtensionFieldVO) => String(field.id);
 const optionRecord = (option?: SelectOption) => option?.record?.record ?? option?.record;
 const optionValueEquals = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '');
@@ -811,7 +841,7 @@ const loadPageFieldOptions = async () => {
   if (!currentPage) {
     return;
   }
-  const fields = currentPage.fields.filter((field) => field.optionSource);
+  const fields = currentPage.fields.filter((field) => field.optionSource && field.prop !== 'enabledText');
   await Promise.all(
     fields.map(async (field) => {
       dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] = await loadDimensionFieldOptions(routeKey.value, field.prop);
@@ -1091,6 +1121,23 @@ const parseXlsxRows = async (file: Blob) => {
   return parsedRows;
 };
 
+const validateDimensionPayloadRows = (rows: Record<string, any>[]) => {
+  const currentPage = page.value;
+  if (!currentPage) return;
+  const requiredFields = [
+    { prop: 'recordCode', label: currentPage.codeLabel },
+    { prop: 'recordName', label: currentPage.nameLabel },
+    ...(currentPage.showParent && currentPage.parentRequired ? [{ prop: 'parentCode', label: currentPage.parentLabel ?? '上级编码' }] : []),
+    ...visibleFormFields.value.filter((field) => field.required)
+  ];
+  rows.forEach((row, rowIndex) => {
+    const missing = requiredFields.find((field) => row[field.prop] === undefined || row[field.prop] === null || row[field.prop] === '');
+    if (missing) {
+      throw new Error(`第 ${rowIndex + 1} 行${missing.label}不能为空`);
+    }
+  });
+};
+
 const getList = async () => {
   if (concreteTableRoute.value || !page.value) {
     recordList.value = [];
@@ -1111,9 +1158,13 @@ const getList = async () => {
 const reset = () => {
   form.value = {
     ...initFormData,
-    dimensionCode: routeKey.value
+    dimensionCode: routeKey.value,
+    enabledText: routeKey.value === 'intensity-denominator' || routeKey.value === 'intensity-tolerance' ? '1' : undefined
   };
   dimensionFormRef.value?.resetFields();
+  if (routeKey.value === 'intensity-denominator' || routeKey.value === 'intensity-tolerance') {
+    form.value.enabledText = '1';
+  }
 };
 
 const cancel = () => {
@@ -1232,6 +1283,7 @@ const submitForm = () => {
 
 const persistDimensionRows = async (rows: Record<string, any>[], successMessage: string) => {
   if (!isEditable.value) return;
+  validateDimensionPayloadRows(rows);
   sheetSaving.value = true;
   try {
     for (const row of rows) {
