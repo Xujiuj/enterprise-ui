@@ -10,3 +10,13 @@ export interface ReportContentVO {
   updateTime?: string;
   remark?: string;
 }
+
+export interface ReportContentSyncResult {
+  licenseId?: string;
+  contentCount: number;
+  syncedTime?: string;
+}
+
+export interface ReportContentSyncResponse {
+  data?: ReportContentSyncResult;
+}

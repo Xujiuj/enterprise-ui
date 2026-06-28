@@ -70,9 +70,9 @@
           <el-table-column v-if="isEditable" type="selection" width="42" align="center" />
           <el-table-column :label="page.codeLabel" align="center" prop="recordCode" min-width="150" />
           <el-table-column :label="page.nameLabel" align="center" prop="recordName" min-width="180" :show-overflow-tooltip="true" />
-          <el-table-column v-if="page.showParent" label="上级编码" align="center" prop="parentCode" min-width="140" />
+          <el-table-column v-if="page.showParent" :label="page.parentLabel ?? '上级编码'" align="center" prop="parentCode" min-width="140" />
           <el-table-column
-            v-for="field in page.fields"
+            v-for="field in visibleFields"
             :key="field.prop"
             :label="field.label"
             align="center"
@@ -95,6 +95,15 @@
           <el-table-column v-if="page.showRemark !== false" label="备注" align="center" prop="remark" min-width="180" :show-overflow-tooltip="true" />
           <el-table-column v-if="isEditable" label="操作" align="center" width="150" fixed="right">
             <template #default="scope">
+              <el-button
+                v-if="dimensionExtensionFields.length > 0"
+                link
+                type="primary"
+                icon="EditPen"
+                @click="handleDimensionExtensionUpdate(scope.row)"
+                v-hasPermi="['enterprise:extensionFieldValue:edit']"
+                >扩展字段</el-button
+              >
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['enterprise:dimension:edit']">编辑</el-button>
               <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['enterprise:dimension:remove']"
                 >删除</el-button
@@ -114,13 +123,30 @@
           <el-form-item :label="page.nameLabel" prop="recordName">
             <el-input v-model="form.recordName" :placeholder="`请输入${page.nameLabel}`" />
           </el-form-item>
-          <el-form-item v-if="page.showParent" label="上级编码" prop="parentCode">
-            <el-select v-model="form.parentCode" placeholder="请选择上级编码" clearable filterable allow-create class="w-full">
+          <el-form-item v-if="page.showParent" :label="page.parentLabel ?? '上级编码'" prop="parentCode">
+            <el-select
+              v-model="form.parentCode"
+              :placeholder="page.parentPlaceholder ?? `请选择${page.parentLabel ?? '上级编码'}`"
+              clearable
+              filterable
+              allow-create
+              class="w-full"
+              @change="handleParentCodeChange"
+            >
               <el-option v-for="item in parentCodeOptions" :key="String(item.value)" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
-          <el-form-item v-for="field in page.fields" :key="field.prop" :label="field.label" :prop="field.prop">
-            <el-select v-if="field.optionSource" v-model="form[field.prop]" :placeholder="`请选择${field.label}`" clearable class="w-full">
+          <el-form-item v-for="field in visibleFormFields" :key="field.prop" :label="field.label" :prop="field.prop">
+            <el-select
+              v-if="field.optionSource"
+              v-model="form[field.prop]"
+              :placeholder="field.placeholder ?? `请选择${field.label}`"
+              clearable
+              :filterable="field.filterable ?? true"
+              :allow-create="field.allowCreate ?? false"
+              class="w-full"
+              @change="handleFieldSelect(field, $event)"
+            >
               <el-option v-for="item in fieldOptions(field)" :key="String(item.value)" :label="item.label" :value="item.value" />
             </el-select>
             <el-date-picker
@@ -128,11 +154,11 @@
               v-model="form[field.prop]"
               value-format="YYYY-MM-DD"
               type="date"
-              :placeholder="`请选择${field.label}`"
+              :placeholder="field.placeholder ?? `请选择${field.label}`"
               class="w-full"
             />
-            <el-input v-else-if="field.type === 'number'" v-model="form[field.prop]" type="number" :placeholder="`请输入${field.label}`" />
-            <el-input v-else v-model="form[field.prop]" :placeholder="`请输入${field.label}`" />
+            <el-input v-else-if="field.type === 'number'" v-model="form[field.prop]" type="number" :placeholder="field.placeholder ?? `请输入${field.label}`" />
+            <el-input v-else v-model="form[field.prop]" :placeholder="field.placeholder ?? `请输入${field.label}`" />
           </el-form-item>
           <el-form-item v-if="page.showStatus !== false" label="状态" prop="status">
             <el-radio-group v-model="form.status">
@@ -150,6 +176,21 @@
         <template #footer>
           <el-button :loading="buttonLoading" type="primary" @click="submitForm">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
+        </template>
+      </el-drawer>
+
+      <el-drawer v-model="extensionDialog.visible" :title="extensionDialog.title" size="560px" append-to-body>
+        <el-form label-width="132px">
+          <template v-if="dimensionExtensionFields.length > 0">
+            <el-form-item v-for="field in dimensionExtensionFields" :key="String(field.id)" :label="field.fieldName || field.fieldCode">
+              <component :is="extensionControlComponent(field)" v-bind="extensionControlProps(field)" v-model="extensionValues[extensionFieldKey(field)]" />
+            </el-form-item>
+          </template>
+          <el-empty v-else description="暂无可维护的扩展字段" />
+        </el-form>
+        <template #footer>
+          <el-button :loading="extensionSaving" type="primary" @click="submitExtensionValues">保存</el-button>
+          <el-button @click="cancelExtensionDialog">取消</el-button>
         </template>
       </el-drawer>
 
@@ -213,6 +254,8 @@ import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
 import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
 import { loadDimensionFieldOptions, loadRecordStatusOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
+import { listExtensionFields, listExtensionFieldValues, saveExtensionFieldValuesBatch } from '@/api/enterprise/extensionField';
+import type { ExtensionFieldVO, ExtensionFieldValueForm, ExtensionFieldValueVO } from '@/api/enterprise/extensionField/types';
 
 type FieldProp = keyof DimensionRecordForm;
 
@@ -222,7 +265,16 @@ interface FieldConfig {
   type?: 'text' | 'number' | 'date';
   optionSource?: 'dimension-field';
   width?: number;
+  hidden?: boolean;
+  allowCreate?: boolean;
+  filterable?: boolean;
+  placeholder?: string;
 }
+
+type CompanyIndustryFieldPair = {
+  code: FieldProp;
+  name: FieldProp;
+};
 
 interface PageConfig {
   title: string;
@@ -231,6 +283,8 @@ interface PageConfig {
   mode: string;
   codeLabel: string;
   nameLabel: string;
+  parentLabel?: string;
+  parentPlaceholder?: string;
   showParent?: boolean;
   showStatus?: boolean;
   showSort?: boolean;
@@ -250,6 +304,12 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const statusOptions = ref<SelectOption[]>([]);
 const dynamicFieldOptions = reactive<Record<string, SelectOption[]>>({});
+const companyIndustryFieldPairs: CompanyIndustryFieldPair[] = [
+  { code: 'industrySectionCode', name: 'industrySectionName' },
+  { code: 'industryDivisionCode', name: 'industryDivisionName' },
+  { code: 'industryGroupCode', name: 'industryGroupName' },
+  { code: 'industryClassCode', name: 'industryClassName' }
+];
 const dimensionPages: Record<string, PageConfig> = {
   'admin-division': {
     title: '行政区划',
@@ -273,20 +333,22 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '公司编号',
     nameLabel: '公司',
     showParent: true,
+    parentLabel: '工厂编号',
+    parentPlaceholder: '请选择或输入工厂编号',
     fields: [
-      { prop: 'companySk', label: 'SK_公司' },
-      { prop: 'factoryName', label: '工厂' },
+      { prop: 'companySk', label: 'SK_公司', hidden: true },
+      { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称' },
       { prop: 'provinceCode', label: '省份编码', optionSource: 'dimension-field' },
       { prop: 'provinceName', label: '所在省份', optionSource: 'dimension-field' },
-      { prop: 'factoryType', label: '工厂类型' },
-      { prop: 'industrySectionCode', label: '行业门类代码' },
-      { prop: 'industrySectionName', label: '行业门类名称' },
-      { prop: 'industryDivisionCode', label: '行业大类代码' },
-      { prop: 'industryDivisionName', label: '行业大类名称' },
-      { prop: 'industryGroupCode', label: '行业中类代码' },
-      { prop: 'industryGroupName', label: '行业中类名称' },
-      { prop: 'industryClassCode', label: '行业小类代码' },
-      { prop: 'industryClassName', label: '行业小类名称' },
+      { prop: 'factoryType', label: '工厂类型', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入工厂类型' },
+      { prop: 'industrySectionCode', label: '行业门类代码', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业门类代码' },
+      { prop: 'industrySectionName', label: '行业门类名称', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业门类名称' },
+      { prop: 'industryDivisionCode', label: '行业大类代码', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业大类代码' },
+      { prop: 'industryDivisionName', label: '行业大类名称', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业大类名称' },
+      { prop: 'industryGroupCode', label: '行业中类代码', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业中类代码' },
+      { prop: 'industryGroupName', label: '行业中类名称', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业中类名称' },
+      { prop: 'industryClassCode', label: '行业小类代码', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业小类代码' },
+      { prop: 'industryClassName', label: '行业小类名称', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入行业小类名称' },
       { prop: 'effectiveDate', label: '生效日期', type: 'date' },
       { prop: 'expiryDate', label: '失效日期', type: 'date' },
       { prop: 'activeFlag', label: '是否有效', optionSource: 'dimension-field' }
@@ -520,6 +582,17 @@ const editableDimensionCodes = new Set([
   'intensity-tolerance'
 ]);
 
+const dimensionExtensionOwnerTables: Record<string, string> = {
+  company: 'ce_company_factory',
+  'base-year': 'ce_base_year',
+  'ef-factor': 'ce_ef_factor',
+  'ef-electricity-version': 'ce_electricity_factor_version_map',
+  'intensity-denominator': 'ce_intensity_denominator_rule',
+  'intensity-target': 'ce_intensity_target',
+  'denominator-fact': 'ce_intensity_denominator_fact',
+  'intensity-tolerance': 'ce_intensity_tolerance'
+};
+
 const routeKey = computed(() => {
   const queryCode = typeof route.query.code === 'string' ? route.query.code : '';
   const pathParts = route.path.split('/').filter(Boolean);
@@ -528,13 +601,30 @@ const routeKey = computed(() => {
 });
 const concreteTableRoute = computed(() => concreteTableRoutes[routeKey.value]);
 const page = computed(() => dimensionPages[routeKey.value]);
+const dimensionExtensionOwnerTable = computed(() => dimensionExtensionOwnerTables[routeKey.value]);
+const visibleFields = computed(() => page.value?.fields.filter((field) => !field.hidden) ?? []);
+const visibleFormFields = computed(() => visibleFields.value);
 const parentCodeOptions = computed(() => {
   const records = recordList.value ?? [];
+  if (routeKey.value === 'company') {
+    const uniqueFactories = new Map<string, SelectOption>();
+    records.forEach((record: any) => {
+      const factoryCode = String(record.parentCode ?? '').trim();
+      if (!factoryCode || uniqueFactories.has(factoryCode)) return;
+      uniqueFactories.set(factoryCode, {
+        label: [factoryCode, record.factoryName].filter(Boolean).join(' / '),
+        value: factoryCode,
+        record
+      });
+    });
+    return Array.from(uniqueFactories.values());
+  }
   return records
     .filter((r: any) => r.recordCode)
     .map((r: any) => ({
       label: [r.recordCode, r.recordName].filter(Boolean).join(' / '),
-      value: r.recordCode
+      value: r.recordCode,
+      record: r
     }));
 });
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
@@ -559,9 +649,9 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
     { prop: 'recordName', label: page.value.nameLabel, required: true, width: 190 }
   ];
   if (page.value.showParent) {
-    columns.push({ prop: 'parentCode', label: '上级编码', width: 150 });
+    columns.push({ prop: 'parentCode', label: page.value.parentLabel ?? '上级编码', width: 150 });
   }
-  page.value.fields.forEach((field) => {
+  visibleFields.value.forEach((field) => {
     columns.push({
       prop: field.prop,
       label: field.label,
@@ -611,6 +701,15 @@ const uploadDialog = reactive({
 });
 const sheetSaving = ref(false);
 const uploadParsing = ref(false);
+const dimensionExtensionFields = ref<ExtensionFieldVO[]>([]);
+const extensionValueRows = ref<Record<string, ExtensionFieldValueVO>>({});
+const extensionValues = reactive<Record<string, any>>({});
+const extensionSaving = ref(false);
+const extensionOwnerId = ref<string | number>();
+const extensionDialog = reactive({
+  visible: false,
+  title: ''
+});
 
 const sheetEmptyRow = computed(() => ({
   dimensionCode: routeKey.value,
@@ -674,6 +773,38 @@ const formatDisplayValue = (value: unknown) => {
 
 const fieldOptionKey = (dimensionCode: string, field: FieldConfig) => `${dimensionCode}:${field.prop}`;
 const fieldOptions = (field: FieldConfig) => (page.value ? (dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] ?? []) : []);
+const extensionFieldKey = (field: ExtensionFieldVO) => String(field.id);
+const optionRecord = (option?: SelectOption) => option?.record?.record ?? option?.record;
+const optionValueEquals = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '');
+const formValueFromRecord = (record: Record<string, any> | undefined, prop: FieldProp) => record?.[prop];
+const assignFormValueFromRecord = (record: Record<string, any> | undefined, prop: FieldProp) => {
+  const value = formValueFromRecord(record, prop);
+  if (value !== undefined && value !== null && value !== '') {
+    form.value[prop] = value;
+  }
+};
+
+const handleParentCodeChange = (value: unknown) => {
+  if (routeKey.value !== 'company') return;
+  const selected = parentCodeOptions.value.find((option) => optionValueEquals(option.value, value));
+  assignFormValueFromRecord(optionRecord(selected), 'factoryName');
+};
+
+const handleFieldSelect = (field: FieldConfig, value: unknown) => {
+  if (routeKey.value !== 'company') return;
+  const selected = fieldOptions(field).find((option) => optionValueEquals(option.value, value));
+  const record = optionRecord(selected);
+  if (!record) return;
+  const pair = companyIndustryFieldPairs.find((item) => item.code === field.prop || item.name === field.prop);
+  if (pair) {
+    assignFormValueFromRecord(record, pair.code);
+    assignFormValueFromRecord(record, pair.name);
+  }
+  if (field.prop === 'provinceCode' || field.prop === 'provinceName') {
+    assignFormValueFromRecord(record, 'provinceCode');
+    assignFormValueFromRecord(record, 'provinceName');
+  }
+};
 
 const loadPageFieldOptions = async () => {
   statusOptions.value = await loadRecordStatusOptions();
@@ -687,6 +818,138 @@ const loadPageFieldOptions = async () => {
       dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] = await loadDimensionFieldOptions(routeKey.value, field.prop);
     })
   );
+};
+
+const resetExtensionValues = () => {
+  Object.keys(extensionValues).forEach((key) => delete extensionValues[key]);
+  extensionValueRows.value = {};
+  extensionOwnerId.value = undefined;
+};
+
+const extensionValueProp = (field: ExtensionFieldVO): keyof ExtensionFieldValueForm => {
+  const valueType = String(field.valueType ?? 'text').toLowerCase();
+  if (['number', 'decimal', 'numeric', 'integer'].includes(valueType)) {
+    return 'decimalValue';
+  }
+  if (valueType === 'date') {
+    return 'dateValue';
+  }
+  if (['boolean', 'bool'].includes(valueType)) {
+    return 'booleanValue';
+  }
+  return 'textValue';
+};
+
+const extensionControlComponent = (field: ExtensionFieldVO) => {
+  const prop = extensionValueProp(field);
+  if (prop === 'decimalValue') return 'el-input-number';
+  if (prop === 'dateValue') return 'el-date-picker';
+  if (prop === 'booleanValue') return 'el-switch';
+  return 'el-input';
+};
+
+const extensionControlProps = (field: ExtensionFieldVO) => {
+  const label = field.fieldName || field.fieldCode || '扩展字段';
+  if (String(field.valueType ?? '').toLowerCase() === 'textarea') {
+    return { placeholder: `请输入${label}`, type: 'textarea', rows: 3, maxlength: 500, showWordLimit: true };
+  }
+  const prop = extensionValueProp(field);
+  if (prop === 'decimalValue') {
+    return { placeholder: `请输入${label}`, min: 0, precision: 4, controlsPosition: 'right', class: 'w-full' };
+  }
+  if (prop === 'dateValue') {
+    return { placeholder: `请选择${label}`, type: 'date', valueFormat: 'YYYY-MM-DD', class: 'w-full' };
+  }
+  if (prop === 'booleanValue') {
+    return { activeValue: true, inactiveValue: false };
+  }
+  return { placeholder: `请输入${label}`, clearable: true };
+};
+
+const normalizeExtensionValue = (field: ExtensionFieldVO, value: unknown) => {
+  const prop = extensionValueProp(field);
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  if (prop === 'decimalValue') {
+    return Number(value);
+  }
+  if (prop === 'booleanValue') {
+    return Boolean(value);
+  }
+  return value as string;
+};
+
+const hasExtensionValue = (field: ExtensionFieldVO, value: unknown, existing?: ExtensionFieldValueVO) => {
+  if (existing?.id) return true;
+  if (extensionValueProp(field) === 'booleanValue') return value === true;
+  return value !== undefined && value !== null && value !== '';
+};
+
+const loadDimensionExtensionFields = async () => {
+  if (!dimensionExtensionOwnerTable.value || !isEditable.value) {
+    dimensionExtensionFields.value = [];
+    return;
+  }
+  const res = await listExtensionFields({
+    moduleCode: routeKey.value,
+    enabledFlag: true,
+    pageNum: 1,
+    pageSize: 200
+  });
+  dimensionExtensionFields.value = (res.rows ?? res.data ?? []).filter((field) => field.enabledFlag !== false && field.id != null);
+};
+
+const loadExtensionValues = async (ownerId?: string | number) => {
+  resetExtensionValues();
+  if (!dimensionExtensionOwnerTable.value || !ownerId) return;
+  extensionOwnerId.value = ownerId;
+  const res = await listExtensionFieldValues({
+    ownerTableCode: dimensionExtensionOwnerTable.value,
+    ownerRecordId: ownerId,
+    pageNum: 1,
+    pageSize: 200
+  });
+  const rows = res.rows ?? res.data ?? [];
+  extensionValueRows.value = rows.reduce<Record<string, ExtensionFieldValueVO>>((acc, item) => {
+    if (item.extensionFieldId != null) acc[String(item.extensionFieldId)] = item;
+    return acc;
+  }, {});
+  for (const field of dimensionExtensionFields.value) {
+    const key = extensionFieldKey(field);
+    const row = extensionValueRows.value[key];
+    if (row) extensionValues[key] = row[extensionValueProp(field)];
+  }
+};
+
+const buildExtensionPayload = (field: ExtensionFieldVO, ownerId: string | number, existing?: ExtensionFieldValueVO): ExtensionFieldValueForm => {
+  const prop = extensionValueProp(field);
+  return {
+    id: existing?.id,
+    ownerTableCode: dimensionExtensionOwnerTable.value,
+    ownerRecordId: ownerId,
+    extensionFieldId: field.id,
+    textValue: null,
+    decimalValue: null,
+    dateValue: null,
+    booleanValue: null,
+    [prop]: normalizeExtensionValue(field, extensionValues[extensionFieldKey(field)])
+  };
+};
+
+const saveExtensionValues = async (ownerId?: string | number) => {
+  if (!dimensionExtensionOwnerTable.value || !ownerId) return;
+  const payloads = dimensionExtensionFields.value
+    .map((field) => {
+      const key = extensionFieldKey(field);
+      const existing = extensionValueRows.value[key];
+      if (!hasExtensionValue(field, extensionValues[key], existing)) return undefined;
+      return buildExtensionPayload(field, ownerId, existing);
+    })
+    .filter((payload): payload is ExtensionFieldValueForm => Boolean(payload));
+  if (payloads.length > 0) {
+    await saveExtensionFieldValuesBatch(payloads);
+  }
 };
 
 const textDecoder = new TextDecoder('utf-8');
@@ -924,6 +1187,29 @@ const handleUpdate = async (row?: DimensionRecordVO) => {
   dialog.title = `修改${page.value?.title ?? ''}`;
 };
 
+const handleDimensionExtensionUpdate = async (row: DimensionRecordVO) => {
+  resetExtensionValues();
+  await loadExtensionValues(row.id);
+  extensionDialog.title = `${page.value?.title ?? ''}扩展字段`;
+  extensionDialog.visible = true;
+};
+
+const submitExtensionValues = async () => {
+  extensionSaving.value = true;
+  try {
+    await saveExtensionValues(extensionOwnerId.value);
+    ElMessage.success('扩展字段已保存');
+    extensionDialog.visible = false;
+  } finally {
+    extensionSaving.value = false;
+  }
+};
+
+const cancelExtensionDialog = () => {
+  extensionDialog.visible = false;
+  resetExtensionValues();
+};
+
 const submitForm = () => {
   if (!isEditable.value) return;
   dimensionFormRef.value?.validate(async (valid: boolean) => {
@@ -1014,6 +1300,7 @@ watch(
       return;
     }
     loadPageFieldOptions();
+    loadDimensionExtensionFields();
     resetQuery();
   }
 );
@@ -1038,6 +1325,7 @@ const handleRefresh = async () => {
 
 onMounted(async () => {
   await loadPageFieldOptions();
+  await loadDimensionExtensionFields();
   if (concreteTableRoute.value) {
     router.replace(concreteTableRoute.value);
     return;

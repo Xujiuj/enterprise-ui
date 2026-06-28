@@ -17,6 +17,10 @@ const config = {
   title: '强度指标结果',
   description: '查看和维护企业碳排放强度结果。分母事实来自强度分母事实表，用户侧展示指标、期间、排放量、分母和目标，不暴露内部事实记录编号。',
   permissionPrefix: 'enterprise:intensityMetric',
+  extension: {
+    moduleCode: 'intensity_metric',
+    ownerTableCode: 'ce_intensity_metric'
+  },
   columns: [
     { prop: 'metricName', label: '指标名称', minWidth: 180 },
     { prop: 'ruleCode', label: '分母规则', minWidth: 140 },

@@ -1,5 +1,6 @@
 import request from '@/utils/request';
 import {
+  ExtensionFieldForm,
   ExtensionFieldQuery,
   ExtensionFieldVO,
   ExtensionFieldValueForm,
@@ -25,6 +26,36 @@ export const listExtensionFields = (query?: ExtensionFieldQuery): Promise<Extens
     method: 'get',
     params: query
   }) as unknown as Promise<ExtensionFieldPageResponse>;
+};
+
+export const getExtensionField = (id: string | number) => {
+  return request({
+    url: '/enterprise/extension-field/' + id,
+    method: 'get'
+  });
+};
+
+export const addExtensionField = (data: ExtensionFieldForm) => {
+  return request({
+    url: '/enterprise/extension-field',
+    method: 'post',
+    data
+  });
+};
+
+export const updateExtensionField = (data: ExtensionFieldForm) => {
+  return request({
+    url: '/enterprise/extension-field',
+    method: 'put',
+    data
+  });
+};
+
+export const delExtensionField = (id: string | number | Array<string | number>) => {
+  return request({
+    url: '/enterprise/extension-field/' + id,
+    method: 'delete'
+  });
 };
 
 export const listExtensionFieldValues = (query?: ExtensionFieldValueQuery): Promise<ExtensionFieldValuePageResponse> => {

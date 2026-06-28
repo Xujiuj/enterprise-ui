@@ -215,8 +215,8 @@ interface RowActionConfig {
 }
 
 interface ExtensionConfig {
-  moduleCode: 'activity_data' | 'green_electricity' | 'intensity_denominator';
-  ownerTableCode: 'ce_activity_data' | 'ce_green_power_certificate' | 'ce_intensity_denominator_fact';
+  moduleCode: string;
+  ownerTableCode: string;
 }
 
 interface CrudConfig {
@@ -283,8 +283,6 @@ const extensionDialog = reactive({
   title: ''
 });
 
-const allowedExtensionModules = ['activity_data', 'green_electricity', 'intensity_denominator'];
-
 const rules = computed<FormRules>(() => {
   return props.config.formFields.reduce<FormRules>((acc, field) => {
     if (field.required) {
@@ -301,7 +299,7 @@ const actionColumnWidth = computed(() => {
 
 const extensionEnabled = computed(() => {
   const extension = props.config.extension;
-  return Boolean(extension && allowedExtensionModules.includes(extension.moduleCode));
+  return Boolean(extension?.moduleCode && extension?.ownerTableCode);
 });
 
 const showExtensionFieldsInCrudDrawer = computed(() => extensionEnabled.value && !props.config.readonly && extensionFields.value.length > 0);
@@ -581,6 +579,9 @@ const extensionControlComponent = (field: ExtensionFieldVO) => {
 
 const extensionControlProps = (field: ExtensionFieldVO) => {
   const label = field.fieldName || field.fieldCode || '扩展字段';
+  if (String(field.valueType ?? '').toLowerCase() === 'textarea') {
+    return { placeholder: `请输入${label}`, type: 'textarea', rows: 3, maxlength: 500, showWordLimit: true };
+  }
   const prop = extensionValueProp(field);
   if (prop === 'decimalValue') {
     return { placeholder: `请输入${label}`, min: 0, precision: 4, controlsPosition: 'right', class: 'w-full' };

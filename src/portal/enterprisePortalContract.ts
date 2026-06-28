@@ -102,7 +102,7 @@ const enterpriseAllowedVisibleChildPathsByScope = new Map<string, string[]>([
   ['green-electricity', ['green-electricity-data']],
   ['intensity', ['intensity-denominator', 'intensity-target', 'denominator-fact', 'intensity-tolerance']],
   ['report-management', ['content', 'data-validation', 'report-template-download']],
-  ['system', ['user', 'role', 'menu']],
+  ['system', ['user', 'role', 'menu', 'extension-field']],
   ['log', ['operlog', 'logininfor']]
 ]);
 
@@ -152,7 +152,8 @@ const enterpriseCanonicalChildTitlesByScope = new Map<string, Map<string, string
     new Map([
       ['user', '用户管理'],
       ['role', '角色管理'],
-      ['menu', '菜单管理']
+      ['menu', '菜单管理'],
+      ['extension-field', '扩展字段配置']
     ])
   ],
   [

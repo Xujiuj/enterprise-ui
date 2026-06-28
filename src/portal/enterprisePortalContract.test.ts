@@ -239,6 +239,12 @@ describe('enterprise dynamic router guard', () => {
             permissions: ['system:menu:list']
           },
           {
+            path: 'extension-field',
+            component: 'enterprise/extensionField/index',
+            meta: { title: '扩展字段配置' },
+            permissions: ['enterprise:extensionField:list']
+          },
+          {
             path: 'dept',
             component: 'system/dept/index',
             meta: { title: '部门管理' },
@@ -354,6 +360,7 @@ describe('enterprise dynamic router guard', () => {
         'system/role/index',
         'system/role/authUser',
         'system/menu/index',
+        'enterprise/extensionField/index',
         'monitor/operlog/index',
         'monitor/logininfor/index'
       ])
@@ -402,7 +409,7 @@ describe('enterprise dynamic router guard', () => {
       '/green-electricity': ['green-electricity-data'],
       '/intensity': ['intensity-denominator', 'intensity-target', 'denominator-fact', 'intensity-tolerance'],
       '/report-management': ['content', 'data-validation', 'report-template-download'],
-      '/system': ['user', 'role', 'menu'],
+      '/system': ['user', 'role', 'menu', 'extension-field'],
       '/log': ['operlog', 'logininfor']
     });
     expect(filtered.map((route: any) => route.meta?.title)).toEqual([
@@ -448,6 +455,7 @@ describe('enterprise dynamic router guard', () => {
       '用户管理',
       '角色管理',
       '菜单管理',
+      '扩展字段配置',
       '日志',
       '操作日志',
       '登录日志'

@@ -21,13 +21,10 @@ import { ElMessage } from 'element-plus';
 import FileSaver from 'file-saver';
 import EnterpriseCrudPage from '@/views/enterprise/components/EnterpriseCrudPage.vue';
 import {
-  addReportTemplateFile,
-  delReportTemplateFile,
   downloadReportTemplateFile,
   getReportTemplateFile,
   listReportTemplateFile,
-  syncReportTemplates,
-  updateReportTemplateFile
+  syncReportTemplates
 } from '@/api/enterprise/reportTemplateFile';
 import type { ReportTemplateFileVO } from '@/api/enterprise/reportTemplateFile/types';
 import { errorCode } from '@/utils/errorCode';
@@ -76,8 +73,9 @@ async function resolveBlobErrorMessage(blob: Blob) {
 
 const config = {
   title: '报表模板下载',
-  description: '维护企业端可下载的报表模板元数据。模板文件下载仅允许访问企业模板目录内的受控文件。',
+  description: '企业端模板仅支持从厂商端同步和下载，模板文件下载仅允许访问企业模板目录内的受控文件。',
   permissionPrefix: 'enterprise:reportTemplateFile',
+  readonly: true,
   columns: [
     { prop: 'templateCode', label: '模板编码', minWidth: 150 },
     { prop: 'templateName', label: '模板名称', minWidth: 180 },
@@ -104,20 +102,7 @@ const config = {
     { prop: 'templateType', label: '类型', type: 'select', loadOptions: loadTemplateTypeOptions },
     { prop: 'enabledFlag', label: '状态', type: 'select', loadOptions: loadBooleanStatusOptions }
   ],
-  formFields: [
-    { prop: 'templateCode', label: '模板编码', required: true },
-    { prop: 'templateName', label: '模板名称', required: true },
-    { prop: 'templateType', label: '类型', type: 'select', loadOptions: loadTemplateTypeOptions, required: true },
-    { prop: 'fileName', label: '文件名', required: true },
-    {
-      prop: 'filePath',
-      label: '模板相对路径',
-      placeholder: '请输入企业模板目录下的相对路径',
-      required: true
-    },
-    { prop: 'enabledFlag', label: '启用状态', type: 'switch' },
-    { prop: 'remark', label: '备注', type: 'textarea' }
-  ],
+  formFields: [],
   rowActions: [
     {
       key: 'download',
@@ -137,8 +122,12 @@ const config = {
 const api = {
   list: listReportTemplateFile,
   get: getReportTemplateFile,
-  add: addReportTemplateFile,
-  update: updateReportTemplateFile,
-  remove: delReportTemplateFile
+  add: rejectReadonlyMutation,
+  update: rejectReadonlyMutation,
+  remove: rejectReadonlyMutation
 };
+
+function rejectReadonlyMutation() {
+  return Promise.reject(new Error('企业端报表模板仅允许从厂商端同步和下载'));
+}
 </script>

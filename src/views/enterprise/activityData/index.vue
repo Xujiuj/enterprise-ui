@@ -15,6 +15,9 @@
         <el-tab-pane label="导入结果">
           <EnterpriseImportResults />
         </el-tab-pane>
+        <el-tab-pane label="扩展字段维护">
+          <EnterpriseActivityDataExtension />
+        </el-tab-pane>
       </el-tabs>
     </section>
   </div>
@@ -22,6 +25,7 @@
 
 <script setup name="EnterpriseActivityData" lang="ts">
 import EnterpriseActivityEntry from '@/views/enterprise/activityEntry/index.vue';
+import EnterpriseActivityDataExtension from '@/views/enterprise/activityData/extension.vue';
 import EnterpriseImportResults from '@/views/enterprise/importResults/index.vue';
 </script>
 

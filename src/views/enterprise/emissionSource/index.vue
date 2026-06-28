@@ -26,6 +26,10 @@ const config = {
   title: '排放源识别',
   description: '维护企业排放源、负责部门、数据来源和适用因子。公司、工厂、排放源分类、负责部门均来自企业业务表已有值去重选项。',
   permissionPrefix: 'enterprise:emissionSource',
+  extension: {
+    moduleCode: 'emission_source',
+    ownerTableCode: 'ce_emission_source'
+  },
   columns: [
     { prop: 'companyName', label: '公司名称', minWidth: 180 },
     { prop: 'factoryName', label: '工厂', minWidth: 180 },

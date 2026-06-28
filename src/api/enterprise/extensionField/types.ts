@@ -19,6 +19,17 @@ export interface ExtensionFieldQuery extends PageQuery {
   params?: any;
 }
 
+export interface ExtensionFieldForm extends BaseEntity {
+  id?: string | number;
+  templateVersionId?: string | number;
+  moduleCode?: string;
+  sheetId?: string | number;
+  fieldCode?: string;
+  fieldName?: string;
+  valueType?: string;
+  enabledFlag?: boolean;
+}
+
 export interface ExtensionFieldValueVO {
   id: string | number;
   ownerTableCode?: string;

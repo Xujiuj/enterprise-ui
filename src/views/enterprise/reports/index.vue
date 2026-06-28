@@ -2,7 +2,10 @@
   <div class="p-2 enterprise-reports-page">
     <section class="page-head">
       <h1>报表内容目录</h1>
-      <el-button icon="Refresh" :loading="loading" @click="loadContent">刷新</el-button>
+      <div class="page-actions">
+        <el-button icon="Refresh" :loading="loading" @click="loadContent">刷新</el-button>
+        <el-button type="success" plain icon="RefreshRight" :loading="syncing" @click="handleSync">同步厂商配置</el-button>
+      </div>
     </section>
 
     <section class="content-grid">
@@ -46,7 +49,8 @@
 
 <script setup name="EnterpriseReports" lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { listReportContent } from '@/api/enterprise/reportContent';
+import { ElMessage } from 'element-plus';
+import { listReportContent, syncReportContent } from '@/api/enterprise/reportContent';
 import type { ReportContentVO } from '@/api/enterprise/reportContent/types';
 
 interface DirectoryItem {
@@ -56,6 +60,7 @@ interface DirectoryItem {
 }
 
 const loading = ref(false);
+const syncing = ref(false);
 const rows = ref<ReportContentVO[]>([]);
 const activeDirectoryKey = ref('');
 
@@ -121,6 +126,18 @@ const loadContent = async () => {
   }
 };
 
+const handleSync = async () => {
+  syncing.value = true;
+  try {
+    const response = await syncReportContent();
+    const count = response.data?.contentCount ?? 0;
+    await loadContent();
+    ElMessage.success(`已同步 ${count} 条报表内容配置`);
+  } finally {
+    syncing.value = false;
+  }
+};
+
 onMounted(loadContent);
 </script>
 
@@ -143,6 +160,14 @@ onMounted(loadContent);
     font-weight: 650;
     margin-bottom: 0;
   }
+}
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .content-grid {
