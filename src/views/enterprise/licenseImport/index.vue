@@ -87,10 +87,14 @@
             </div>
           </template>
 
-          <el-upload drag action="#" accept=".lic,text/plain" :auto-upload="false" :show-file-list="false" :before-upload="readLicenseFile">
+          <el-upload drag action="#" accept=".lic,text/plain" :auto-upload="false" :show-file-list="false" :on-change="readLicenseFile">
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">拖拽授权文件到此处，或点击选择</div>
           </el-upload>
+
+          <el-descriptions v-if="licenseFileName" class="mt-4" :column="1" border>
+            <el-descriptions-item label="已选择文件">{{ licenseFileName }}</el-descriptions-item>
+          </el-descriptions>
 
           <el-input v-model="expectedInstallId" class="mt-4" maxlength="128" show-word-limit placeholder="本机部署指纹由系统自动回填" readonly />
 
@@ -139,11 +143,12 @@
 <script setup name="EnterpriseLicenseImport" lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import type { UploadRawFile } from 'element-plus';
+import type { UploadFile, UploadRawFile } from 'element-plus';
 import { getCurrentLicenseState, getExpectedInstallId, getLicenseGateStatus, importEnterpriseLicense } from '@/api/enterprise/licenseImport';
 import type {
   EnterpriseLicenseCurrentState,
   EnterpriseLicenseGateStatus,
+  EnterpriseLicenseInstallIdResponse,
   EnterpriseLicenseImportResult,
   EnterpriseLicenseState,
   LicenseGateDenialReason
@@ -154,6 +159,7 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const statusLoading = ref(false);
 const importLoading = ref(false);
 const licenseContent = ref('');
+const licenseFileName = ref('');
 const expectedInstallId = ref('');
 const currentState = ref<EnterpriseLicenseCurrentState>();
 const gateStatus = ref<EnterpriseLicenseGateStatus>();
@@ -332,7 +338,12 @@ function formatPackage(state?: EnterpriseLicenseState): string {
   return name || id || '-';
 }
 
-function readLicenseFile(file: UploadRawFile): false {
+function readLicenseFile(uploadFile: UploadFile | UploadRawFile): false {
+  const file = 'raw' in uploadFile ? uploadFile.raw : uploadFile;
+  if (!file) {
+    ElMessage.error('授权文件读取失败');
+    return false;
+  }
   if (!file.name.toLowerCase().endsWith('.lic')) {
     ElMessage.warning('请选择 .lic 授权文件');
     return false;
@@ -340,6 +351,12 @@ function readLicenseFile(file: UploadRawFile): false {
   const reader = new FileReader();
   reader.onload = () => {
     licenseContent.value = String(reader.result || '').trim();
+    licenseFileName.value = file.name;
+    if (licenseContent.value) {
+      ElMessage.success('授权文件已读取');
+    } else {
+      ElMessage.warning('授权文件内容为空');
+    }
   };
   reader.onerror = () => {
     ElMessage.error('授权文件读取失败');
@@ -350,11 +367,21 @@ function readLicenseFile(file: UploadRawFile): false {
 
 function clearLicenseContent() {
   licenseContent.value = '';
+  licenseFileName.value = '';
+}
+
+async function loadExpectedInstallId() {
+  const result = await getExpectedInstallId();
+  const installIdResult = unwrapResponse<EnterpriseLicenseInstallIdResponse>(result);
+  expectedInstallId.value = installIdResult.expectedInstallId;
 }
 
 async function refreshStatus() {
   statusLoading.value = true;
   try {
+    if (!expectedInstallId.value) {
+      await loadExpectedInstallId();
+    }
     const stateResult = await getCurrentLicenseState();
     currentState.value = unwrapResponse<EnterpriseLicenseCurrentState>(stateResult);
     if (!expectedInstallId.value && currentState.value?.installId) {
@@ -383,7 +410,7 @@ async function submitLicense() {
     });
     lastImportResult.value = unwrapResponse<EnterpriseLicenseImportResult>(response);
     await showImportResultDialog(lastImportResult.value);
-    licenseContent.value = '';
+    clearLicenseContent();
     await refreshStatus();
   } finally {
     importLoading.value = false;
