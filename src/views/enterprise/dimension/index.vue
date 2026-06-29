@@ -277,6 +277,7 @@ interface FieldConfig {
   formLabel?: string;
   type?: 'text' | 'number' | 'date';
   optionSource?: 'dimension-field' | 'emission-source-name';
+  optionDimensionCode?: string;
   fillProps?: FieldProp[];
   width?: number;
   hidden?: boolean;
@@ -363,19 +364,37 @@ const dimensionPages: Record<string, PageConfig> = {
     fields: [
       { prop: 'companySk', label: 'SK_公司', hidden: true },
       { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称', required: true },
-      { prop: 'provinceCode', label: '省份编码', formLabel: '所在省份', optionSource: 'dimension-field', fillProps: ['provinceCode', 'provinceName'], placeholder: '请选择所在省份' },
+      { prop: 'provinceCode', label: '省份编码', formLabel: '所在省份', optionSource: 'dimension-field', optionDimensionCode: 'admin-division', fillProps: ['provinceCode', 'provinceName'], placeholder: '请选择所在省份' },
       { prop: 'provinceName', label: '所在省份', optionSource: 'dimension-field', formHidden: true },
       { prop: 'factoryType', label: '工厂类型', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入工厂类型' },
-      { prop: 'industrySectionCode', label: '行业门类代码', formLabel: '行业门类', optionSource: 'dimension-field', fillProps: ['industrySectionCode', 'industrySectionName'], clearsOnChange: ['industryDivisionCode', 'industryDivisionName', 'industryGroupCode', 'industryGroupName', 'industryClassCode', 'industryClassName'], placeholder: '请选择行业门类' },
+      { prop: 'industrySectionCode', label: '行业门类代码', formLabel: '行业门类', optionSource: 'dimension-field', optionDimensionCode: 'industry', fillProps: ['industrySectionCode', 'industrySectionName'], clearsOnChange: ['industryDivisionCode', 'industryDivisionName', 'industryGroupCode', 'industryGroupName', 'industryClassCode', 'industryClassName'], placeholder: '请选择行业门类' },
       { prop: 'industrySectionName', label: '行业门类名称', optionSource: 'dimension-field', formHidden: true },
-      { prop: 'industryDivisionCode', label: '行业大类代码', formLabel: '行业大类', optionSource: 'dimension-field', fillProps: ['industryDivisionCode', 'industryDivisionName'], parentProp: 'industrySectionCode', clearsOnChange: ['industryGroupCode', 'industryGroupName', 'industryClassCode', 'industryClassName'], placeholder: '请选择行业大类' },
+      { prop: 'industryDivisionCode', label: '行业大类代码', formLabel: '行业大类', optionSource: 'dimension-field', optionDimensionCode: 'industry', fillProps: ['industryDivisionCode', 'industryDivisionName'], parentProp: 'industrySectionCode', clearsOnChange: ['industryGroupCode', 'industryGroupName', 'industryClassCode', 'industryClassName'], placeholder: '请选择行业大类' },
       { prop: 'industryDivisionName', label: '行业大类名称', optionSource: 'dimension-field', formHidden: true },
-      { prop: 'industryGroupCode', label: '行业中类代码', formLabel: '行业中类', optionSource: 'dimension-field', fillProps: ['industryGroupCode', 'industryGroupName'], parentProp: 'industryDivisionCode', clearsOnChange: ['industryClassCode', 'industryClassName'], placeholder: '请选择行业中类' },
+      { prop: 'industryGroupCode', label: '行业中类代码', formLabel: '行业中类', optionSource: 'dimension-field', optionDimensionCode: 'industry', fillProps: ['industryGroupCode', 'industryGroupName'], parentProp: 'industryDivisionCode', clearsOnChange: ['industryClassCode', 'industryClassName'], placeholder: '请选择行业中类' },
       { prop: 'industryGroupName', label: '行业中类名称', optionSource: 'dimension-field', formHidden: true },
-      { prop: 'industryClassCode', label: '行业小类代码', formLabel: '行业小类', optionSource: 'dimension-field', fillProps: ['industryClassCode', 'industryClassName'], parentProp: 'industryGroupCode', placeholder: '请选择行业小类' },
+      { prop: 'industryClassCode', label: '行业小类代码', formLabel: '行业小类', optionSource: 'dimension-field', optionDimensionCode: 'industry', fillProps: ['industryClassCode', 'industryClassName'], parentProp: 'industryGroupCode', placeholder: '请选择行业小类' },
       { prop: 'industryClassName', label: '行业小类名称', optionSource: 'dimension-field', formHidden: true },
       { prop: 'effectiveDate', label: '生效日期', type: 'date' },
       { prop: 'expiryDate', label: '失效日期', type: 'date' }
+    ]
+  },
+  industry: {
+    title: '行业代码表',
+    stage: '配置排放源',
+    owner: '企业',
+    mode: '企业维护',
+    codeLabel: '行业小类代码',
+    nameLabel: '行业小类名称',
+    fields: [
+      { prop: 'industrySectionCode', label: '行业门类代码', required: true },
+      { prop: 'industrySectionName', label: '行业门类名称', required: true },
+      { prop: 'industryDivisionCode', label: '行业大类代码' },
+      { prop: 'industryDivisionName', label: '行业大类名称' },
+      { prop: 'industryGroupCode', label: '行业中类代码' },
+      { prop: 'industryGroupName', label: '行业中类名称' },
+      { prop: 'industryClassCode', label: '行业小类代码', required: true },
+      { prop: 'industryClassName', label: '行业小类名称', required: true }
     ]
   },
   'emission-source-category': {
@@ -605,6 +624,7 @@ const vendorOnlyDimensionCodes = new Set([
 
 const editableDimensionCodes = new Set([
   'company',
+  'industry',
   'base-year',
   'ef-factor',
   'ef-electricity-version',
@@ -616,6 +636,7 @@ const editableDimensionCodes = new Set([
 
 const dimensionExtensionOwnerTables: Record<string, string> = {
   company: 'ce_company_factory',
+  industry: 'ce_industry_classification',
   'base-year': 'ce_base_year',
   'ef-factor': 'ce_ef_factor',
   'ef-electricity-version': 'ce_electricity_factor_version_map',
@@ -839,6 +860,7 @@ const formatDisplayValue = (value: unknown, field?: FieldConfig) => {
   return text.replace(/(\.\d*?[1-9])0+$/, '$1').replace(/\.0+$/, '');
 };
 
+const fieldOptionDimensionCode = (field: FieldConfig) => field.optionDimensionCode ?? routeKey.value;
 const fieldOptionKey = (dimensionCode: string, field: FieldConfig) => `${dimensionCode}:${field.prop}`;
 const optionRecord = (option?: SelectOption) => option?.record?.record ?? option?.record;
 const optionValueEquals = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '');
@@ -846,7 +868,7 @@ const fieldOptions = (field: FieldConfig, row: Record<string, any> = form.value)
   if (field.prop === 'enabledText') {
     return enabledFlagOptions;
   }
-  const options = page.value ? (dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] ?? []) : [];
+  const options = page.value ? (dynamicFieldOptions[fieldOptionKey(fieldOptionDimensionCode(field), field)] ?? []) : [];
   if (routeKey.value !== 'company' || !field.parentProp) {
     return options;
   }
@@ -936,10 +958,11 @@ const loadPageFieldOptions = async () => {
   ].filter((field) => field.optionSource && field.prop !== 'enabledText' && !isCompanyDerivedNameField(field));
   await Promise.all(
     fields.map(async (field) => {
-      dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] =
+      const optionDimensionCode = fieldOptionDimensionCode(field);
+      dynamicFieldOptions[fieldOptionKey(optionDimensionCode, field)] =
         field.optionSource === 'emission-source-name'
           ? await loadEmissionSourceNameOptions()
-          : await loadDimensionFieldOptions(routeKey.value, field.prop);
+          : await loadDimensionFieldOptions(optionDimensionCode, field.prop);
     })
   );
 };
