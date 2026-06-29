@@ -121,7 +121,19 @@
             <el-input v-model="form.recordCode" :placeholder="`请输入${page.codeLabel}`" />
           </el-form-item>
           <el-form-item :label="page.nameLabel" prop="recordName">
-            <el-input v-model="form.recordName" :placeholder="`请输入${page.nameLabel}`" />
+            <el-select
+              v-if="page.nameField"
+              v-model="form.recordName"
+              :placeholder="page.nameField.placeholder ?? `请选择${page.nameLabel}`"
+              clearable
+              filterable
+              :allow-create="page.nameField.allowCreate ?? false"
+              class="w-full"
+              @change="handleFieldSelect(page.nameField, $event)"
+            >
+              <el-option v-for="item in fieldOptions(page.nameField)" :key="String(item.value)" :label="item.label" :value="item.value" />
+            </el-select>
+            <el-input v-else v-model="form.recordName" :placeholder="`请输入${page.nameLabel}`" />
           </el-form-item>
           <el-form-item v-if="page.showParent" :label="page.parentLabel ?? '上级编码'" :prop="page.parentRequired ? 'parentCode' : undefined" :required="page.parentRequired">
             <el-select
@@ -136,11 +148,11 @@
               <el-option v-for="item in parentCodeOptions" :key="String(item.value)" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
-          <el-form-item v-for="field in visibleFormFields" :key="field.prop" :label="field.label" :prop="field.required ? field.prop : undefined" :required="field.required">
+          <el-form-item v-for="field in visibleFormFields" :key="field.prop" :label="field.formLabel ?? field.label" :prop="field.required ? field.prop : undefined" :required="field.required">
             <el-select
               v-if="field.optionSource"
               v-model="form[field.prop]"
-              :placeholder="field.placeholder ?? `请选择${field.label}`"
+              :placeholder="field.placeholder ?? `请选择${field.formLabel ?? field.label}`"
               clearable
               :filterable="field.filterable ?? true"
               :allow-create="field.allowCreate ?? false"
@@ -154,11 +166,11 @@
               v-model="form[field.prop]"
               value-format="YYYY-MM-DD"
               type="date"
-              :placeholder="field.placeholder ?? `请选择${field.label}`"
+              :placeholder="field.placeholder ?? `请选择${field.formLabel ?? field.label}`"
               class="w-full"
             />
-            <el-input v-else-if="field.type === 'number'" v-model="form[field.prop]" type="number" :placeholder="field.placeholder ?? `请输入${field.label}`" />
-            <el-input v-else v-model="form[field.prop]" :placeholder="field.placeholder ?? `请输入${field.label}`" />
+            <el-input v-else-if="field.type === 'number'" v-model="form[field.prop]" type="number" :placeholder="field.placeholder ?? `请输入${field.formLabel ?? field.label}`" />
+            <el-input v-else v-model="form[field.prop]" :placeholder="field.placeholder ?? `请输入${field.formLabel ?? field.label}`" />
           </el-form-item>
           <el-form-item v-if="page.showStatus !== false" label="状态" prop="status">
             <el-radio-group v-model="form.status">
@@ -253,7 +265,7 @@ import { DimensionRecordForm, DimensionRecordQuery, DimensionRecordVO } from '@/
 import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
 import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
-import { loadDimensionFieldOptions, loadRecordStatusOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
+import { loadDimensionFieldOptions, loadEmissionSourceNameOptions, loadRecordStatusOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
 import { listExtensionFields, listExtensionFieldValues, saveExtensionFieldValuesBatch } from '@/api/enterprise/extensionField';
 import type { ExtensionFieldVO, ExtensionFieldValueForm, ExtensionFieldValueVO } from '@/api/enterprise/extensionField/types';
 
@@ -262,11 +274,13 @@ type FieldProp = keyof DimensionRecordForm;
 interface FieldConfig {
   prop: FieldProp;
   label: string;
+  formLabel?: string;
   type?: 'text' | 'number' | 'date';
-  optionSource?: 'dimension-field';
+  optionSource?: 'dimension-field' | 'emission-source-name';
   fillProps?: FieldProp[];
   width?: number;
   hidden?: boolean;
+  formHidden?: boolean;
   required?: boolean;
   allowCreate?: boolean;
   filterable?: boolean;
@@ -292,6 +306,7 @@ interface PageConfig {
   showStatus?: boolean;
   showSort?: boolean;
   showRemark?: boolean;
+  nameField?: FieldConfig;
   fields: FieldConfig[];
 }
 
@@ -313,6 +328,10 @@ const companyIndustryFieldPairs: CompanyIndustryFieldPair[] = [
   { code: 'industryGroupCode', name: 'industryGroupName' },
   { code: 'industryClassCode', name: 'industryClassName' }
 ];
+const companyDerivedNameFields = new Set<FieldProp>([
+  'provinceName',
+  ...companyIndustryFieldPairs.map((item) => item.name)
+]);
 const dimensionPages: Record<string, PageConfig> = {
   'admin-division': {
     title: '行政区划',
@@ -342,17 +361,17 @@ const dimensionPages: Record<string, PageConfig> = {
     fields: [
       { prop: 'companySk', label: 'SK_公司', hidden: true },
       { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称', required: true },
-      { prop: 'provinceCode', label: '省份编码', optionSource: 'dimension-field' },
-      { prop: 'provinceName', label: '所在省份', optionSource: 'dimension-field' },
+      { prop: 'provinceCode', label: '省份编码', formLabel: '所在省份', optionSource: 'dimension-field', fillProps: ['provinceCode', 'provinceName'], placeholder: '请选择所在省份' },
+      { prop: 'provinceName', label: '所在省份', optionSource: 'dimension-field', formHidden: true },
       { prop: 'factoryType', label: '工厂类型', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入工厂类型' },
-      { prop: 'industrySectionCode', label: '行业门类代码', optionSource: 'dimension-field', placeholder: '请选择行业门类代码' },
-      { prop: 'industrySectionName', label: '行业门类名称', optionSource: 'dimension-field', placeholder: '请选择行业门类名称' },
-      { prop: 'industryDivisionCode', label: '行业大类代码', optionSource: 'dimension-field', placeholder: '请选择行业大类代码' },
-      { prop: 'industryDivisionName', label: '行业大类名称', optionSource: 'dimension-field', placeholder: '请选择行业大类名称' },
-      { prop: 'industryGroupCode', label: '行业中类代码', optionSource: 'dimension-field', placeholder: '请选择行业中类代码' },
-      { prop: 'industryGroupName', label: '行业中类名称', optionSource: 'dimension-field', placeholder: '请选择行业中类名称' },
-      { prop: 'industryClassCode', label: '行业小类代码', optionSource: 'dimension-field', placeholder: '请选择行业小类代码' },
-      { prop: 'industryClassName', label: '行业小类名称', optionSource: 'dimension-field', placeholder: '请选择行业小类名称' },
+      { prop: 'industrySectionCode', label: '行业门类代码', formLabel: '行业门类', optionSource: 'dimension-field', fillProps: ['industrySectionCode', 'industrySectionName'], placeholder: '请选择行业门类' },
+      { prop: 'industrySectionName', label: '行业门类名称', optionSource: 'dimension-field', formHidden: true },
+      { prop: 'industryDivisionCode', label: '行业大类代码', formLabel: '行业大类', optionSource: 'dimension-field', fillProps: ['industryDivisionCode', 'industryDivisionName'], placeholder: '请选择行业大类' },
+      { prop: 'industryDivisionName', label: '行业大类名称', optionSource: 'dimension-field', formHidden: true },
+      { prop: 'industryGroupCode', label: '行业中类代码', formLabel: '行业中类', optionSource: 'dimension-field', fillProps: ['industryGroupCode', 'industryGroupName'], placeholder: '请选择行业中类' },
+      { prop: 'industryGroupName', label: '行业中类名称', optionSource: 'dimension-field', formHidden: true },
+      { prop: 'industryClassCode', label: '行业小类代码', formLabel: '行业小类', optionSource: 'dimension-field', fillProps: ['industryClassCode', 'industryClassName'], placeholder: '请选择行业小类' },
+      { prop: 'industryClassName', label: '行业小类名称', optionSource: 'dimension-field', formHidden: true },
       { prop: 'effectiveDate', label: '生效日期', type: 'date' },
       { prop: 'expiryDate', label: '失效日期', type: 'date' }
     ]
@@ -410,6 +429,14 @@ const dimensionPages: Record<string, PageConfig> = {
     mode: '确认引用',
     codeLabel: 'SK_排放因子',
     nameLabel: '排放源名称',
+    nameField: {
+      prop: 'recordName',
+      label: '排放源名称',
+      optionSource: 'emission-source-name',
+      fillProps: ['recordName', 'sourceUnit'],
+      allowCreate: true,
+      placeholder: '请选择104排放源或输入新的排放源名称'
+    },
     fields: [
       { prop: 'emissionSourceNameEn', label: '排放源英文名', optionSource: 'dimension-field', fillProps: ['emissionSourceNameEn', 'fuelMaterialCategory', 'sourceUnit', 'applicableScope', 'factorSource', 'factorUnit'], allowCreate: true },
       { prop: 'fuelMaterialCategory', label: '燃料/物料类别', optionSource: 'dimension-field', fillProps: ['fuelMaterialCategory', 'sourceUnit', 'applicableScope'], allowCreate: true },
@@ -611,7 +638,8 @@ const concreteTableRoute = computed(() => concreteTableRoutes[routeKey.value]);
 const page = computed(() => dimensionPages[routeKey.value]);
 const dimensionExtensionOwnerTable = computed(() => dimensionExtensionOwnerTables[routeKey.value]);
 const visibleFields = computed(() => page.value?.fields.filter((field) => !field.hidden) ?? []);
-const visibleFormFields = computed(() => visibleFields.value);
+const isCompanyDerivedNameField = (field: FieldConfig) => routeKey.value === 'company' && companyDerivedNameFields.has(field.prop);
+const visibleFormFields = computed(() => visibleFields.value.filter((field) => !field.formHidden && !isCompanyDerivedNameField(field)));
 const parentCodeOptions = computed(() => {
   const records = recordList.value ?? [];
   if (routeKey.value === 'company') {
@@ -654,17 +682,26 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
   if (!page.value) return [];
   const columns: SpreadsheetColumn[] = [
     { prop: 'recordCode', label: page.value.codeLabel, required: true, width: 170 },
-    { prop: 'recordName', label: page.value.nameLabel, required: true, width: 190 }
+    {
+      prop: 'recordName',
+      label: page.value.nameLabel,
+      type: page.value.nameField?.optionSource ? 'select' : 'text',
+      options: page.value.nameField ? fieldOptions(page.value.nameField) : undefined,
+      fillProps: page.value.nameField?.fillProps,
+      required: true,
+      width: 190
+    }
   ];
   if (page.value.showParent) {
     columns.push({ prop: 'parentCode', label: page.value.parentLabel ?? '上级编码', required: page.value.parentRequired, width: 150 });
   }
-  visibleFields.value.forEach((field) => {
+  visibleFormFields.value.forEach((field) => {
     columns.push({
       prop: field.prop,
-      label: field.label,
+      label: field.formLabel ?? field.label,
       type: field.optionSource ? 'select' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text',
       options: field.optionSource ? fieldOptions(field) : undefined,
+      fillProps: field.fillProps,
       required: field.required,
       width: field.width ?? 150,
       precision: field.type === 'number' ? 2 : undefined
@@ -840,16 +877,49 @@ const handleFieldSelect = (field: FieldConfig, value: unknown) => {
   }
 };
 
+const fieldByProp = (prop: FieldProp) => page.value?.fields.find((field) => field.prop === prop);
+
+const fillRowValueFromOption = (row: Record<string, any>, field: FieldConfig, prop: FieldProp) => {
+  const value = row[field.prop];
+  const selected = fieldOptions(field).find((option) => optionValueEquals(option.value, value));
+  const record = optionRecord(selected);
+  const recordValue = formValueFromRecord(record, prop);
+  if (recordValue !== undefined && recordValue !== null && recordValue !== '') {
+    row[prop] = recordValue;
+  }
+};
+
+const hydrateCompanyDerivedFields = (row: Record<string, any>) => {
+  if (routeKey.value !== 'company') return row;
+  const provinceField = fieldByProp('provinceCode');
+  if (provinceField) {
+    fillRowValueFromOption(row, provinceField, 'provinceName');
+  }
+  companyIndustryFieldPairs.forEach((pair) => {
+    const codeField = fieldByProp(pair.code);
+    if (codeField) {
+      fillRowValueFromOption(row, codeField, pair.name);
+    }
+  });
+  return row;
+};
+
 const loadPageFieldOptions = async () => {
   statusOptions.value = await loadRecordStatusOptions();
   const currentPage = page.value;
   if (!currentPage) {
     return;
   }
-  const fields = currentPage.fields.filter((field) => field.optionSource && field.prop !== 'enabledText');
+  const fields = [
+    ...(currentPage.nameField ? [currentPage.nameField] : []),
+    ...currentPage.fields
+  ].filter((field) => field.optionSource && field.prop !== 'enabledText' && !isCompanyDerivedNameField(field));
   await Promise.all(
     fields.map(async (field) => {
-      dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] = await loadDimensionFieldOptions(routeKey.value, field.prop);
+      dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] =
+        field.optionSource === 'emission-source-name'
+          ? await loadEmissionSourceNameOptions()
+          : await loadDimensionFieldOptions(routeKey.value, field.prop);
     })
   );
 };
@@ -1272,6 +1342,7 @@ const submitForm = () => {
     buttonLoading.value = true;
     form.value.dimensionCode = routeKey.value;
     try {
+      hydrateCompanyDerivedFields(form.value);
       if (form.value.id) {
         await updateDimensionRecord(form.value);
       } else {
@@ -1292,7 +1363,7 @@ const persistDimensionRows = async (rows: Record<string, any>[], successMessage:
   sheetSaving.value = true;
   try {
     for (const row of rows) {
-      const entryRow = { ...row };
+      const entryRow = hydrateCompanyDerivedFields({ ...row });
       delete entryRow.id;
       const payload: DimensionRecordForm = {
         ...sheetEmptyRow.value,

@@ -28,7 +28,7 @@ export const loadEnterpriseOptions = async (
   const res = await listEnterpriseOptions(optionCode, params);
   return uniqueByValue(
     (res.data ?? [])
-      .map((record) => {
+      .map<SelectOption | undefined>((record) => {
         const label = String(record.label ?? '').trim();
         const value = record.value;
         const rawValue = String(value ?? '').trim();
@@ -73,6 +73,7 @@ export const loadFactoryOptions = loadFactoryCodeOptions;
 export const loadSourceCategoryOptions = () => loadEnterpriseOptions('source-category-key');
 export const loadResponsibleDeptOptions = () => loadEnterpriseOptions('responsible-dept');
 export const loadEmissionSourceCodeOptions = () => loadEnterpriseOptions('emission-source-code');
+export const loadEmissionSourceNameOptions = () => loadEnterpriseOptions('emission-source-name');
 export const loadFactorOptions = () => loadEnterpriseOptions('factor-key');
 export const loadIntensityRuleOptions = () => loadEnterpriseOptions('intensity-rule-code');
 export const loadIntensityTargetOptions = () => loadEnterpriseOptions('intensity-target-code');

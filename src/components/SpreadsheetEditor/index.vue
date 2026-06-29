@@ -282,6 +282,13 @@ const reloadWorkbook = () => {
 const selectOptions = (column: SpreadsheetColumn, row: SpreadsheetRow) => column.getOptions?.(row) ?? column.options ?? [];
 
 const handleCellChange = (row: SpreadsheetRow, column: SpreadsheetColumn) => {
+  const selected = selectOptions(column, row).find((option) => String(option.value ?? '') === String(row[column.prop] ?? ''));
+  column.fillProps?.forEach((prop) => {
+    const value = selected?.record?.[prop];
+    if (!isBlank(value)) {
+      row[prop] = value;
+    }
+  });
   column.clearsOnChange?.forEach((prop) => {
     row[prop] = undefined;
   });

@@ -3,6 +3,7 @@ export type SpreadsheetValue = string | number | boolean | null | undefined;
 export interface SpreadsheetOption {
   label: string;
   value: SpreadsheetValue;
+  record?: Record<string, any>;
 }
 
 export interface SpreadsheetColumn {
@@ -18,4 +19,5 @@ export interface SpreadsheetColumn {
   options?: SpreadsheetOption[];
   getOptions?: (row: Record<string, any>) => SpreadsheetOption[];
   clearsOnChange?: string[];
+  fillProps?: string[];
 }
