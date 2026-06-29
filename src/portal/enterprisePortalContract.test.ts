@@ -34,7 +34,7 @@ describe('enterprise dynamic router guard', () => {
           {
             path: 'content',
             component: 'enterprise/reports/index',
-            meta: { title: 'Power BI 温室气体核算报表' },
+            meta: { title: 'Power BI content' },
             permissions: ['enterprise:reports:view']
           },
           {
@@ -448,7 +448,7 @@ describe('enterprise dynamic router guard', () => {
       '503 分母事实表',
       '504 碳排放强度容忍率参数表',
       '报表管理',
-      '温室气体核算报表',
+      'Content',
       '数据验证',
       '报表模板下载',
       '系统管理',

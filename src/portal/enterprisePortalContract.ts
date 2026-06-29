@@ -142,7 +142,7 @@ const enterpriseCanonicalChildTitlesByScope = new Map<string, Map<string, string
   [
     'report-management',
     new Map([
-      ['content', '温室气体核算报表'],
+      ['content', 'Content'],
       ['data-validation', '数据验证'],
       ['report-template-download', '报表模板下载']
     ])
