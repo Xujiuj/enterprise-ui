@@ -851,7 +851,7 @@ const selectedSourceMasterIssue = computed(() => {
   const record = selectedSourceRecord.value;
   if (!record) return '';
   if (!record.sourceUnit) {
-    return `排放源“${form.emissionSourceName}”在 104 排放源识别中缺少活动单位，请先在 104 补齐后再录入活动数据。`;
+    return `排放源“${form.emissionSourceName}”关联的 201 排放因子缺少排放源单位/因子单位，请先补齐因子单位后再录入活动数据。`;
   }
   if (!record.sourceIdentificationCode) {
     return `排放源“${form.emissionSourceName}”在 104 排放源识别中缺少排放源编号，请先补齐主数据。`;
@@ -864,7 +864,7 @@ const selectedSourceMasterIssue = computed(() => {
 const formatSourceOptionLabel = (option: SelectOption) => {
   const record = optionRecord(option);
   if (record && !record.sourceUnit) {
-    return `${option.label}（104缺活动单位）`;
+    return `${option.label}（201缺单位）`;
   }
   return option.label;
 };
@@ -1708,7 +1708,7 @@ const sheetSourceMasterIssues = (rows: Record<string, any>[]) =>
       const record = optionRecord(option);
       if (!record) return '';
       if (!record.sourceUnit) {
-        return `第 ${index + 2} 行排放源“${row.emissionSourceName}”在 104 缺少活动单位`;
+        return `第 ${index + 2} 行排放源“${row.emissionSourceName}”关联的 201 排放因子缺少排放源单位/因子单位`;
       }
       if (!record.sourceIdentificationCode) {
         return `第 ${index + 2} 行排放源“${row.emissionSourceName}”在 104 缺少排放源编号`;
