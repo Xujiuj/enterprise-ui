@@ -280,17 +280,19 @@ const reloadWorkbook = () => {
 };
 
 const selectOptions = (column: SpreadsheetColumn, row: SpreadsheetRow) => column.getOptions?.(row) ?? column.options ?? [];
+const optionRecord = (option?: { record?: Record<string, any> }) => option?.record?.record ?? option?.record;
 
 const handleCellChange = (row: SpreadsheetRow, column: SpreadsheetColumn) => {
   const selected = selectOptions(column, row).find((option) => String(option.value ?? '') === String(row[column.prop] ?? ''));
+  column.clearsOnChange?.forEach((prop) => {
+    row[prop] = undefined;
+  });
+  const record = optionRecord(selected);
   column.fillProps?.forEach((prop) => {
-    const value = selected?.record?.[prop];
+    const value = record?.[prop];
     if (!isBlank(value)) {
       row[prop] = value;
     }
-  });
-  column.clearsOnChange?.forEach((prop) => {
-    row[prop] = undefined;
   });
 };
 

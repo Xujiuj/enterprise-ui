@@ -3,7 +3,12 @@ import { listActivityData } from '@/api/enterprise/activityData';
 import { ActivityDataQuery, ActivityDataVO } from '@/api/enterprise/activityData/types';
 import { listEmissionSource } from '@/api/enterprise/emissionSource';
 import { EmissionSourceQuery, EmissionSourceVO } from '@/api/enterprise/emissionSource/types';
-import { EmissionActivityImportValidationRequest, EmissionActivityImportValidationResult, EmissionActivityValidationRequest } from '@/api/enterprise/emissionActivityValidation/types';
+import {
+  EmissionActivityFieldDescriptor,
+  EmissionActivityImportValidationRequest,
+  EmissionActivityImportValidationResult,
+  EmissionActivityValidationRequest
+} from '@/api/enterprise/emissionActivityValidation/types';
 
 export interface LocalListResponse<T> {
   rows?: T[];
@@ -24,6 +29,13 @@ export const validateLocalEmissionActivity = (data: EmissionActivityImportValida
     url: '/enterprise/activity-import/emission-activity/validate',
     method: 'post',
     data
+  });
+};
+
+export const listLocalEmissionActivityFields = (): Promise<{ data: EmissionActivityFieldDescriptor[] }> => {
+  return request({
+    url: '/enterprise/activity-import/emission-activity/fields',
+    method: 'get'
   });
 };
 

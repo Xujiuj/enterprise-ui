@@ -401,6 +401,7 @@ import { loadUniverSheetsCore } from '@/components/SpreadsheetEditor/univerLoade
 import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
 import {
   importLocalEmissionActivity,
+  listLocalEmissionActivityFields,
   listLocalActivityData,
   parseLocalEmissionActivityFile,
   saveLocalEmissionActivity,
@@ -492,7 +493,7 @@ const ALL_FIELD_DESCRIPTORS: EmissionActivityFieldDescriptor[] = [
   { fieldOrder: 18, fieldCode: 'sourceRemark', fieldName: '备注', sourceRequired: false, rowValueRequired: false, derivedField: true },
   { fieldOrder: 19, fieldCode: 'factorKey', fieldName: '排放因子', sourceRequired: false, rowValueRequired: false, derivedField: true }
 ];
-const ENTRY_FIELD_DESCRIPTORS: EmissionActivityFieldDescriptor[] = [
+const FALLBACK_ENTRY_FIELD_DESCRIPTORS: EmissionActivityFieldDescriptor[] = [
   { fieldOrder: 1, fieldCode: 'companyName', fieldName: '公司名称', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 2, fieldCode: 'factoryName', fieldName: '工厂', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 3, fieldCode: 'scopeName', fieldName: '范围', sourceRequired: false, rowValueRequired: true, derivedField: false },
@@ -541,6 +542,7 @@ const allSourceFactoryOptions = ref<SelectOption[]>([]);
 const allSourceScopeOptions = ref<SelectOption[]>([]);
 const allSourceSubcategoryOptions = ref<SelectOption[]>([]);
 const allSourceIdentificationOptions = ref<SelectOption[]>([]);
+const entryFieldDescriptors = ref<EmissionActivityFieldDescriptor[]>(FALLBACK_ENTRY_FIELD_DESCRIPTORS);
 const manualValidation = ref<EmissionActivityImportValidationResult>();
 const uploadValidation = ref<EmissionActivityImportValidationResult>();
 const manualResolvedDerivedValues = ref<DerivedValueMap>({});
@@ -637,7 +639,7 @@ const visibleActivityTableColumns = computed(() => {
   return activityTableColumns.filter((column) => !hiddenKeys.has(String(column.prop)));
 });
 const sheetColumns = computed<SpreadsheetColumn[]>(() =>
-  ENTRY_FIELD_DESCRIPTORS.map((field) => {
+  entryFieldDescriptors.value.map((field) => {
     if (field.fieldCode === 'companyName') {
       return {
         prop: field.fieldCode,
@@ -767,7 +769,7 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
   })
 );
 const sheetEmptyRow = computed(() =>
-  ENTRY_FIELD_DESCRIPTORS.reduce<Record<string, string | number | undefined>>((row, field) => {
+  entryFieldDescriptors.value.reduce<Record<string, string | number | undefined>>((row, field) => {
     row[field.fieldCode] = undefined;
     return row;
   }, {})
@@ -1247,7 +1249,7 @@ const buildFieldValues = (): EmissionActivityFieldValue[] => {
     sourceRemark: form.remark ?? ''
   };
 
-  return ENTRY_FIELD_DESCRIPTORS.map((field) => ({
+  return entryFieldDescriptors.value.map((field) => ({
     fieldCode: field.fieldCode,
     fieldName: field.fieldName,
     value: values[field.fieldCode] ?? ''
@@ -1284,7 +1286,7 @@ const buildActivityDataForm = (dataStatus?: string) => {
 };
 
 const buildManualValidationRequest = (): EmissionActivityImportValidationRequest => ({
-  headerFields: cloneFieldDescriptors(ENTRY_FIELD_DESCRIPTORS),
+  headerFields: cloneFieldDescriptors(entryFieldDescriptors.value),
   rows: [
     {
       rowNumber: 2,
@@ -1438,8 +1440,8 @@ const openSheetDrawer = () => {
 };
 
 const downloadImportTemplate = () => {
-  const entryHeaders = ENTRY_FIELD_DESCRIPTORS.map((field) => field.fieldName);
-  const headerName = (code: string) => ENTRY_FIELD_DESCRIPTORS.find((field) => field.fieldCode === code)?.fieldName ?? code;
+  const entryHeaders = entryFieldDescriptors.value.map((field) => field.fieldName);
+  const headerName = (code: string) => entryFieldDescriptors.value.find((field) => field.fieldCode === code)?.fieldName ?? code;
   downloadXlsxTemplate({
     fileName: `emission_activity_activity_template_${new Date().getTime()}.xlsx`,
     sheetName: 'emission_activity',
@@ -1690,10 +1692,10 @@ const submitCurrentPageActivities = () =>
 const submitActivity = (row: ActivityDataVO) => submitActivitiesByIds([row.id], '确认提交这条活动数据吗？');
 
 const buildSheetRowRequest = (rows: Record<string, any>[]): EmissionActivityImportValidationRequest => ({
-  headerFields: cloneFieldDescriptors(ENTRY_FIELD_DESCRIPTORS),
+  headerFields: cloneFieldDescriptors(entryFieldDescriptors.value),
   rows: rows.map((row, index) => ({
     rowNumber: index + 2,
-    fieldValues: ENTRY_FIELD_DESCRIPTORS.map((field) => ({
+    fieldValues: entryFieldDescriptors.value.map((field) => ({
       fieldCode: field.fieldCode,
       fieldName: field.fieldName,
       value: valueToString(field.fieldCode === 'activityValue' ? roundToTwoDecimal(row[field.fieldCode]) : row[field.fieldCode])
@@ -1831,6 +1833,19 @@ const loadControlledOptions = async () => {
   activityDataStatusOptions.value = dataStatuses;
 };
 
+const loadEntryFieldDescriptors = async () => {
+  try {
+    const res = await listLocalEmissionActivityFields();
+    const fields = [...(res.data ?? [])].sort((left, right) => Number(left.fieldOrder ?? 0) - Number(right.fieldOrder ?? 0));
+    if (fields.length) {
+      entryFieldDescriptors.value = fields;
+    }
+  } catch (error) {
+    console.warn('加载 emission_activity 字段定义失败，使用前端兜底字段。', error);
+    entryFieldDescriptors.value = FALLBACK_ENTRY_FIELD_DESCRIPTORS;
+  }
+};
+
 watch(
   () => [form.sourceCompanyName, form.sourceFactoryName, form.scopeName, form.scopeSubcategory, form.emissionSourceName],
   () => {
@@ -1851,8 +1866,8 @@ watch(
 
 onMounted(async () => {
   applyRouteQuery();
+  await Promise.all([loadEntryFieldDescriptors(), loadEmissionSourceOptions(), loadControlledOptions()]);
   await loadActivities();
-  await Promise.all([loadEmissionSourceOptions(), loadControlledOptions()]);
   hasMounted.value = true;
   preloadSpreadsheetEditor();
 });

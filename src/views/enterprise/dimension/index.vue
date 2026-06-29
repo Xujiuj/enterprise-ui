@@ -642,6 +642,7 @@ const dimensionExtensionOwnerTable = computed(() => dimensionExtensionOwnerTable
 const visibleFields = computed(() => page.value?.fields.filter((field) => !field.hidden) ?? []);
 const isCompanyDerivedNameField = (field: FieldConfig) => routeKey.value === 'company' && companyDerivedNameFields.has(field.prop);
 const visibleFormFields = computed(() => visibleFields.value.filter((field) => !field.formHidden && !isCompanyDerivedNameField(field)));
+const sheetFields = computed(() => visibleFields.value);
 const parentCodeOptions = computed(() => {
   const records = recordList.value ?? [];
   if (routeKey.value === 'company') {
@@ -698,15 +699,16 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
   if (page.value.showParent) {
     columns.push({ prop: 'parentCode', label: page.value.parentLabel ?? '上级编码', required: page.value.parentRequired, width: 150 });
   }
-  visibleFormFields.value.forEach((field) => {
+  sheetFields.value.forEach((field) => {
     columns.push({
       prop: field.prop,
       label: field.formLabel ?? field.label,
       type: field.optionSource ? 'select' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text',
-      getOptions: field.optionSource ? (row) => fieldOptions(field, row) : undefined,
+      getOptions: field.optionSource && !field.formHidden ? (row) => fieldOptions(field, row) : undefined,
       clearsOnChange: field.clearsOnChange,
       fillProps: field.fillProps,
       required: field.required,
+      readonly: field.formHidden,
       width: field.width ?? 150,
       precision: field.type === 'number' ? 2 : undefined
     });
@@ -1221,7 +1223,7 @@ const validateDimensionPayloadRows = (rows: Record<string, any>[]) => {
     { prop: 'recordCode', label: currentPage.codeLabel },
     { prop: 'recordName', label: currentPage.nameLabel },
     ...(currentPage.showParent && currentPage.parentRequired ? [{ prop: 'parentCode', label: currentPage.parentLabel ?? '上级编码' }] : []),
-    ...visibleFormFields.value.filter((field) => field.required)
+    ...sheetFields.value.filter((field) => field.required)
   ];
   rows.forEach((row, rowIndex) => {
     const missing = requiredFields.find((field) => row[field.prop] === undefined || row[field.prop] === null || row[field.prop] === '');
