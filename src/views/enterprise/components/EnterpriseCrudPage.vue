@@ -113,7 +113,13 @@
 
     <el-drawer v-model="dialog.visible" :title="dialog.title" size="620px" append-to-body>
       <el-form ref="crudFormRef" :model="form" :rules="rules" label-width="132px">
-        <el-form-item v-for="field in config.formFields" :key="field.prop" :label="field.label" :prop="field.required ? field.prop : undefined" :required="field.required">
+        <el-form-item
+          v-for="field in visibleFormFields"
+          :key="field.prop"
+          :label="field.label"
+          :prop="field.required ? field.prop : undefined"
+          :required="field.required"
+        >
           <component
             :is="controlComponent(field)"
             v-bind="controlProps(field)"
@@ -190,6 +196,8 @@ interface FieldConfig {
   placeholder?: string;
   precision?: number;
   disabled?: boolean;
+  hidden?: boolean;
+  allowCreate?: boolean;
 }
 
 interface ColumnConfig {
@@ -331,6 +339,8 @@ const visibleColumns = computed(() => {
   const hiddenKeys = new Set(columnOptions.value.filter((item) => !item.visible).map((item) => String(item.key)));
   return props.config.columns.filter((column) => !hiddenKeys.has(column.prop));
 });
+
+const visibleFormFields = computed(() => props.config.formFields.filter((field) => !field.hidden));
 
 const resetForm = () => {
   form.value = { ...props.config.emptyForm };
@@ -530,7 +540,15 @@ const controlProps = (field: FieldConfig) => {
     return { placeholder, min: 0, precision: field.precision ?? 2, controlsPosition: 'right', class: 'w-full', disabled: field.disabled };
   }
   if (field.type === 'select') {
-    return { placeholder, clearable: true, filterable: true, class: 'w-full', disabled: field.disabled };
+    return {
+      placeholder,
+      clearable: true,
+      filterable: true,
+      allowCreate: field.allowCreate,
+      defaultFirstOption: field.allowCreate,
+      class: 'w-full',
+      disabled: field.disabled
+    };
   }
   if (field.type === 'date') {
     return { placeholder, type: 'date', valueFormat: 'YYYY-MM-DD', class: 'w-full', disabled: field.disabled };

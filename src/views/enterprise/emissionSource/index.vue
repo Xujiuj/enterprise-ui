@@ -38,23 +38,6 @@ const applySourceCategory = (_value: unknown, form: Record<string, any>, option?
   assignFromRecord(form, option?.record, ['sourceCategoryKey', 'scopeName', 'scopeSubcategory']);
 };
 
-const applyEmissionSource = (_value: unknown, form: Record<string, any>, option?: { record?: Record<string, any> }) => {
-  assignFromRecord(form, option?.record, [
-    'companyCode',
-    'companyName',
-    'factoryName',
-    'sourceCategoryKey',
-    'scopeName',
-    'scopeSubcategory',
-    'sourceIdentificationCode',
-    'sourceIdentificationName',
-    'emissionSourceName',
-    'responsibleDept',
-    'dataSource',
-    'factorKey'
-  ]);
-};
-
 const applyFactor = (_value: unknown, form: Record<string, any>, option?: { record?: Record<string, any> }) => {
   const record = option?.record;
   if (!record) return;
@@ -93,17 +76,17 @@ const config = {
   ],
   formFields: [
     { prop: 'companyCode', label: '公司', type: 'select', loadOptions: loadCompanyCodeOptions, onChange: applyCompany, required: true },
-    { prop: 'companyName', label: '公司名称', disabled: true },
     { prop: 'factoryName', label: '工厂', type: 'select', loadOptions: loadFactoryNameOptions, onChange: applyFactory },
     { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions, onChange: applySourceCategory, required: true },
-    { prop: 'scopeName', label: '核算范围', disabled: true },
-    { prop: 'scopeSubcategory', label: '范围子类别', disabled: true },
-    { prop: 'sourceIdentificationCode', label: '排放源编号', type: 'select', loadOptions: loadEmissionSourceCodeOptions, onChange: applyEmissionSource, required: true },
-    { prop: 'sourceIdentificationName', label: '排放源识别', disabled: true },
-    { prop: 'emissionSourceName', label: '排放源', disabled: true },
-    { prop: 'responsibleDept', label: '负责部门', type: 'select', loadOptions: loadResponsibleDeptOptions },
-    { prop: 'dataSource', label: '数据来源', type: 'select', loadOptions: loadDataSourceOptions },
-    { prop: 'factorKey', label: '适用因子', type: 'select', loadOptions: loadFactorOptions, onChange: applyFactor }
+    { prop: 'companyName', label: '公司名称', hidden: true },
+    { prop: 'scopeName', label: '核算范围', hidden: true },
+    { prop: 'scopeSubcategory', label: '范围子类别', hidden: true },
+    { prop: 'sourceIdentificationCode', label: '排放源编号', required: true },
+    { prop: 'sourceIdentificationName', label: '排放源识别' },
+    { prop: 'emissionSourceName', label: '排放源' },
+    { prop: 'responsibleDept', label: '负责部门', type: 'select', loadOptions: loadResponsibleDeptOptions, allowCreate: true },
+    { prop: 'dataSource', label: '数据来源', type: 'select', loadOptions: loadDataSourceOptions, allowCreate: true },
+    { prop: 'factorKey', label: '适用因子', type: 'select', loadOptions: loadFactorOptions, onChange: applyFactor, allowCreate: true }
   ],
   emptyForm: {
     enabledFlag: true

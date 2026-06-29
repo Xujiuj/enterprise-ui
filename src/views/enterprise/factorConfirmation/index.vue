@@ -77,9 +77,9 @@ const config = {
     { prop: 'factorValue', label: '因子值', type: 'number', required: true, precision: 6 },
     { prop: 'factorUnit', label: '单位', required: true },
     { prop: 'confirmationStatus', label: '确认状态', type: 'select', loadOptions: loadConfirmationStatusOptions, required: true },
-    { prop: 'confirmedBy', label: '确认人', type: 'select', loadOptions: loadConfirmedByOptions },
+    { prop: 'confirmedBy', label: '确认人', type: 'select', loadOptions: loadConfirmedByOptions, allowCreate: true },
     { prop: 'confirmedTime', label: '确认时间', type: 'date' },
-    { prop: 'licenseId', label: '授权编号', type: 'select', loadOptions: loadLicenseIdOptions },
+    { prop: 'licenseId', label: '授权编号', type: 'select', loadOptions: loadLicenseIdOptions, allowCreate: true },
     { prop: 'remark', label: '备注', type: 'textarea' }
   ],
   emptyForm: {

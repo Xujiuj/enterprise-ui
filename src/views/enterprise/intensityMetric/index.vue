@@ -40,7 +40,7 @@ const config = {
   ],
   searchFields: [
     { prop: 'metricName', label: '指标名称' },
-    { prop: 'ruleCode', label: '分母规则', type: 'select', loadOptions: loadIntensityRuleOptions },
+    { prop: 'ruleCode', label: '分母规则', type: 'select', loadOptions: loadIntensityRuleOptions, allowCreate: true },
     { prop: 'metricPeriod', label: '期间', type: 'month' },
     { prop: 'targetCode', label: '目标', type: 'select', loadOptions: loadIntensityTargetOptions },
     { prop: 'metricStatus', label: '状态', type: 'select', loadOptions: loadIntensityMetricStatusOptions }
@@ -52,9 +52,9 @@ const config = {
     { prop: 'metricPeriod', label: '期间', type: 'month', required: true },
     { prop: 'numeratorEmission', label: '排放量分子', type: 'number', required: true, precision: 6 },
     { prop: 'denominatorValue', label: '分母值', type: 'number', required: true, precision: 6 },
-    { prop: 'denominatorUnit', label: '分母单位', type: 'select', loadOptions: loadDenominatorUnitOptions, required: true },
+    { prop: 'denominatorUnit', label: '分母单位', type: 'select', loadOptions: loadDenominatorUnitOptions, allowCreate: true, required: true },
     { prop: 'intensityValue', label: '强度值', type: 'number', precision: 6 },
-    { prop: 'targetCode', label: '目标', type: 'select', loadOptions: loadIntensityTargetOptions },
+    { prop: 'targetCode', label: '目标', type: 'select', loadOptions: loadIntensityTargetOptions, allowCreate: true },
     { prop: 'metricStatus', label: '状态', type: 'select', loadOptions: loadIntensityMetricStatusOptions, required: true },
     { prop: 'remark', label: '备注', type: 'textarea' }
   ],

@@ -398,9 +398,9 @@ const dimensionPages: Record<string, PageConfig> = {
     fields: [
       { prop: 'baseYearKey', label: '基准年业务键' },
       { prop: 'description', label: '说明', width: 220 },
-      { prop: 'baseYear', label: '基准年', optionSource: 'dimension-field', fillProps: ['baseYearKey', 'description', 'baseYear', 'isCurrent', 'currentBaseFlag'], required: true },
-      { prop: 'isCurrent', label: '厂商当前标识', optionSource: 'dimension-field', fillProps: ['isCurrent', 'currentBaseFlag'] },
-      { prop: 'currentBaseFlag', label: '是否当前基准', optionSource: 'dimension-field' }
+      { prop: 'baseYear', label: '基准年', optionSource: 'dimension-field', fillProps: ['baseYearKey', 'description', 'baseYear', 'isCurrent', 'currentBaseFlag'], allowCreate: true, required: true },
+      { prop: 'isCurrent', label: '厂商当前标识', optionSource: 'dimension-field', fillProps: ['isCurrent', 'currentBaseFlag'], allowCreate: true },
+      { prop: 'currentBaseFlag', label: '是否当前基准', optionSource: 'dimension-field', allowCreate: true }
     ]
   },
   'ef-factor': {
@@ -411,9 +411,9 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: 'SK_排放因子',
     nameLabel: '排放源名称',
     fields: [
-      { prop: 'emissionSourceNameEn', label: '排放源英文名', optionSource: 'dimension-field', fillProps: ['emissionSourceNameEn', 'fuelMaterialCategory', 'sourceUnit', 'applicableScope', 'factorSource', 'factorUnit'] },
-      { prop: 'fuelMaterialCategory', label: '燃料/物料类别', optionSource: 'dimension-field', fillProps: ['fuelMaterialCategory', 'sourceUnit', 'applicableScope'] },
-      { prop: 'sourceUnit', label: '源单位', optionSource: 'dimension-field' },
+      { prop: 'emissionSourceNameEn', label: '排放源英文名', optionSource: 'dimension-field', fillProps: ['emissionSourceNameEn', 'fuelMaterialCategory', 'sourceUnit', 'applicableScope', 'factorSource', 'factorUnit'], allowCreate: true },
+      { prop: 'fuelMaterialCategory', label: '燃料/物料类别', optionSource: 'dimension-field', fillProps: ['fuelMaterialCategory', 'sourceUnit', 'applicableScope'], allowCreate: true },
+      { prop: 'sourceUnit', label: '源单位', optionSource: 'dimension-field', allowCreate: true },
       { prop: 'co2', label: 'CO2', type: 'number' },
       { prop: 'ch4', label: 'CH4', type: 'number' },
       { prop: 'n2o', label: 'N2O', type: 'number' },
@@ -421,8 +421,8 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'pfcs', label: 'PFCs', type: 'number' },
       { prop: 'sf6', label: 'SF6', type: 'number' },
       { prop: 'nf3', label: 'NF3', type: 'number' },
-      { prop: 'applicableScope', label: '适用范围', optionSource: 'dimension-field' },
-      { prop: 'factorSource', label: '因子来源', optionSource: 'dimension-field' },
+      { prop: 'applicableScope', label: '适用范围', optionSource: 'dimension-field', allowCreate: true },
+      { prop: 'factorSource', label: '因子来源', optionSource: 'dimension-field', allowCreate: true },
       { prop: 'gwpCh4', label: 'GWP_CH4', type: 'number' },
       { prop: 'gwpN2o', label: 'GWP_N2O', type: 'number' },
       { prop: 'gwpHfcs', label: 'GWP_HFCs', type: 'number' },
@@ -430,7 +430,7 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'gwpSf6', label: 'GWP_SF6', type: 'number' },
       { prop: 'gwpNf3', label: 'GWP_NF3', type: 'number' },
       { prop: 'factorGwp', label: '因子GWP', type: 'number' },
-      { prop: 'factorUnit', label: '因子单位', optionSource: 'dimension-field' }
+      { prop: 'factorUnit', label: '因子单位', optionSource: 'dimension-field', allowCreate: true }
     ]
   },
   'ef-electricity-factor': {
