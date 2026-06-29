@@ -131,7 +131,7 @@
               class="w-full"
               @change="handleFieldSelect(page.nameField, $event)"
             >
-              <el-option v-for="item in fieldOptions(page.nameField)" :key="String(item.value)" :label="item.label" :value="item.value" />
+              <el-option v-for="item in fieldOptions(page.nameField, form)" :key="String(item.value)" :label="item.label" :value="item.value" />
             </el-select>
             <el-input v-else v-model="form.recordName" :placeholder="`请输入${page.nameLabel}`" />
           </el-form-item>
@@ -159,7 +159,7 @@
               class="w-full"
               @change="handleFieldSelect(field, $event)"
             >
-              <el-option v-for="item in fieldOptions(field)" :key="String(item.value)" :label="item.label" :value="item.value" />
+              <el-option v-for="item in fieldOptions(field, form)" :key="String(item.value)" :label="item.label" :value="item.value" />
             </el-select>
             <el-date-picker
               v-else-if="field.type === 'date'"
@@ -285,6 +285,8 @@ interface FieldConfig {
   allowCreate?: boolean;
   filterable?: boolean;
   placeholder?: string;
+  parentProp?: FieldProp;
+  clearsOnChange?: FieldProp[];
 }
 
 type CompanyIndustryFieldPair = {
@@ -364,13 +366,13 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'provinceCode', label: '省份编码', formLabel: '所在省份', optionSource: 'dimension-field', fillProps: ['provinceCode', 'provinceName'], placeholder: '请选择所在省份' },
       { prop: 'provinceName', label: '所在省份', optionSource: 'dimension-field', formHidden: true },
       { prop: 'factoryType', label: '工厂类型', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入工厂类型' },
-      { prop: 'industrySectionCode', label: '行业门类代码', formLabel: '行业门类', optionSource: 'dimension-field', fillProps: ['industrySectionCode', 'industrySectionName'], placeholder: '请选择行业门类' },
+      { prop: 'industrySectionCode', label: '行业门类代码', formLabel: '行业门类', optionSource: 'dimension-field', fillProps: ['industrySectionCode', 'industrySectionName'], clearsOnChange: ['industryDivisionCode', 'industryDivisionName', 'industryGroupCode', 'industryGroupName', 'industryClassCode', 'industryClassName'], placeholder: '请选择行业门类' },
       { prop: 'industrySectionName', label: '行业门类名称', optionSource: 'dimension-field', formHidden: true },
-      { prop: 'industryDivisionCode', label: '行业大类代码', formLabel: '行业大类', optionSource: 'dimension-field', fillProps: ['industryDivisionCode', 'industryDivisionName'], placeholder: '请选择行业大类' },
+      { prop: 'industryDivisionCode', label: '行业大类代码', formLabel: '行业大类', optionSource: 'dimension-field', fillProps: ['industryDivisionCode', 'industryDivisionName'], parentProp: 'industrySectionCode', clearsOnChange: ['industryGroupCode', 'industryGroupName', 'industryClassCode', 'industryClassName'], placeholder: '请选择行业大类' },
       { prop: 'industryDivisionName', label: '行业大类名称', optionSource: 'dimension-field', formHidden: true },
-      { prop: 'industryGroupCode', label: '行业中类代码', formLabel: '行业中类', optionSource: 'dimension-field', fillProps: ['industryGroupCode', 'industryGroupName'], placeholder: '请选择行业中类' },
+      { prop: 'industryGroupCode', label: '行业中类代码', formLabel: '行业中类', optionSource: 'dimension-field', fillProps: ['industryGroupCode', 'industryGroupName'], parentProp: 'industryDivisionCode', clearsOnChange: ['industryClassCode', 'industryClassName'], placeholder: '请选择行业中类' },
       { prop: 'industryGroupName', label: '行业中类名称', optionSource: 'dimension-field', formHidden: true },
-      { prop: 'industryClassCode', label: '行业小类代码', formLabel: '行业小类', optionSource: 'dimension-field', fillProps: ['industryClassCode', 'industryClassName'], placeholder: '请选择行业小类' },
+      { prop: 'industryClassCode', label: '行业小类代码', formLabel: '行业小类', optionSource: 'dimension-field', fillProps: ['industryClassCode', 'industryClassName'], parentProp: 'industryGroupCode', placeholder: '请选择行业小类' },
       { prop: 'industryClassName', label: '行业小类名称', optionSource: 'dimension-field', formHidden: true },
       { prop: 'effectiveDate', label: '生效日期', type: 'date' },
       { prop: 'expiryDate', label: '失效日期', type: 'date' }
@@ -686,7 +688,8 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
       prop: 'recordName',
       label: page.value.nameLabel,
       type: page.value.nameField?.optionSource ? 'select' : 'text',
-      options: page.value.nameField ? fieldOptions(page.value.nameField) : undefined,
+      getOptions: page.value.nameField ? (row) => fieldOptions(page.value.nameField!, row) : undefined,
+      clearsOnChange: page.value.nameField?.clearsOnChange,
       fillProps: page.value.nameField?.fillProps,
       required: true,
       width: 190
@@ -700,7 +703,8 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
       prop: field.prop,
       label: field.formLabel ?? field.label,
       type: field.optionSource ? 'select' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text',
-      options: field.optionSource ? fieldOptions(field) : undefined,
+      getOptions: field.optionSource ? (row) => fieldOptions(field, row) : undefined,
+      clearsOnChange: field.clearsOnChange,
       fillProps: field.fillProps,
       required: field.required,
       width: field.width ?? 150,
@@ -834,21 +838,34 @@ const formatDisplayValue = (value: unknown, field?: FieldConfig) => {
 };
 
 const fieldOptionKey = (dimensionCode: string, field: FieldConfig) => `${dimensionCode}:${field.prop}`;
-const fieldOptions = (field: FieldConfig) => {
+const optionRecord = (option?: SelectOption) => option?.record?.record ?? option?.record;
+const optionValueEquals = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '');
+const fieldOptions = (field: FieldConfig, row: Record<string, any> = form.value) => {
   if (field.prop === 'enabledText') {
     return enabledFlagOptions;
   }
-  return page.value ? (dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] ?? []) : [];
+  const options = page.value ? (dynamicFieldOptions[fieldOptionKey(routeKey.value, field)] ?? []) : [];
+  if (routeKey.value !== 'company' || !field.parentProp) {
+    return options;
+  }
+  const parentValue = row[field.parentProp];
+  if (parentValue === undefined || parentValue === null || parentValue === '') {
+    return [];
+  }
+  return options.filter((option) => optionValueEquals(optionRecord(option)?.[field.parentProp as string], parentValue));
 };
 const extensionFieldKey = (field: ExtensionFieldVO) => String(field.id);
-const optionRecord = (option?: SelectOption) => option?.record?.record ?? option?.record;
-const optionValueEquals = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '');
 const formValueFromRecord = (record: Record<string, any> | undefined, prop: FieldProp) => record?.[prop];
 const assignFormValueFromRecord = (record: Record<string, any> | undefined, prop: FieldProp) => {
   const value = formValueFromRecord(record, prop);
   if (value !== undefined && value !== null && value !== '') {
     form.value[prop] = value;
   }
+};
+const clearFormFields = (props?: FieldProp[]) => {
+  props?.forEach((prop) => {
+    form.value[prop] = undefined;
+  });
 };
 
 const handleParentCodeChange = (value: unknown) => {
@@ -858,7 +875,8 @@ const handleParentCodeChange = (value: unknown) => {
 };
 
 const handleFieldSelect = (field: FieldConfig, value: unknown) => {
-  const selected = fieldOptions(field).find((option) => optionValueEquals(option.value, value));
+  clearFormFields(field.clearsOnChange);
+  const selected = fieldOptions(field, form.value).find((option) => optionValueEquals(option.value, value));
   const record = optionRecord(selected);
   if (!record) return;
   if (field.fillProps?.length) {
@@ -881,7 +899,7 @@ const fieldByProp = (prop: FieldProp) => page.value?.fields.find((field) => fiel
 
 const fillRowValueFromOption = (row: Record<string, any>, field: FieldConfig, prop: FieldProp) => {
   const value = row[field.prop];
-  const selected = fieldOptions(field).find((option) => optionValueEquals(option.value, value));
+  const selected = fieldOptions(field, row).find((option) => optionValueEquals(option.value, value));
   const record = optionRecord(selected);
   const recordValue = formValueFromRecord(record, prop);
   if (recordValue !== undefined && recordValue !== null && recordValue !== '') {

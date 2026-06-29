@@ -34,6 +34,7 @@ export interface EmissionSourceForm extends BaseEntity {
   responsibleDept?: string;
   dataSource?: string;
   factorKey?: string;
+  sourceUnit?: string;
   enabledFlag?: boolean;
   remark?: string;
 }

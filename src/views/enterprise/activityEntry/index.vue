@@ -226,7 +226,7 @@
                 placeholder="请选择排放源名称"
                 @change="handleSourceNameChange"
               >
-                <el-option v-for="option in sourceNameOptions" :key="option.value" :label="option.label" :value="option.value" />
+                <el-option v-for="option in sourceNameOptions" :key="option.value" :label="formatSourceOptionLabel(option)" :value="option.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -269,6 +269,10 @@
         </el-row>
       </el-form>
 
+      <el-alert v-if="selectedSourceMasterIssue" class="mb-3" type="error" show-icon :closable="false">
+        <template #title>{{ selectedSourceMasterIssue }}</template>
+      </el-alert>
+
       <el-alert v-if="manualBlockingIssues.length" class="mb-3" type="error" show-icon :closable="false">
         <template #title>存在 {{ manualBlockingIssues.length }} 条错误，请修正后保存。</template>
       </el-alert>
@@ -298,6 +302,7 @@
             type="primary"
             icon="Check"
             :loading="saving"
+            :disabled="Boolean(selectedSourceMasterIssue)"
             @click="saveActivity()"
           >
             保存
@@ -308,6 +313,7 @@
             type="success"
             icon="CircleCheck"
             :loading="saving"
+            :disabled="Boolean(selectedSourceMasterIssue)"
             @click="saveActivity({ submitAfterSave: true })"
           >
             保存并提交
@@ -699,7 +705,8 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         required: true,
         width: 190,
         options: emissionSourceNameOptions.value,
-        getOptions: (row) => sheetEmissionSourceNameOptions(row)
+        getOptions: (row) => sheetEmissionSourceNameOptions(row),
+        fillProps: ['companyName', 'factoryName', 'scopeName', 'scopeSubcategory', 'sourceIdentificationName', 'emissionSourceName']
       };
     }
     if (field.fieldCode === 'activityPeriod') {
@@ -802,13 +809,14 @@ const uploadStatusText = computed(() => {
 const isBlockingIssue = (issue: EmissionActivityValidationIssue) => issue.severity === 'ERROR';
 const valueToString = (value?: string | number) => (value === undefined || value === null ? '' : String(value));
 const sameOptionValue = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '');
+const optionRecord = (option?: SelectOption) => option?.record?.record ?? option?.record;
 const filterOptionsByRecord = (options: SelectOption[], filters: Record<string, unknown>) =>
   options.filter((option) =>
     Object.entries(filters).every(([key, value]) => {
       if (value === undefined || value === null || value === '') {
         return true;
       }
-      return sameOptionValue(option.record?.record?.[key] ?? option.record?.[key], value);
+      return sameOptionValue(optionRecord(option)?.[key], value);
     })
   );
 const sheetFactoryOptions = (row: Record<string, any>) => filterOptionsByRecord(allSourceFactoryOptions.value, { companyName: row.companyName });
@@ -835,6 +843,31 @@ const sheetEmissionSourceNameOptions = (row: Record<string, any>) =>
     scopeSubcategory: row.scopeSubcategory,
     sourceIdentificationName: row.sourceIdentificationName
   });
+const sourceOptionByValue = (options: SelectOption[], value: unknown) => options.find((option) => sameOptionValue(option.value, value));
+const selectedSourceOption = computed(() => sourceOptionByValue(sourceNameOptions.value, form.emissionSourceName));
+const selectedSourceRecord = computed(() => optionRecord(selectedSourceOption.value));
+const selectedSourceMasterIssue = computed(() => {
+  if (!form.emissionSourceName || formDrawer.readonly) return '';
+  const record = selectedSourceRecord.value;
+  if (!record) return '';
+  if (!record.sourceUnit) {
+    return `排放源“${form.emissionSourceName}”在 104 排放源识别中缺少活动单位，请先在 104 补齐后再录入活动数据。`;
+  }
+  if (!record.sourceIdentificationCode) {
+    return `排放源“${form.emissionSourceName}”在 104 排放源识别中缺少排放源编号，请先补齐主数据。`;
+  }
+  if (!record.factorKey) {
+    return `排放源“${form.emissionSourceName}”在 104 排放源识别中缺少适用因子，请先补齐主数据。`;
+  }
+  return '';
+});
+const formatSourceOptionLabel = (option: SelectOption) => {
+  const record = optionRecord(option);
+  if (record && !record.sourceUnit) {
+    return `${option.label}（104缺活动单位）`;
+  }
+  return option.label;
+};
 const roundToTwoDecimal = (value?: string | number) => {
   if (value === undefined || value === null || value === '') {
     return undefined;
@@ -1081,10 +1114,11 @@ const handleSourceIdentificationChange = async () => {
   await loadSourceNameOptions(requestId);
 };
 
-const handleSourceNameChange = () => {
-  form.sourceIdentificationCode = undefined;
+const handleSourceNameChange = (value?: unknown) => {
   clearResolvedSourceFields();
   clearManualValidation();
+  const option = sourceOptionByValue(sourceNameOptions.value, value ?? form.emissionSourceName);
+  applySourceRecordToForm(optionRecord(option));
 };
 
 const joinPeriod = (year?: number, month?: number) => {
@@ -1120,6 +1154,52 @@ const fieldValueFromResolvedSource = (source: EmissionActivityResolvedRow | unde
     factorKey: source.emissionFactorCode ?? ''
   };
   return values[code] ?? '';
+};
+
+const resolvedRowFromSourceRecord = (record: Record<string, any> | undefined): EmissionActivityResolvedRow | undefined => {
+  if (!record) return undefined;
+  return {
+    emissionSourceCode: record.sourceIdentificationCode,
+    companyCode: record.companyCode,
+    companyName: record.companyName,
+    factoryName: record.factoryName,
+    emissionSourceCategoryCode: record.sourceCategoryKey,
+    scope: record.scopeName,
+    scopeSubcategory: record.scopeSubcategory,
+    emissionSourceIdentity: record.sourceIdentificationName,
+    emissionSourceName: record.emissionSourceName,
+    unit: record.sourceUnit,
+    emissionFactorCode: record.factorKey
+  };
+};
+
+const applySourceRecordToForm = (record: Record<string, any> | undefined) => {
+  const resolved = resolvedRowFromSourceRecord(record);
+  if (!resolved) return;
+  resolvedSource.value = resolved;
+  manualResolvedDerivedValues.value = {
+    sourceIdentificationCode: resolved.emissionSourceCode ?? '',
+    companyCode: resolved.companyCode ?? '',
+    companyName: resolved.companyName ?? '',
+    factoryName: resolved.factoryName ?? '',
+    sourceCategoryKey: resolved.emissionSourceCategoryCode ?? '',
+    scopeName: resolved.scope ?? '',
+    scopeSubcategory: resolved.scopeSubcategory ?? '',
+    sourceIdentificationName: resolved.emissionSourceIdentity ?? '',
+    emissionSourceName: resolved.emissionSourceName ?? '',
+    activityUnit: resolved.unit ?? '',
+    factorKey: resolved.emissionFactorCode ?? ''
+  };
+  form.sourceIdentificationCode = resolved.emissionSourceCode || form.sourceIdentificationCode;
+  form.sourceCompanyName = resolved.companyName || form.sourceCompanyName;
+  form.sourceFactoryName = resolved.factoryName || form.sourceFactoryName;
+  form.sourceCategoryKey = resolved.emissionSourceCategoryCode || form.sourceCategoryKey;
+  form.scopeName = resolved.scope || form.scopeName;
+  form.scopeSubcategory = resolved.scopeSubcategory || form.scopeSubcategory;
+  form.sourceIdentificationName = resolved.emissionSourceIdentity || form.sourceIdentificationName;
+  form.emissionSourceName = resolved.emissionSourceName || form.emissionSourceName;
+  form.activityUnit = resolved.unit || form.activityUnit;
+  form.factorKey = resolved.emissionFactorCode || form.factorKey;
 };
 
 const currentDerivedValues = () =>
@@ -1426,6 +1506,10 @@ const runUploadServerValidation = async (request: EmissionActivityImportValidati
 const handleValidate = async () => {
   const valid = await validateFormFields();
   if (!valid) return;
+  if (selectedSourceMasterIssue.value) {
+    ElMessage.error(selectedSourceMasterIssue.value);
+    return;
+  }
   const result = await runManualServerValidation(buildManualValidationRequest());
   if (result.blocking) {
     ElMessage.error('校验存在错误');
@@ -1437,6 +1521,10 @@ const handleValidate = async () => {
 const saveActivity = async (options: { submitAfterSave?: boolean } = {}) => {
   const valid = await validateFormFields();
   if (!valid) return;
+  if (selectedSourceMasterIssue.value) {
+    ElMessage.error(selectedSourceMasterIssue.value);
+    return;
+  }
 
   saving.value = true;
   try {
@@ -1613,11 +1701,35 @@ const buildSheetRowRequest = (rows: Record<string, any>[]): EmissionActivityImpo
   }))
 });
 
+const sheetSourceMasterIssues = (rows: Record<string, any>[]) =>
+  rows
+    .map((row, index) => {
+      const option = sheetEmissionSourceNameOptions(row).find((item) => sameOptionValue(item.value, row.emissionSourceName));
+      const record = optionRecord(option);
+      if (!record) return '';
+      if (!record.sourceUnit) {
+        return `第 ${index + 2} 行排放源“${row.emissionSourceName}”在 104 缺少活动单位`;
+      }
+      if (!record.sourceIdentificationCode) {
+        return `第 ${index + 2} 行排放源“${row.emissionSourceName}”在 104 缺少排放源编号`;
+      }
+      if (!record.factorKey) {
+        return `第 ${index + 2} 行排放源“${row.emissionSourceName}”在 104 缺少适用因子`;
+      }
+      return '';
+    })
+    .filter(Boolean);
+
 const saveSheetRows = async (rows: Record<string, any>[]) => {
   sheetSaving.value = true;
   try {
     if (!rows.length) {
       ElMessage.warning('没有可保存的新增数据');
+      return;
+    }
+    const masterIssues = sheetSourceMasterIssues(rows);
+    if (masterIssues.length) {
+      ElMessage.error(`${masterIssues[0]}，请先补齐 104 排放源识别主数据。`);
       return;
     }
     const request = buildSheetRowRequest(rows);

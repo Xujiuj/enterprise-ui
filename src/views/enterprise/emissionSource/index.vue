@@ -86,7 +86,8 @@ const config = {
     { prop: 'emissionSourceName', label: '排放源' },
     { prop: 'responsibleDept', label: '负责部门', type: 'select', loadOptions: loadResponsibleDeptOptions, allowCreate: true },
     { prop: 'dataSource', label: '数据来源', type: 'select', loadOptions: loadDataSourceOptions, allowCreate: true },
-    { prop: 'factorKey', label: '适用因子', type: 'select', loadOptions: loadFactorOptions, onChange: applyFactor, allowCreate: true }
+    { prop: 'factorKey', label: '适用因子', type: 'select', loadOptions: loadFactorOptions, onChange: applyFactor, allowCreate: true },
+    { prop: 'sourceUnit', label: '活动单位', required: true, placeholder: '选择适用因子后自动带出，也可手动补充' }
   ],
   emptyForm: {
     enabledFlag: true
