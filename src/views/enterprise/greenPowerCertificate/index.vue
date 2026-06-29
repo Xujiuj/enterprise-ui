@@ -25,10 +25,28 @@ import {
   loadYearOptions
 } from '@/utils/enterpriseFieldOptions';
 
+const assignFromRecord = (form: Record<string, any>, record: Record<string, any> | undefined, props: string[]) => {
+  if (!record) return;
+  props.forEach((prop) => {
+    const value = record[prop];
+    if (value !== undefined && value !== null && value !== '') {
+      form[prop] = value;
+    }
+  });
+};
+
+const applyFactory = (_value: unknown, form: Record<string, any>, option?: { record?: Record<string, any> }) => {
+  assignFromRecord(form, option?.record, ['factoryCode', 'factoryName']);
+};
+
+const applySourceCategory = (_value: unknown, form: Record<string, any>, option?: { record?: Record<string, any> }) => {
+  assignFromRecord(form, option?.record, ['sourceCategoryKey', 'scopeName', 'scopeSubcategory']);
+};
+
 const applyFactor = (_value: unknown, form: Record<string, any>, option?: { record?: Record<string, any> }) => {
   const record = option?.record;
   if (!record) return;
-  form.emissionSourceName = form.emissionSourceName || record.recordName;
+  form.emissionSourceName = form.emissionSourceName || record.recordName || record.emissionSourceName || record.factorName;
 };
 
 const config = {
@@ -70,13 +88,13 @@ const config = {
     { prop: 'certificateCode', label: '证书编号' }
   ],
   formFields: [
-    { prop: 'factoryCode', label: '工厂', type: 'select', loadOptions: loadFactoryCodeOptions, required: true },
-    { prop: 'factoryName', label: '工厂名称' },
+    { prop: 'factoryCode', label: '工厂', type: 'select', loadOptions: loadFactoryCodeOptions, onChange: applyFactory, required: true },
+    { prop: 'factoryName', label: '工厂名称', disabled: true },
     { prop: 'activityYear', label: '年度', type: 'select', loadOptions: loadYearOptions },
     { prop: 'activityMonth', label: '月份', type: 'select', loadOptions: loadMonthOptions },
-    { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions },
-    { prop: 'scopeName', label: '核算范围' },
-    { prop: 'scopeSubcategory', label: '范围子类别' },
+    { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions, onChange: applySourceCategory },
+    { prop: 'scopeName', label: '核算范围', disabled: true },
+    { prop: 'scopeSubcategory', label: '范围子类别', disabled: true },
     { prop: 'electricityType', label: '电力类型', type: 'select', loadOptions: loadElectricityTypeOptions },
     { prop: 'electricityTypeDesc', label: '电力类型说明' },
     { prop: 'quantityKwh', label: '数量(kWh)', type: 'number', precision: 4 },
@@ -88,7 +106,7 @@ const config = {
     { prop: 'offsetPowerSource', label: '抵消电力来源', type: 'select', loadOptions: loadOffsetPowerSourceOptions },
     { prop: 'dataSource', label: '数据来源', type: 'select', loadOptions: loadDataSourceOptions },
     { prop: 'sourceRemark', label: '备注', type: 'textarea' },
-    { prop: 'emissionSourceName', label: '排放源' },
+    { prop: 'emissionSourceName', label: '排放源', disabled: true },
     { prop: 'factorKey', label: '适用因子', type: 'select', loadOptions: loadFactorOptions, onChange: applyFactor }
   ],
   emptyForm: {

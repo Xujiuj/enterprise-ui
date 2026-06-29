@@ -264,6 +264,7 @@ interface FieldConfig {
   label: string;
   type?: 'text' | 'number' | 'date';
   optionSource?: 'dimension-field';
+  fillProps?: FieldProp[];
   width?: number;
   hidden?: boolean;
   required?: boolean;
@@ -397,8 +398,8 @@ const dimensionPages: Record<string, PageConfig> = {
     fields: [
       { prop: 'baseYearKey', label: '基准年业务键' },
       { prop: 'description', label: '说明', width: 220 },
-      { prop: 'baseYear', label: '基准年', type: 'number', required: true },
-      { prop: 'isCurrent', label: '厂商当前标识', type: 'number' },
+      { prop: 'baseYear', label: '基准年', optionSource: 'dimension-field', fillProps: ['baseYearKey', 'description', 'baseYear', 'isCurrent', 'currentBaseFlag'], required: true },
+      { prop: 'isCurrent', label: '厂商当前标识', optionSource: 'dimension-field', fillProps: ['isCurrent', 'currentBaseFlag'] },
       { prop: 'currentBaseFlag', label: '是否当前基准', optionSource: 'dimension-field' }
     ]
   },
@@ -410,9 +411,9 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: 'SK_排放因子',
     nameLabel: '排放源名称',
     fields: [
-      { prop: 'emissionSourceNameEn', label: '排放源英文名' },
-      { prop: 'fuelMaterialCategory', label: '燃料/物料类别' },
-      { prop: 'sourceUnit', label: '源单位' },
+      { prop: 'emissionSourceNameEn', label: '排放源英文名', optionSource: 'dimension-field', fillProps: ['emissionSourceNameEn', 'fuelMaterialCategory', 'sourceUnit', 'applicableScope', 'factorSource', 'factorUnit'] },
+      { prop: 'fuelMaterialCategory', label: '燃料/物料类别', optionSource: 'dimension-field', fillProps: ['fuelMaterialCategory', 'sourceUnit', 'applicableScope'] },
+      { prop: 'sourceUnit', label: '源单位', optionSource: 'dimension-field' },
       { prop: 'co2', label: 'CO2', type: 'number' },
       { prop: 'ch4', label: 'CH4', type: 'number' },
       { prop: 'n2o', label: 'N2O', type: 'number' },
@@ -420,8 +421,8 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'pfcs', label: 'PFCs', type: 'number' },
       { prop: 'sf6', label: 'SF6', type: 'number' },
       { prop: 'nf3', label: 'NF3', type: 'number' },
-      { prop: 'applicableScope', label: '适用范围' },
-      { prop: 'factorSource', label: '因子来源' },
+      { prop: 'applicableScope', label: '适用范围', optionSource: 'dimension-field' },
+      { prop: 'factorSource', label: '因子来源', optionSource: 'dimension-field' },
       { prop: 'gwpCh4', label: 'GWP_CH4', type: 'number' },
       { prop: 'gwpN2o', label: 'GWP_N2O', type: 'number' },
       { prop: 'gwpHfcs', label: 'GWP_HFCs', type: 'number' },
@@ -429,7 +430,7 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'gwpSf6', label: 'GWP_SF6', type: 'number' },
       { prop: 'gwpNf3', label: 'GWP_NF3', type: 'number' },
       { prop: 'factorGwp', label: '因子GWP', type: 'number' },
-      { prop: 'factorUnit', label: '因子单位' }
+      { prop: 'factorUnit', label: '因子单位', optionSource: 'dimension-field' }
     ]
   },
   'ef-electricity-factor': {
@@ -820,18 +821,22 @@ const handleParentCodeChange = (value: unknown) => {
 };
 
 const handleFieldSelect = (field: FieldConfig, value: unknown) => {
-  if (routeKey.value !== 'company') return;
   const selected = fieldOptions(field).find((option) => optionValueEquals(option.value, value));
   const record = optionRecord(selected);
   if (!record) return;
-  const pair = companyIndustryFieldPairs.find((item) => item.code === field.prop || item.name === field.prop);
-  if (pair) {
-    assignFormValueFromRecord(record, pair.code);
-    assignFormValueFromRecord(record, pair.name);
+  if (field.fillProps?.length) {
+    field.fillProps.forEach((prop) => assignFormValueFromRecord(record, prop));
   }
-  if (field.prop === 'provinceCode' || field.prop === 'provinceName') {
-    assignFormValueFromRecord(record, 'provinceCode');
-    assignFormValueFromRecord(record, 'provinceName');
+  if (routeKey.value === 'company') {
+    const pair = companyIndustryFieldPairs.find((item) => item.code === field.prop || item.name === field.prop);
+    if (pair) {
+      assignFormValueFromRecord(record, pair.code);
+      assignFormValueFromRecord(record, pair.name);
+    }
+    if (field.prop === 'provinceCode' || field.prop === 'provinceName') {
+      assignFormValueFromRecord(record, 'provinceCode');
+      assignFormValueFromRecord(record, 'provinceName');
+    }
   }
 };
 
