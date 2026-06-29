@@ -38,6 +38,12 @@ describe('enterprise dynamic router guard', () => {
             permissions: ['enterprise:reports:view']
           },
           {
+            path: 'powerbi-report',
+            component: 'enterprise/reports/powerbi',
+            meta: { title: 'Power BI 温室气体核算报表' },
+            permissions: ['enterprise:reports:view']
+          },
+          {
             path: 'data-validation',
             component: 'enterprise/dataValidation/index',
             meta: { title: 'data validation' },
@@ -353,6 +359,7 @@ describe('enterprise dynamic router guard', () => {
         'enterprise/licenseImport/index',
         'enterprise/activityData/index',
         'enterprise/greenPowerCertificate/index',
+        'enterprise/reports/powerbi',
         'enterprise/dataValidation/index',
         'enterprise/reportTemplateFile/index',
         'system/user/index',
@@ -408,7 +415,7 @@ describe('enterprise dynamic router guard', () => {
       '/activity-data': ['emission-activity-data'],
       '/green-electricity': ['green-electricity-data'],
       '/intensity': ['intensity-denominator', 'intensity-target', 'denominator-fact', 'intensity-tolerance'],
-      '/report-management': ['content', 'data-validation', 'report-template-download'],
+      '/report-management': ['content', 'powerbi-report', 'data-validation', 'report-template-download'],
       '/system': ['user', 'role', 'menu', 'extension-field'],
       '/log': ['operlog', 'logininfor']
     });
@@ -449,6 +456,7 @@ describe('enterprise dynamic router guard', () => {
       '504 碳排放强度容忍率参数表',
       '报表管理',
       'Content',
+      '温室气体核算报表',
       '数据验证',
       '报表模板下载',
       '系统管理',
