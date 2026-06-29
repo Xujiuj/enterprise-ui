@@ -96,7 +96,7 @@ const enterpriseTopLevelAliases = new Map([
 
 const enterpriseAllowedVisibleChildPathsByScope = new Map<string, string[]>([
   ['system-auth', ['license-import']],
-  ['emission-source-config', ['admin-division', 'company', 'industry', 'emission-source-category', 'emission-source', 'base-year']],
+  ['emission-source-config', ['admin-division', 'company', 'emission-source-category', 'emission-source', 'base-year']],
   ['factor-confirm', ['ef-factor', 'ef-electricity-factor', 'ef-electricity-version', 'ef-electricity-scope', 'greenhouse-gas']],
   ['activity-data', ['emission-activity-data']],
   ['green-electricity', ['green-electricity-data']],
@@ -113,7 +113,6 @@ const enterpriseCanonicalChildTitlesByScope = new Map<string, Map<string, string
     new Map([
       ['admin-division', '101 行政区划'],
       ['company', '102 公司表'],
-      ['industry', '107 行业代码表'],
       ['emission-source-category', '103 排放源分类'],
       ['emission-source', '104 排放源识别'],
       ['base-year', '106 基准年维度表']
@@ -172,7 +171,6 @@ const enterpriseLegacyChildTitleAliasesByScope = new Map<string, Map<string, str
     new Map([
       ['行政区划', 'admin-division'],
       ['公司表', 'company'],
-      ['行业代码表', 'industry'],
       ['排放源分类', 'emission-source-category'],
       ['排放源识别', 'emission-source'],
       ['基准年维度表', 'base-year']
