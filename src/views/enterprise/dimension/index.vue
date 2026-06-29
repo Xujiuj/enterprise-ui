@@ -364,7 +364,7 @@ const dimensionPages: Record<string, PageConfig> = {
     fields: [
       { prop: 'companySk', label: 'SK_公司', hidden: true },
       { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称', required: true },
-      { prop: 'provinceCode', label: '省份编码', formLabel: '所在省份', optionSource: 'dimension-field', optionDimensionCode: 'admin-division', fillProps: ['provinceCode', 'provinceName'], placeholder: '请选择所在省份' },
+      { prop: 'provinceCode', label: '省份编码', formLabel: '所在省份', optionSource: 'dimension-field', fillProps: ['provinceCode', 'provinceName'], placeholder: '请选择所在省份' },
       { prop: 'provinceName', label: '所在省份', optionSource: 'dimension-field', formHidden: true },
       { prop: 'factoryType', label: '工厂类型', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入工厂类型' },
       { prop: 'industrySectionCode', label: '行业门类代码', formLabel: '行业门类', optionSource: 'dimension-field', optionDimensionCode: 'industry', fillProps: ['industrySectionCode', 'industrySectionName'], clearsOnChange: ['industryDivisionCode', 'industryDivisionName', 'industryGroupCode', 'industryGroupName', 'industryClassCode', 'industryClassName'], placeholder: '请选择行业门类' },
