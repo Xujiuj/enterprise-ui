@@ -345,8 +345,6 @@ const dimensionPages: Record<string, PageConfig> = {
     nameLabel: '行政区划名称',
     showParent: true,
     fields: [
-      { prop: 'divisionCode', label: '区划代码' },
-      { prop: 'divisionName', label: '区划名称' },
       { prop: 'levelType', label: '区划层级' }
     ]
   },
