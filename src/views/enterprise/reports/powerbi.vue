@@ -12,7 +12,7 @@
     </section>
     <iframe
       :key="frameKey"
-      title="企业温室气体核算数字化平台"
+      title="企业温室气体核算数字化平台（会员版）"
       class="powerbi-frame"
       :src="reportUrl"
       frameborder="0"
@@ -26,7 +26,7 @@
 import { ref } from 'vue';
 
 const reportUrl =
-  'https://app.powerbi.com/reportEmbed?reportId=a5fe1fc7-db00-4093-aa48-958e9b2ef205&autoAuth=true&ctid=e6411fdb-6d77-4ffd-b015-619c75b13768&actionBarEnabled=true&reportCopilotInEmbed=true';
+  'https://app.powerbi.com/reportEmbed?reportId=fe3213fc-3659-4a24-a7d8-031353e805f5&autoAuth=true&ctid=e6411fdb-6d77-4ffd-b015-619c75b13768';
 
 const frameKey = ref(0);
 
