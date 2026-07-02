@@ -8,8 +8,8 @@
    CSS 变量（原型色彩体系）
    ============================================================ */
 :root {
-  --carbon-primary: #167656;
-  --carbon-primary-dark: #0f5f45;
+  --carbon-primary: #1E7F4C;
+  --carbon-primary-dark: #145F39;
   --carbon-success: #18a058;
   --carbon-warning: #d48806;
   --carbon-danger: #d92d20;
@@ -31,12 +31,12 @@
   --carbon-side: #18342f;
   --carbon-side-deep: #102820;
   --carbon-side-active: #0e211d;
-  --carbon-brand: #1f8f6a;
-  --carbon-green: #1f8f6a;
+  --carbon-brand: #1E7F4C;
+  --carbon-green: #1E7F4C;
   --carbon-green-soft: #e7f6ef;
   --carbon-shadow: 0 10px 26px rgba(31, 45, 61, 0.08);
   --carbon-shadow-soft: 0 1px 2px rgba(31, 45, 61, 0.025), 0 6px 18px -10px rgba(31, 45, 61, 0.06);
-  --carbon-focus: 0 0 0 3px rgba(31, 143, 106, 0.18);
+  --carbon-focus: 0 0 0 3px rgba(30, 127, 76, 0.18);
   --carbon-radius-sm: 6px;
   --carbon-radius: 10px;
   --carbon-radius-lg: 12px;
@@ -63,7 +63,7 @@ html.dark {
   --carbon-table-selected: #102237;
   --carbon-table-selected-hover: #132c43;
   --carbon-disabled-bg: #1f2937;
-  --carbon-green-soft: rgba(31, 143, 106, 0.18);
+  --carbon-green-soft: rgba(30, 127, 76, 0.18);
   --carbon-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
   --carbon-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.28), 0 8px 18px rgba(0, 0, 0, 0.22);
   --carbon-focus: 0 0 0 3px rgba(69, 212, 131, 0.24);
@@ -337,14 +337,14 @@ body {
 .toolbar .el-button--success.is-plain:not(.is-link):not(.is-text):not(.el-button--text),
 .panel .el-button--primary.is-plain:not(.is-link):not(.is-text):not(.el-button--text),
 .panel .el-button--success.is-plain:not(.is-link):not(.is-text):not(.el-button--text) {
-  --el-button-bg-color: #167656;
-  --el-button-border-color: #167656;
-  --el-button-hover-bg-color: #0f5f45;
-  --el-button-hover-border-color: #0f5f45;
+  --el-button-bg-color: #1E7F4C;
+  --el-button-border-color: #1E7F4C;
+  --el-button-hover-bg-color: #145F39;
+  --el-button-hover-border-color: #145F39;
   --el-button-active-bg-color: #0d513b;
   --el-button-active-border-color: #0d513b;
-  background: #167656 !important;
-  border-color: #167656 !important;
+  background: #1E7F4C !important;
+  border-color: #1E7F4C !important;
 }
 
 @media (max-width: 768px) {
@@ -443,16 +443,16 @@ body {
 
 .btn.primary {
   color: #fff;
-  background: linear-gradient(180deg, #1f8f6a, #167656);
-  border-color: #167656;
-  box-shadow: 0 2px 6px rgba(31, 143, 106, 0.25);
+  background: linear-gradient(180deg, #24945A, #1E7F4C);
+  border-color: #1E7F4C;
+  box-shadow: 0 2px 6px rgba(30, 127, 76, 0.25);
 }
 
 .btn.primary:hover {
-  background: linear-gradient(180deg, #1fa37a, #157a5b);
-  border-color: #167656;
+  background: linear-gradient(180deg, #2EA864, #176B40);
+  border-color: #1E7F4C;
   color: #fff;
-  box-shadow: 0 4px 12px rgba(31, 143, 106, 0.32);
+  box-shadow: 0 4px 12px rgba(30, 127, 76, 0.32);
 }
 
 .btn.danger {
@@ -927,16 +927,16 @@ html.dark {
   --el-button-text-color: #fff;
   --el-button-hover-text-color: #fff;
   --el-button-active-text-color: #fff;
-  background: linear-gradient(180deg, #18805f, #0f5f45) !important;
-  border-color: #167656 !important;
+  background: linear-gradient(180deg, #24945A, #145F39) !important;
+  border-color: #1E7F4C !important;
   color: #fff !important;
-  box-shadow: 0 2px 6px rgba(31, 143, 106, 0.25);
+  box-shadow: 0 2px 6px rgba(30, 127, 76, 0.25);
 }
 
 .page-panel .el-button--primary:not(.is-link):not(.is-text):not(.el-button--text):hover {
-  background: linear-gradient(180deg, #167656, #0f5f45) !important;
-  border-color: #0f5f45 !important;
-  box-shadow: 0 4px 12px rgba(31, 143, 106, 0.32);
+  background: linear-gradient(180deg, #1E7F4C, #145F39) !important;
+  border-color: #145F39 !important;
+  box-shadow: 0 4px 12px rgba(30, 127, 76, 0.32);
 }
 
 /* el-dialog → 原型风格 */

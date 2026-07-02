@@ -194,7 +194,7 @@ const scopeBars = computed(() =>
 
 const businessActions = [
   { step: '01', title: '配置排放源', detail: '建立排放源台账', path: '/emission-source-config/emission-source' },
-  { step: '02', title: '确认排放因子', detail: '同步厂商因子库', path: '/factor-confirm/ef-factor' },
+  { step: '02', title: '确认排放因子', detail: '匹配因子库，支持企业自主登记', path: '/factor-confirm/ef-factor' },
   { step: '03', title: '录入活动数据', detail: '上传并校验 656 表数据', path: '/activity-data/emission-activity-data' },
   { step: '04', title: '绿电绿证', detail: '登记抵扣记录', path: '/green-electricity/green-electricity-data' },
   { step: '05', title: '强度管理', detail: '分母录入与目标核算', path: '/intensity/intensity-target' }
@@ -338,8 +338,8 @@ onMounted(() => {
 }
 
 .step-card:hover {
-  border-color: rgba(31, 143, 106, 0.4);
-  box-shadow: 0 12px 28px -18px rgba(31, 143, 106, 0.45);
+  border-color: rgba(30, 127, 76, 0.4);
+  box-shadow: 0 12px 28px -18px rgba(30, 127, 76, 0.45);
   transform: translateY(-1px);
 }
 
@@ -350,7 +350,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: rgba(31, 143, 106, 0.12);
+  background: rgba(30, 127, 76, 0.12);
   color: var(--carbon-primary);
   font-size: 12px;
   font-weight: 800;
@@ -504,7 +504,7 @@ onMounted(() => {
 .notice-item.active::before,
 .tl-item.ok::before {
   background: var(--carbon-primary);
-  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.14);
+  box-shadow: 0 0 0 3px rgba(30, 127, 76, 0.14);
 }
 
 .notice-item b {
@@ -569,7 +569,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 0 8px;
-  border: 1px solid rgba(31, 143, 106, 0.24);
+  border: 1px solid rgba(30, 127, 76, 0.24);
   border-radius: 6px;
   background: var(--carbon-green-soft);
   color: var(--carbon-brand);

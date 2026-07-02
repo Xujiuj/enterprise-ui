@@ -11,8 +11,8 @@
   --subMenuTitleHover: #293444;
 
   // 菜单栏缩进
-  --el-menu-base-level-padding: 12px;
-  --el-menu-level-padding: 8px;
+  --el-menu-base-level-padding: 14px;
+  --el-menu-level-padding: 16px;
   --el-menu-item-height: 50px;
 
   --fixedHeaderBg: #ffffff;
@@ -68,51 +68,51 @@ html.dark {
   }
 
   .el-button--primary {
-    --el-button-bg-color: #167656;
-    --el-button-border-color: #1f8f6a;
+    --el-button-bg-color: #1E7F4C;
+    --el-button-border-color: #24945A;
     --el-button-text-color: #f0fdf4;
     --el-button-hover-text-color: #f0fdf4;
-    --el-button-hover-bg-color: #18805f;
-    --el-button-hover-border-color: #18805f;
+    --el-button-hover-bg-color: #24945A;
+    --el-button-hover-border-color: #24945A;
     --el-button-active-text-color: #f0fdf4;
-    --el-button-active-bg-color: #0f5f45;
-    --el-button-active-border-color: #0f5f45;
+    --el-button-active-bg-color: #145F39;
+    --el-button-active-border-color: #145F39;
   }
 
   .el-button--primary.is-plain {
-    --el-button-bg-color: rgba(31, 143, 106, 0.14);
+    --el-button-bg-color: rgba(30, 127, 76, 0.14);
     --el-button-border-color: rgba(43, 191, 134, 0.54);
     --el-button-text-color: #b7f7d0;
     --el-button-hover-text-color: #dcfce7;
-    --el-button-hover-bg-color: rgba(31, 143, 106, 0.24);
+    --el-button-hover-bg-color: rgba(30, 127, 76, 0.24);
     --el-button-hover-border-color: rgba(43, 191, 134, 0.76);
     --el-button-active-text-color: #dcfce7;
     --el-button-active-bg-color: rgba(22, 118, 86, 0.34);
-    --el-button-active-border-color: rgba(31, 143, 106, 0.86);
+    --el-button-active-border-color: rgba(30, 127, 76, 0.86);
   }
 
   .el-button--success {
-    --el-button-bg-color: #167656;
-    --el-button-border-color: #1f8f6a;
+    --el-button-bg-color: #1E7F4C;
+    --el-button-border-color: #24945A;
     --el-button-text-color: #f0fdf4;
     --el-button-hover-text-color: #f0fdf4;
-    --el-button-hover-bg-color: #18805f;
-    --el-button-hover-border-color: #18805f;
+    --el-button-hover-bg-color: #24945A;
+    --el-button-hover-border-color: #24945A;
     --el-button-active-text-color: #f0fdf4;
-    --el-button-active-bg-color: #0f5f45;
-    --el-button-active-border-color: #0f5f45;
+    --el-button-active-bg-color: #145F39;
+    --el-button-active-border-color: #145F39;
   }
 
   .el-button--success.is-plain {
-    --el-button-bg-color: rgba(31, 143, 106, 0.14);
+    --el-button-bg-color: rgba(30, 127, 76, 0.14);
     --el-button-border-color: rgba(43, 191, 134, 0.54);
     --el-button-text-color: #b7f7d0;
     --el-button-hover-text-color: #dcfce7;
-    --el-button-hover-bg-color: rgba(31, 143, 106, 0.24);
+    --el-button-hover-bg-color: rgba(30, 127, 76, 0.24);
     --el-button-hover-border-color: rgba(43, 191, 134, 0.76);
     --el-button-active-text-color: #dcfce7;
     --el-button-active-bg-color: rgba(22, 118, 86, 0.34);
-    --el-button-active-border-color: rgba(31, 143, 106, 0.86);
+    --el-button-active-border-color: rgba(30, 127, 76, 0.86);
   }
 
   .el-button--warning {
@@ -266,7 +266,7 @@ $fixed-header-bg: var(--fixedHeaderBg);
 $table-header-bg: var(--tableHeaderBg);
 $table-header-text-color: var(--tableHeaderTextColor);
 
-$--color-primary: #167656;
+$--color-primary: #1E7F4C;
 $--color-success: #67c23a;
 $--color-warning: #e6a23c;
 $--color-danger: #f56c6c;

@@ -2,15 +2,15 @@
   <div class="login-page auth-page">
     <div class="login-brand">
       <span class="logo-mark"></span>
-      <span>企业碳数据管理平台</span>
+      <span>企业温室气体核算数字化平台</span>
     </div>
     <span class="portal-tag">企业端</span>
 
     <div class="login-box">
       <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-card">
         <div class="login-header">
-          <h2>企业碳数据管理平台</h2>
-          <p>企业碳数据管理</p>
+          <h2>企业温室气体核算数字化平台</h2>
+          <p>统一数据 · 精准核算 · 管理赋能</p>
         </div>
 
         <div v-if="showExpiryNotice" class="login-expiry-alert">
@@ -72,16 +72,11 @@
           <span v-if="!loading">登录</span>
           <span v-else>校验中...</span>
         </el-button>
-
-        <div class="login-support">
-          <span>技术支持：400-888-8888</span>
-          <span>service@carbondata.com</span>
-        </div>
       </el-form>
     </div>
 
     <div class="login-footer">
-      <p>技术支持：400-888-8888 &nbsp;|&nbsp; service@carbondata.com</p>
+      <p>技术支持：15099663016 &nbsp;|&nbsp; service@fengxingdata.com</p>
       <p>
         <a :href="supportLinks.website" target="_blank" rel="noreferrer">官方网站</a> ·
         <a :href="supportLinks.privacy" target="_blank" rel="noreferrer">隐私政策</a> ·
@@ -324,9 +319,13 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 48px;
-  background:
-    linear-gradient(90deg, rgba(16, 40, 32, 0.74), rgba(24, 52, 47, 0.42) 48%, rgba(255, 255, 255, 0.08)),
-    url('../assets/images/login-carbon-bg.png') center / cover no-repeat;
+  background: url('../assets/images/login-gradient-bg.png') center / cover no-repeat;
+  overflow: hidden;
+}
+
+.auth-page::before,
+.auth-page::after {
+  display: none;
 }
 
 html.dark .auth-page {
@@ -356,23 +355,28 @@ html.dark .auth-page {
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  color: #fff;
+  color: #1E7F4C;
   pointer-events: auto;
 }
 
 .login-brand {
   left: 48px;
   gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid rgba(30, 127, 76, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
   font-size: 15px;
   font-weight: 700;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px);
 }
 
 .logo-mark {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 44%), linear-gradient(135deg, #22c55e, #1677ff);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 44%), linear-gradient(135deg, #43A96E, #1E7F4C);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
@@ -381,9 +385,9 @@ html.dark .auth-page {
   height: 32px;
   gap: 6px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(30, 127, 76, 0.2);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.62);
   font-size: 13px;
   font-weight: 700;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -402,6 +406,7 @@ html.dark .auth-page {
   position: relative;
   z-index: 1;
   width: min(430px, calc(100vw - 48px));
+  margin-right: 0;
 }
 
 .login-card {
@@ -410,7 +415,7 @@ html.dark .auth-page {
   border: 1px solid var(--login-card-border);
   border-radius: 8px;
   background: var(--login-card-bg);
-  box-shadow: 0 28px 70px rgba(8, 24, 42, 0.28);
+  box-shadow: 0 28px 70px rgba(3, 36, 27, 0.34);
   backdrop-filter: blur(16px);
 }
 
@@ -542,7 +547,7 @@ html.dark .auth-page {
 .login-card :deep(.el-input__wrapper.is-focus) {
   box-shadow:
     0 0 0 1px var(--carbon-primary) inset,
-    0 0 0 3px rgba(22, 119, 255, 0.12);
+    0 0 0 3px rgba(30, 127, 76, 0.14);
 }
 
 .captcha-field {
@@ -556,8 +561,8 @@ html.dark .auth-page {
   border: 1px solid var(--login-captcha-border);
   border-radius: 6px;
   background:
-    linear-gradient(135deg, rgba(31, 143, 106, 0.14), rgba(22, 119, 255, 0.1)),
-    repeating-linear-gradient(-35deg, transparent 0 8px, rgba(31, 143, 106, 0.1) 8px 10px), var(--login-captcha-bg);
+    linear-gradient(135deg, rgba(30, 127, 76, 0.14), rgba(67, 169, 110, 0.1)),
+    repeating-linear-gradient(-35deg, transparent 0 8px, rgba(30, 127, 76, 0.1) 8px 10px), var(--login-captcha-bg);
   color: var(--login-captcha-text);
   font-weight: 800;
   letter-spacing: 2px;
@@ -648,16 +653,6 @@ html.dark .auth-page {
   font-weight: 700;
 }
 
-.login-support {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px 12px;
-  margin-top: 18px;
-  color: var(--carbon-muted);
-  font-size: 12px;
-}
-
 .login-footer {
   position: fixed;
   left: 24px;
@@ -686,6 +681,7 @@ html.dark .auth-page {
 @media (max-width: 720px) {
   .auth-page {
     padding: 80px 24px 88px;
+    justify-content: center;
   }
 
   .login-brand {
@@ -700,6 +696,10 @@ html.dark .auth-page {
 
   .login-footer {
     bottom: 14px;
+  }
+
+  .login-box {
+    margin-right: 0;
   }
 }
 </style>
