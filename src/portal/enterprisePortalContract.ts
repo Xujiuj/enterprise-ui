@@ -1,10 +1,11 @@
 import type { RouteRecordRaw } from 'vue-router';
 
 type PortalRoute = RouteRecordRaw & {
+  [key: string]: any;
   permissions?: string | string[];
   perms?: string | string[];
   children?: PortalRoute[];
-  hidden?: boolean;
+  hidden?: boolean | string | number;
   meta?: RouteRecordRaw['meta'] & {
     activeMenu?: string;
     title?: string;
@@ -19,7 +20,7 @@ export const enterpriseForbiddenMenuTitlePatterns = [
   /模板(库|管理|分发|上传|发布)/,
   /续费|支付|订单/,
   /厂商.*因子|因子.*(库管理|版本|版本治理|版本管控|标准库)/,
-  /字典管理|参数设置|通知公告|文件管理|文件配置管理|部门管理|岗位管理|在线用户|缓存监控|代码生成|系统工具|PLUS官网|测试菜单/
+  /字典管理|参数设置|通知公告|文件管理|文件配置管理|岗位管理|在线用户|缓存监控|代码生成|系统工具|PLUS官网|测试菜单/
 ];
 
 export const enterpriseAllowedPermissionPrefixes = ['enterprise:', 'system:', 'monitor:'];
@@ -68,6 +69,14 @@ const enterpriseCanonicalTopLevelTitles = new Map([
   ['log', '日志']
 ]);
 
+const enterpriseCanonicalTopLevelIcons = new Map([
+  ['emission-source-config', 'list'],
+  ['factor-confirm', 'list'],
+  ['activity-data', 'list'],
+  ['green-electricity', 'list'],
+  ['intensity', 'list']
+]);
+
 const enterpriseTopLevelAliases = new Map([
   ['首页', 'index'],
   ['工作台', 'index'],
@@ -102,7 +111,7 @@ const enterpriseAllowedVisibleChildPathsByScope = new Map<string, string[]>([
   ['green-electricity', ['green-electricity-data']],
   ['intensity', ['intensity-denominator', 'intensity-target', 'denominator-fact', 'intensity-tolerance']],
   ['report-management', ['content', 'powerbi-report', 'data-validation', 'report-template-download']],
-  ['system', ['user', 'role', 'menu', 'extension-field']],
+  ['system', ['user', 'role', 'menu', 'dept', 'extension-field']],
   ['log', ['operlog', 'logininfor']]
 ]);
 
@@ -154,6 +163,7 @@ const enterpriseCanonicalChildTitlesByScope = new Map<string, Map<string, string
       ['user', '用户管理'],
       ['role', '角色管理'],
       ['menu', '菜单管理'],
+      ['dept', '部门管理'],
       ['extension-field', '扩展字段配置']
     ])
   ],
@@ -221,19 +231,14 @@ const enterpriseForbiddenRouteIdentifierPatterns = [
 ];
 
 const enterpriseForbiddenPermissionPatterns = [
-  /^system:(client|tenant|tenantPackage|license|licenseState|factorLibrary|reportTemplate|dept|post|dict|config|notice|oss|ossConfig):/i,
+  /^system:(client|tenant|tenantPackage|license|licenseState|factorLibrary|reportTemplate|post|dict|config|notice|oss|ossConfig):/i,
   /^monitor:(online|cache):/i,
   /^tool:/i,
   /^vendor:/i
 ];
 
 export function isEnterpriseForbiddenMenuTitle(title: string): boolean {
-  if (
-    title === 'EF电力因子版本对应' ||
-    title === '203 EF电力因子版本对应' ||
-    title === 'EF电力因子口径维度' ||
-    title === '205 EF电力因子口径维度'
-  ) {
+  if (title === 'EF电力因子版本对应' || title === '203 EF电力因子版本对应' || title === 'EF电力因子口径维度' || title === '205 EF电力因子口径维度') {
     return false;
   }
   return enterpriseForbiddenMenuTitlePatterns.some((pattern) => pattern.test(title));
@@ -258,7 +263,7 @@ function promoteLogRoute(routes: RouteRecordRaw[]): RouteRecordRaw[] {
   let logRoute: RouteRecordRaw | undefined;
 
   routes.forEach((route) => {
-    if (resolveTopLevelRouteKey(route as PortalRoute) !== 'system' || !route.children) {
+      if (resolveTopLevelRouteKey(route as unknown as PortalRoute) !== 'system' || !route.children) {
       promotedRoutes.push(route);
       return;
     }
@@ -299,11 +304,13 @@ function normalizePortalRoute(route: PortalRoute, scope: string, children?: Rout
   } as RouteRecordRaw;
 
   if (scope === 'root') {
-    normalizedRoute.path = normalizeTopLevelPath(resolveTopLevelRouteKey(normalizedRoute));
+    const topLevelRouteKey = resolveTopLevelRouteKey(normalizedRoute);
+    normalizedRoute.path = normalizeTopLevelPath(topLevelRouteKey);
     normalizedRoute.alwaysShow = true;
     normalizedRoute.meta = {
       ...(normalizedRoute.meta ?? {}),
-      title: enterpriseCanonicalTopLevelTitles.get(normalizeRouteIdentifier(normalizedRoute.path)) ?? normalizedRoute.meta?.title
+      title: enterpriseCanonicalTopLevelTitles.get(topLevelRouteKey) ?? normalizedRoute.meta?.title,
+      icon: enterpriseCanonicalTopLevelIcons.get(topLevelRouteKey) ?? normalizedRoute.meta?.icon
     };
     return normalizedRoute;
   }
@@ -428,12 +435,12 @@ function routeOrder(route: RouteRecordRaw, order: string[]): number {
 }
 
 function routeOrderKey(route: RouteRecordRaw, order: string[]): string {
-  const topLevelKey = resolveTopLevelRouteKey(route as PortalRoute);
+  const topLevelKey = resolveTopLevelRouteKey(route as unknown as PortalRoute);
   if (order.includes(topLevelKey)) {
     return topLevelKey;
   }
   for (const scope of enterpriseAllowedVisibleChildPathsByScope.keys()) {
-    const childKey = resolveChildRouteKey(route as PortalRoute, scope);
+    const childKey = resolveChildRouteKey(route as unknown as PortalRoute, scope);
     if (order.includes(childKey)) {
       return childKey;
     }

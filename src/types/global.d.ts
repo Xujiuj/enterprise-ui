@@ -90,6 +90,7 @@ declare global {
     pageSize: number;
   }
   declare interface LayoutSetting {
+    topNav?: boolean;
     /**
      * 默认布局
      */

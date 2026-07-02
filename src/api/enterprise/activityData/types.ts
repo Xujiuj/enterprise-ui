@@ -5,6 +5,7 @@ export interface ActivityDataVO {
   sourceIdentificationCode?: string;
   companyCode?: string;
   companyName?: string;
+  factoryCode?: string;
   factoryName?: string;
   sourceCategoryKey?: string;
   scopeName?: string;
@@ -34,6 +35,7 @@ export interface ActivityDataForm extends BaseEntity {
   sourceIdentificationCode?: string;
   companyCode?: string;
   companyName?: string;
+  factoryCode?: string;
   factoryName?: string;
   sourceCategoryKey?: string;
   scopeName?: string;
@@ -60,6 +62,7 @@ export interface ActivityDataQuery extends PageQuery {
   sourceIdentificationCode?: string;
   companyCode?: string;
   companyName?: string;
+  factoryCode?: string;
   factoryName?: string;
   sourceCategoryKey?: string;
   scopeName?: string;

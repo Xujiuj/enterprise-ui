@@ -115,7 +115,10 @@ const router = useRouter();
 const loading = ref(false);
 const dashboard = ref<ActivityDataValidationDashboard>({});
 const selectedPeriod = ref('');
-const queryParams = reactive<ActivityDataQuery>({});
+const queryParams = reactive<ActivityDataQuery>({
+  pageNum: 1,
+  pageSize: 10
+});
 
 const submissions = computed(() => dashboard.value.submissions ?? []);
 const issues = computed(() => dashboard.value.issues ?? []);

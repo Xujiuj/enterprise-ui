@@ -2,7 +2,7 @@
   <EnterpriseCrudPage :config="config" :api="api">
     <template #toolbar-actions="{ refresh }">
       <el-button type="success" plain icon="RefreshRight" :loading="syncing" @click="handleSync(refresh)" v-hasPermi="['enterprise:factorSync:run']">
-        同步厂商因子
+        匹配因子库
       </el-button>
     </template>
   </EnterpriseCrudPage>
@@ -34,9 +34,9 @@ async function handleSync(refresh: () => Promise<void>) {
     const count = result?.recordCount ?? 0;
     const version = result?.versionCode ? `，版本 ${result.versionCode}` : '';
     await refresh();
-    ElMessage.success(`厂商因子同步完成：${changedText} ${count} 条${version}`);
+    ElMessage.success(`因子库匹配完成：${changedText} ${count} 条${version}`);
   } catch (error: any) {
-    const message = error?.response?.data?.msg || error?.message || '因子同步失败';
+    const message = error?.response?.data?.msg || error?.message || '因子库匹配失败';
     ElMessage.error(message);
   } finally {
     syncing.value = false;
@@ -45,7 +45,7 @@ async function handleSync(refresh: () => Promise<void>) {
 
 const config = {
   title: '因子确认记录',
-  description: '维护企业本地确认过的排放因子版本，活动数据计算只引用本地确认记录。',
+  description: '维护企业本地确认过的排放因子版本，支持匹配因子库并自主登记企业适用因子。',
   permissionPrefix: 'enterprise:factorConfirmation',
   columns: [
     { prop: 'factorCode', label: '因子编码', minWidth: 150 },

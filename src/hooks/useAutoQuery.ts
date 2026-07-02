@@ -47,7 +47,7 @@ export const useAutoQuery = (
     return;
   }
 
-  let timer: ReturnType<typeof window.setTimeout> | undefined;
+  let timer: number | undefined;
 
   const snapshot = () => JSON.stringify([normalize(readSource(querySource)), ...extraSources.map((source) => normalize(readSource(source)))]);
 

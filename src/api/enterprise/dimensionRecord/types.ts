@@ -64,6 +64,7 @@ export interface DimensionRecordVO {
   gwpNf3?: string;
   factorGwp?: string;
   factorUnit?: string;
+  versionProvinceCode?: string;
   factorVersion?: string;
   divisionCode?: string;
   divisionName?: string;
@@ -101,6 +102,7 @@ export interface DimensionRecordVO {
 }
 
 export interface DimensionRecordForm extends BaseEntity {
+  [key: string]: any;
   id?: string | number;
   dimensionCode?: string;
   recordCode?: string;

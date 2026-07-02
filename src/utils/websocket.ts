@@ -1,6 +1,7 @@
 import { getToken } from '@/utils/auth';
 import { ElNotification } from 'element-plus';
 import { useNoticeStore } from '@/store/modules/notice';
+import { useWebSocket } from '@vueuse/core';
 
 // 初始化socket
 export const initWebSocket = (url: any) => {

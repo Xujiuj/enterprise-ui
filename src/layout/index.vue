@@ -1,7 +1,8 @@
 <template>
-  <div :class="classObj" class="app-wrapper" :style="{ '--current-color': theme }">
+  <div :class="classObj" class="app-wrapper" :style="{ '--current-color': theme, '--sidebar-width': sidebarWidthCss }">
     <div v-if="device === 'mobile' && sidebar.opened" class="drawer-bg" @click="handleClickOutside" />
     <side-bar v-if="!sidebar.hide" class="sidebar-container" />
+    <button v-if="showSidebarResizeHandle" type="button" class="sidebar-resize-handle" aria-label="调整菜单栏宽度" @mousedown="startSidebarResize" />
     <div :class="{ hasTagsView: needTagsView, sidebarHide: sidebar.hide }" class="main-container">
       <!-- <el-scrollbar>
         <div :class="{ 'fixed-header': fixedHeader }">
@@ -54,6 +55,37 @@ const classObj = computed(() => ({
 
 const { width } = useWindowSize();
 const WIDTH = 992; // refer to Bootstrap's responsive design
+const SIDEBAR_WIDTH_KEY = 'enterpriseSidebarWidth';
+const SIDEBAR_MIN_WIDTH = 180;
+const SIDEBAR_MAX_WIDTH = 320;
+const sidebarWidth = ref(Number(localStorage.getItem(SIDEBAR_WIDTH_KEY)) || 200);
+const sidebarWidthCss = computed(() => `${sidebarWidth.value}px`);
+const resizingSidebar = ref(false);
+const showSidebarResizeHandle = computed(() => showSidebar.value && sidebar.value.opened && device.value === 'desktop');
+
+const clampSidebarWidth = (widthValue: number) => Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, Math.round(widthValue)));
+
+const stopSidebarResize = () => {
+  if (!resizingSidebar.value) return;
+  resizingSidebar.value = false;
+  document.body.classList.remove('is-resizing-sidebar');
+  window.removeEventListener('mousemove', resizeSidebar);
+  window.removeEventListener('mouseup', stopSidebarResize);
+};
+
+const resizeSidebar = (event: MouseEvent) => {
+  if (!resizingSidebar.value) return;
+  sidebarWidth.value = clampSidebarWidth(event.clientX);
+  localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth.value));
+};
+
+const startSidebarResize = (event: MouseEvent) => {
+  event.preventDefault();
+  resizingSidebar.value = true;
+  document.body.classList.add('is-resizing-sidebar');
+  window.addEventListener('mousemove', resizeSidebar);
+  window.addEventListener('mouseup', stopSidebarResize);
+};
 
 watchEffect(() => {
   if (device.value === 'mobile') {
@@ -76,6 +108,10 @@ onMounted(() => {
 
 onMounted(() => {
   initSSE(import.meta.env.VITE_APP_BASE_API + '/resource/sse');
+});
+
+onBeforeUnmount(() => {
+  stopSidebarResize();
 });
 
 const handleClickOutside = () => {
@@ -118,7 +154,7 @@ const setLayout = () => {
   top: 0;
   right: 0;
   z-index: 9;
-  width: calc(100% - #{$base-sidebar-width});
+  width: calc(100% - var(--sidebar-width, #{$base-sidebar-width}));
   transition: width 0.28s;
   background: $fixed-header-bg;
   box-shadow: 0 2px 8px rgba(0, 21, 41, 0.1);
@@ -134,5 +170,29 @@ const setLayout = () => {
 
 .mobile .fixed-header {
   width: 100%;
+}
+
+.sidebar-resize-handle {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--sidebar-width, #{$base-sidebar-width}) - 3px);
+  z-index: 1002;
+  width: 6px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: col-resize;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle:focus-visible {
+  background: rgba(22, 118, 86, 0.18);
+  outline: none;
+}
+
+:global(body.is-resizing-sidebar) {
+  cursor: col-resize;
+  user-select: none;
 }
 </style>

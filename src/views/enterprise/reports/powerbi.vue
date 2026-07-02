@@ -11,20 +11,13 @@
       </div>
     </section>
 
-    <el-alert
-      v-if="embedNotice"
-      class="powerbi-notice"
-      :title="embedNotice"
-      type="warning"
-      :closable="false"
-      show-icon
-    />
+    <el-alert v-if="embedNotice" class="powerbi-notice" :title="embedNotice" type="warning" :closable="false" show-icon />
 
     <div v-show="sdkActive" ref="reportContainerRef" class="powerbi-frame powerbi-sdk-frame" />
     <iframe
       v-show="!sdkActive"
       :key="frameKey"
-      title="企业温室气体核算数字化平台（会员版）"
+      title="企业碳管理数字化平台（会员版）"
       class="powerbi-frame"
       :src="fallbackReportUrl"
       frameborder="0"
@@ -62,8 +55,7 @@ const reportId = 'fe3213fc-3659-4a24-a7d8-031353e805f5';
 const groupId = '3d918536-4851-4c7e-bc1a-0874d05eafdc';
 const tenantId = 'e6411fdb-6d77-4ffd-b015-619c75b13768';
 const embedUrl = `https://app.powerbi.com/reportEmbed?reportId=${reportId}&groupId=${groupId}`;
-const fallbackReportUrl =
-  `https://app.powerbi.com/reportEmbed?reportId=${reportId}&groupId=${groupId}&autoAuth=true&ctid=${tenantId}`;
+const fallbackReportUrl = `https://app.powerbi.com/reportEmbed?reportId=${reportId}&groupId=${groupId}&autoAuth=true&ctid=${tenantId}`;
 const powerBiClientSrc = 'https://cdn.jsdelivr.net/npm/powerbi-client/dist/powerbi.min.js';
 const tokenStorageKey = 'enterprisePowerBiEmbedToken';
 

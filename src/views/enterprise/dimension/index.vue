@@ -21,7 +21,7 @@
           <div v-if="page.showStatus !== false" class="search-item">
             <label>状态</label>
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-              <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option v-for="item in statusOptions" :key="String(item.value)" :label="item.label" :value="item.value" />
             </el-select>
           </div>
           <div class="search-actions">
@@ -70,7 +70,11 @@
           <el-table-column v-if="isEditable" type="selection" width="42" align="center" />
           <el-table-column :label="page.codeLabel" align="center" prop="recordCode" min-width="150" />
           <el-table-column :label="page.nameLabel" align="center" prop="recordName" min-width="180" :show-overflow-tooltip="true" />
-          <el-table-column v-if="page.showParent" :label="page.parentLabel ?? '上级编码'" align="center" prop="parentCode" min-width="140" />
+          <el-table-column v-if="page.showParent" :label="page.parentLabel ?? '上级编码'" align="center" prop="parentCode" min-width="140">
+            <template #default="scope">
+              {{ formatParentDisplayValue(scope.row) }}
+            </template>
+          </el-table-column>
           <el-table-column
             v-for="field in visibleFields"
             :key="field.prop"
@@ -135,7 +139,12 @@
             </el-select>
             <el-input v-else v-model="form.recordName" :placeholder="`请输入${page.nameLabel}`" />
           </el-form-item>
-          <el-form-item v-if="page.showParent" :label="page.parentLabel ?? '上级编码'" :prop="page.parentRequired ? 'parentCode' : undefined" :required="page.parentRequired">
+          <el-form-item
+            v-if="page.showParent"
+            :label="page.parentLabel ?? '上级编码'"
+            :prop="page.parentRequired ? 'parentCode' : undefined"
+            :required="page.parentRequired"
+          >
             <el-select
               v-model="form.parentCode"
               :placeholder="page.parentPlaceholder ?? `请选择${page.parentLabel ?? '上级编码'}`"
@@ -148,7 +157,13 @@
               <el-option v-for="item in parentCodeOptions" :key="String(item.value)" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
-          <el-form-item v-for="field in visibleFormFields" :key="field.prop" :label="field.formLabel ?? field.label" :prop="field.required ? field.prop : undefined" :required="field.required">
+          <el-form-item
+            v-for="field in visibleFormFields"
+            :key="field.prop"
+            :label="field.formLabel ?? field.label"
+            :prop="field.required ? field.prop : undefined"
+            :required="field.required"
+          >
             <el-select
               v-if="field.optionSource"
               v-model="form[field.prop]"
@@ -169,7 +184,12 @@
               :placeholder="field.placeholder ?? `请选择${field.formLabel ?? field.label}`"
               class="w-full"
             />
-            <el-input v-else-if="field.type === 'number'" v-model="form[field.prop]" type="number" :placeholder="field.placeholder ?? `请输入${field.formLabel ?? field.label}`" />
+            <el-input
+              v-else-if="field.type === 'number'"
+              v-model="form[field.prop]"
+              type="number"
+              :placeholder="field.placeholder ?? `请输入${field.formLabel ?? field.label}`"
+            />
             <el-input v-else v-model="form[field.prop]" :placeholder="field.placeholder ?? `请输入${field.formLabel ?? field.label}`" />
           </el-form-item>
           <el-form-item v-if="page.showStatus !== false" label="状态" prop="status">
@@ -195,7 +215,11 @@
         <el-form label-width="132px">
           <template v-if="dimensionExtensionFields.length > 0">
             <el-form-item v-for="field in dimensionExtensionFields" :key="String(field.id)" :label="field.fieldName || field.fieldCode">
-              <component :is="extensionControlComponent(field)" v-bind="extensionControlProps(field)" v-model="extensionValues[extensionFieldKey(field)]" />
+              <component
+                :is="extensionControlComponent(field)"
+                v-bind="extensionControlProps(field)"
+                v-model="extensionValues[extensionFieldKey(field)]"
+              />
             </el-form-item>
           </template>
           <el-empty v-else description="暂无可维护的扩展字段" />
@@ -269,7 +293,7 @@ import { loadDimensionFieldOptions, loadEmissionSourceNameOptions, loadRecordSta
 import { listExtensionFields, listExtensionFieldValues, saveExtensionFieldValuesBatch } from '@/api/enterprise/extensionField';
 import type { ExtensionFieldVO, ExtensionFieldValueForm, ExtensionFieldValueVO } from '@/api/enterprise/extensionField/types';
 
-type FieldProp = keyof DimensionRecordForm;
+type FieldProp = string;
 
 interface FieldConfig {
   prop: FieldProp;
@@ -280,6 +304,7 @@ interface FieldConfig {
   optionDimensionCode?: string;
   fillProps?: FieldProp[];
   width?: number;
+  precision?: number;
   hidden?: boolean;
   formHidden?: boolean;
   required?: boolean;
@@ -331,10 +356,7 @@ const companyIndustryFieldPairs: CompanyIndustryFieldPair[] = [
   { code: 'industryGroupCode', name: 'industryGroupName' },
   { code: 'industryClassCode', name: 'industryClassName' }
 ];
-const companyDerivedNameFields = new Set<FieldProp>([
-  'provinceName',
-  ...companyIndustryFieldPairs.map((item) => item.name)
-]);
+const companyDerivedNameFields = new Set<FieldProp>(['provinceName', ...companyIndustryFieldPairs.map((item) => item.name)]);
 const dimensionPages: Record<string, PageConfig> = {
   'admin-division': {
     title: '行政区划',
@@ -344,9 +366,7 @@ const dimensionPages: Record<string, PageConfig> = {
     codeLabel: '行政区划代码',
     nameLabel: '行政区划名称',
     showParent: true,
-    fields: [
-      { prop: 'levelType', label: '区划层级' }
-    ]
+    fields: [{ prop: 'levelType', label: '区划层级' }]
   },
   company: {
     title: '公司表',
@@ -354,24 +374,76 @@ const dimensionPages: Record<string, PageConfig> = {
     owner: '企业',
     mode: '企业维护',
     codeLabel: '公司编号',
-    nameLabel: '公司',
+    nameLabel: '公司名称',
     showParent: true,
     parentRequired: true,
-    parentLabel: '工厂编号',
-    parentPlaceholder: '请选择或输入工厂编号',
+    parentLabel: '工厂',
+    parentPlaceholder: '请选择或输入工厂',
     fields: [
-      { prop: 'companySk', label: 'SK_公司', hidden: true },
-      { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称', required: true },
-      { prop: 'provinceCode', label: '省份编码', formLabel: '所在省份', optionSource: 'dimension-field', fillProps: ['provinceCode', 'provinceName'], placeholder: '请选择所在省份' },
+      { prop: 'companySk', label: '公司内部键', hidden: true },
+      { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称', hidden: true },
+      {
+        prop: 'provinceCode',
+        label: '省份编码',
+        formLabel: '所在省份',
+        optionSource: 'dimension-field',
+        fillProps: ['provinceCode', 'provinceName'],
+        placeholder: '请选择所在省份'
+      },
       { prop: 'provinceName', label: '所在省份', optionSource: 'dimension-field', formHidden: true },
       { prop: 'factoryType', label: '工厂类型', optionSource: 'dimension-field', allowCreate: true, placeholder: '请选择或输入工厂类型' },
-      { prop: 'industrySectionCode', label: '行业门类代码', formLabel: '行业门类', optionSource: 'dimension-field', optionDimensionCode: 'industry', fillProps: ['industrySectionCode', 'industrySectionName'], clearsOnChange: ['industryDivisionCode', 'industryDivisionName', 'industryGroupCode', 'industryGroupName', 'industryClassCode', 'industryClassName'], placeholder: '请选择行业门类' },
+      {
+        prop: 'industrySectionCode',
+        label: '行业门类代码',
+        formLabel: '行业门类',
+        optionSource: 'dimension-field',
+        optionDimensionCode: 'industry',
+        fillProps: ['industrySectionCode', 'industrySectionName'],
+        clearsOnChange: [
+          'industryDivisionCode',
+          'industryDivisionName',
+          'industryGroupCode',
+          'industryGroupName',
+          'industryClassCode',
+          'industryClassName'
+        ],
+        placeholder: '请选择行业门类'
+      },
       { prop: 'industrySectionName', label: '行业门类名称', optionSource: 'dimension-field', formHidden: true },
-      { prop: 'industryDivisionCode', label: '行业大类代码', formLabel: '行业大类', optionSource: 'dimension-field', optionDimensionCode: 'industry', fillProps: ['industryDivisionCode', 'industryDivisionName'], parentProp: 'industrySectionCode', clearsOnChange: ['industryGroupCode', 'industryGroupName', 'industryClassCode', 'industryClassName'], placeholder: '请选择行业大类' },
+      {
+        prop: 'industryDivisionCode',
+        label: '行业大类代码',
+        formLabel: '行业大类',
+        optionSource: 'dimension-field',
+        optionDimensionCode: 'industry',
+        fillProps: ['industryDivisionCode', 'industryDivisionName'],
+        parentProp: 'industrySectionCode',
+        clearsOnChange: ['industryGroupCode', 'industryGroupName', 'industryClassCode', 'industryClassName'],
+        placeholder: '请选择行业大类'
+      },
       { prop: 'industryDivisionName', label: '行业大类名称', optionSource: 'dimension-field', formHidden: true },
-      { prop: 'industryGroupCode', label: '行业中类代码', formLabel: '行业中类', optionSource: 'dimension-field', optionDimensionCode: 'industry', fillProps: ['industryGroupCode', 'industryGroupName'], parentProp: 'industryDivisionCode', clearsOnChange: ['industryClassCode', 'industryClassName'], placeholder: '请选择行业中类' },
+      {
+        prop: 'industryGroupCode',
+        label: '行业中类代码',
+        formLabel: '行业中类',
+        optionSource: 'dimension-field',
+        optionDimensionCode: 'industry',
+        fillProps: ['industryGroupCode', 'industryGroupName'],
+        parentProp: 'industryDivisionCode',
+        clearsOnChange: ['industryClassCode', 'industryClassName'],
+        placeholder: '请选择行业中类'
+      },
       { prop: 'industryGroupName', label: '行业中类名称', optionSource: 'dimension-field', formHidden: true },
-      { prop: 'industryClassCode', label: '行业小类代码', formLabel: '行业小类', optionSource: 'dimension-field', optionDimensionCode: 'industry', fillProps: ['industryClassCode', 'industryClassName'], parentProp: 'industryGroupCode', placeholder: '请选择行业小类' },
+      {
+        prop: 'industryClassCode',
+        label: '行业小类代码',
+        formLabel: '行业小类',
+        optionSource: 'dimension-field',
+        optionDimensionCode: 'industry',
+        fillProps: ['industryClassCode', 'industryClassName'],
+        parentProp: 'industryGroupCode',
+        placeholder: '请选择行业小类'
+      },
       { prop: 'industryClassName', label: '行业小类名称', optionSource: 'dimension-field', formHidden: true },
       { prop: 'effectiveDate', label: '生效日期', type: 'date' },
       { prop: 'expiryDate', label: '失效日期', type: 'date' }
@@ -404,7 +476,6 @@ const dimensionPages: Record<string, PageConfig> = {
     nameLabel: '分类名称',
     showParent: true,
     fields: [
-      { prop: 'categorySk', label: 'SK_排放源分类' },
       { prop: 'businessKey', label: '业务编码' },
       { prop: 'categoryNameEn', label: '分类英文名' },
       { prop: 'ghgScope', label: 'GHG Protocol范围', optionSource: 'dimension-field' },
@@ -431,14 +502,11 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '配置排放源',
     owner: '企业',
     mode: '企业确认',
-    codeLabel: '工厂编号',
-    nameLabel: '工厂名称',
+    codeLabel: '基准年Key',
+    nameLabel: '基准年',
     fields: [
-      { prop: 'baseYearKey', label: '基准年业务键' },
       { prop: 'description', label: '说明', width: 220 },
-      { prop: 'baseYear', label: '基准年', optionSource: 'dimension-field', fillProps: ['baseYearKey', 'description', 'baseYear', 'isCurrent', 'currentBaseFlag'], allowCreate: true, required: true },
-      { prop: 'isCurrent', label: '厂商当前标识', optionSource: 'dimension-field', fillProps: ['isCurrent', 'currentBaseFlag'], allowCreate: true },
-      { prop: 'currentBaseFlag', label: '是否当前基准', optionSource: 'dimension-field', allowCreate: true }
+      { prop: 'currentBaseFlag', label: '是否当前基准', allowCreate: true }
     ]
   },
   'ef-factor': {
@@ -457,8 +525,20 @@ const dimensionPages: Record<string, PageConfig> = {
       placeholder: '请选择104排放源或输入新的排放源名称'
     },
     fields: [
-      { prop: 'emissionSourceNameEn', label: '排放源英文名', optionSource: 'dimension-field', fillProps: ['emissionSourceNameEn', 'fuelMaterialCategory', 'sourceUnit', 'applicableScope', 'factorSource', 'factorUnit'], allowCreate: true },
-      { prop: 'fuelMaterialCategory', label: '燃料/物料类别', optionSource: 'dimension-field', fillProps: ['fuelMaterialCategory', 'sourceUnit', 'applicableScope'], allowCreate: true },
+      {
+        prop: 'emissionSourceNameEn',
+        label: '排放源英文名',
+        optionSource: 'dimension-field',
+        fillProps: ['emissionSourceNameEn', 'fuelMaterialCategory', 'sourceUnit', 'applicableScope', 'factorSource', 'factorUnit'],
+        allowCreate: true
+      },
+      {
+        prop: 'fuelMaterialCategory',
+        label: '燃料/物料类别',
+        optionSource: 'dimension-field',
+        fillProps: ['fuelMaterialCategory', 'sourceUnit', 'applicableScope'],
+        allowCreate: true
+      },
       { prop: 'sourceUnit', label: '源单位', optionSource: 'dimension-field', allowCreate: true },
       { prop: 'co2', label: 'CO2', type: 'number' },
       { prop: 'ch4', label: 'CH4', type: 'number' },
@@ -484,12 +564,11 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '确认排放因子',
     owner: '链接厂商',
     mode: '同步后确认',
-    codeLabel: '电力因子编码',
-    nameLabel: '电力因子名称',
+    codeLabel: 'PK_因子版本省份代码',
+    nameLabel: '行政区划名称',
     fields: [
       { prop: 'factorVersion', label: '因子版本' },
       { prop: 'divisionCode', label: '行政区划代码' },
-      { prop: 'divisionName', label: '行政区划名称' },
       { prop: 'regionName', label: '区域名称' },
       { prop: 'provinceFactor', label: '省级因子（kgCO2/kWh）', type: 'number', precision: 10 },
       { prop: 'regionFactor', label: '区域因子（kgCO2/kWh）', type: 'number', precision: 10 },
@@ -670,7 +749,7 @@ const parentCodeOptions = computed(() => {
       const factoryCode = String(record.parentCode ?? '').trim();
       if (!factoryCode || uniqueFactories.has(factoryCode)) return;
       uniqueFactories.set(factoryCode, {
-        label: [factoryCode, record.factoryName].filter(Boolean).join(' / '),
+        label: [record.factoryName, record.recordName].filter(Boolean).join(' / '),
         value: factoryCode,
         record
       });
@@ -818,7 +897,7 @@ const data = reactive<PageData<DimensionRecordForm, DimensionRecordQuery>>({
   rules: {
     recordCode: [{ required: true, message: '编码不能为空', trigger: 'blur' }],
     recordName: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
-    parentCode: [{ required: true, message: '工厂编号不能为空', trigger: 'change' }],
+    parentCode: [{ required: true, message: '工厂不能为空', trigger: 'change' }],
     factoryName: [{ required: true, message: '工厂名称不能为空', trigger: 'blur' }],
     baseYear: [{ required: true, message: '基准年不能为空', trigger: 'blur' }],
     effectiveYear: [{ required: true, message: '生效年份不能为空', trigger: 'blur' }],
@@ -837,6 +916,13 @@ const data = reactive<PageData<DimensionRecordForm, DimensionRecordQuery>>({
 const { queryParams, form, rules } = toRefs(data);
 
 const statusLabel = (value?: string) => statusOptions.value.find((item) => item.value === value)?.label ?? value ?? '-';
+
+const formatParentDisplayValue = (row: Record<string, any>) => {
+  if (routeKey.value === 'company') {
+    return row.factoryName || row.parentCode || '-';
+  }
+  return row.parentCode || '-';
+};
 
 const formatDisplayValue = (value: unknown, field?: FieldConfig) => {
   if (value === undefined || value === null || value === '') {
@@ -893,7 +979,11 @@ const clearFormFields = (props?: FieldProp[]) => {
 const handleParentCodeChange = (value: unknown) => {
   if (routeKey.value !== 'company') return;
   const selected = parentCodeOptions.value.find((option) => optionValueEquals(option.value, value));
-  assignFormValueFromRecord(optionRecord(selected), 'factoryName');
+  if (selected) {
+    assignFormValueFromRecord(optionRecord(selected), 'factoryName');
+    return;
+  }
+  form.value.factoryName = value == null ? undefined : String(value);
 };
 
 const handleFieldSelect = (field: FieldConfig, value: unknown) => {
@@ -931,6 +1021,9 @@ const fillRowValueFromOption = (row: Record<string, any>, field: FieldConfig, pr
 
 const hydrateCompanyDerivedFields = (row: Record<string, any>) => {
   if (routeKey.value !== 'company') return row;
+  if (!row.factoryName && row.parentCode) {
+    row.factoryName = row.parentCode;
+  }
   const provinceField = fieldByProp('provinceCode');
   if (provinceField) {
     fillRowValueFromOption(row, provinceField, 'provinceName');
@@ -950,10 +1043,9 @@ const loadPageFieldOptions = async () => {
   if (!currentPage) {
     return;
   }
-  const fields = [
-    ...(currentPage.nameField ? [currentPage.nameField] : []),
-    ...currentPage.fields
-  ].filter((field) => field.optionSource && field.prop !== 'enabledText' && !isCompanyDerivedNameField(field));
+  const fields = [...(currentPage.nameField ? [currentPage.nameField] : []), ...currentPage.fields].filter(
+    (field) => field.optionSource && field.prop !== 'enabledText' && !isCompanyDerivedNameField(field)
+  );
   await Promise.all(
     fields.map(async (field) => {
       const optionDimensionCode = fieldOptionDimensionCode(field);
@@ -1108,7 +1200,7 @@ const inflateRaw = async (bytes: Uint8Array) => {
   if (!streamCtor) {
     throw new Error('当前浏览器不支持解析压缩 Excel，请使用系统模板直接上传');
   }
-  const stream = new Blob([bytes]).stream().pipeThrough(new streamCtor('deflate-raw'));
+  const stream = new Blob([bytes.slice().buffer]).stream().pipeThrough(new streamCtor('deflate-raw'));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 };
 
@@ -1436,7 +1528,7 @@ const parseDimensionUploadFile = async (uploadFile: UploadFile | UploadRawFile) 
   }
   uploadParsing.value = true;
   try {
-    const rows = await parseXlsxRows(file);
+    const rows = await parseXlsxRows(file as Blob);
     if (!rows.length) {
       ElMessage.warning('文件解析完成，但没有可导入的数据行');
       return false;

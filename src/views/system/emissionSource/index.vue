@@ -146,7 +146,11 @@
           </el-select>
         </el-form-item>
         <el-form-item label="数据权限类型" prop="dataPermission">
-          <el-input-number v-model="form.dataPermission" :min="1" :max="3" placeholder="1企业可编辑 2系统预设只读 3链接厂商只读" />
+          <el-select v-model="form.dataPermission" placeholder="请选择数据权限类型" clearable class="w-full">
+            <el-option label="1企业可编辑" value="1" />
+            <el-option label="2系统预设只读" value="2" />
+            <el-option label="3链接厂商只读" value="3" />
+          </el-select>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />

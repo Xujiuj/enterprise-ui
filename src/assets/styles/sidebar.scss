@@ -416,10 +416,6 @@ html.dark {
       font-weight: 600;
     }
 
-    .el-menu-item.is-active {
-      padding-left: 17px !important;
-    }
-
     .el-sub-menu .el-menu-item,
     .nest-menu .el-sub-menu > .el-sub-menu__title {
       min-width: calc(var(--sidebar-width, #{$base-sidebar-width}) - 20px) !important;

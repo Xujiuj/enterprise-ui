@@ -10,6 +10,9 @@ export interface EmissionSourceVO {
   sourceIdentificationName?: string;
   emissionSourceName?: string;
   responsibleDept?: string;
+  dataFrequency?: string;
+  responsibleUserId?: string | number;
+  responsibleUserName?: string;
   dataSource?: string;
   factorKey?: string;
   factorDisplayName?: string;
@@ -32,6 +35,9 @@ export interface EmissionSourceForm extends BaseEntity {
   sourceIdentificationName?: string;
   emissionSourceName?: string;
   responsibleDept?: string;
+  dataFrequency?: string;
+  responsibleUserId?: string | number;
+  responsibleUserName?: string;
   dataSource?: string;
   factorKey?: string;
   sourceUnit?: string;
@@ -50,6 +56,9 @@ export interface EmissionSourceQuery extends PageQuery {
   sourceIdentificationName?: string;
   emissionSourceName?: string;
   responsibleDept?: string;
+  dataFrequency?: string;
+  responsibleUserId?: string | number;
+  responsibleUserName?: string;
   dataSource?: string;
   factorKey?: string;
   enabledFlag?: boolean;

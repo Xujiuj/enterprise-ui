@@ -11,53 +11,53 @@
   </el-menu>
 </template>
 
-<script setup>
-import SidebarItem from '../Sidebar/SidebarItem'
-import {useAppStore} from '@/store/modules/app'
-import {useSettingsStore} from '@/store/modules/settings'
-import {usePermissionStore} from '@/store/modules/permission'
+<script setup lang="ts">
+import SidebarItem from '../Sidebar/SidebarItem.vue';
+import { useAppStore } from '@/store/modules/app';
+import { useSettingsStore } from '@/store/modules/settings';
+import { usePermissionStore } from '@/store/modules/permission';
+import type { RouteRecordRaw } from 'vue-router';
 
-const route = useRoute()
-const appStore = useAppStore()
-const settingsStore = useSettingsStore()
-const permissionStore = usePermissionStore()
+const route = useRoute();
+const appStore = useAppStore();
+const settingsStore = useSettingsStore();
+const permissionStore = usePermissionStore();
 
-const sidebarRouters = computed(() => permissionStore.sidebarRouters)
-const theme = computed(() => settingsStore.theme)
-const device = computed(() => appStore.device)
+const sidebarRouters = computed(() => permissionStore.sidebarRouters);
+const theme = computed(() => settingsStore.theme);
 const activeMenu = computed(() => {
-  const { meta, path } = route
+  const { meta, path } = route;
   if (meta.activeMenu) {
-    return meta.activeMenu
+    return meta.activeMenu;
   }
-  return path
-})
+  return path;
+});
 
-const visibleNumber = ref(5)
-const topMenus = computed(() => {
-  return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(0, visibleNumber.value)
-})
-const moreRoutes = computed(() => {
-  return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(visibleNumber.value, sidebarRouters.value.length - visibleNumber.value)
-})
+const visibleNumber = ref(5);
+const topMenus = computed<RouteRecordRaw[]>(() => {
+  return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(0, visibleNumber.value) as RouteRecordRaw[];
+});
+const moreRoutes = computed<RouteRecordRaw[]>(() => {
+  return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(visibleNumber.value, sidebarRouters.value.length - visibleNumber.value) as RouteRecordRaw[];
+});
 function setVisibleNumber() {
-  let width = document.body.getBoundingClientRect().width
+  let width = document.body.getBoundingClientRect().width;
   if (width >= 1000) {
-    width -= 500
+    width -= 500;
   }
-  visibleNumber.value = parseInt(width / 3 / 85)
+  visibleNumber.value = parseInt(String(width / 3 / 85));
 }
 
 onMounted(() => {
-  window.addEventListener('resize', setVisibleNumber)
-})
+  window.addEventListener('resize', setVisibleNumber);
+});
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', setVisibleNumber)
-})
+  window.removeEventListener('resize', setVisibleNumber);
+});
 
 onMounted(() => {
-  setVisibleNumber()
-})
+  setVisibleNumber();
+});
 </script>
 
 <style lang="scss">

@@ -4,7 +4,7 @@
       <el-form v-show="showSearch" ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="search-bar wide activity-search">
         <el-form-item label="排放源" prop="emissionSourceName">
           <el-select v-model="queryParams.emissionSourceName" clearable filterable :loading="sourceLoading" class="query-source">
-            <el-option v-for="option in emissionSourceNameOptions" :key="option.value" :label="option.label" :value="option.value" />
+            <el-option v-for="option in emissionSourceNameOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="公司" prop="companyName">
@@ -146,7 +146,7 @@
                 placeholder="请选择公司"
                 @change="handleCompanyChange"
               >
-                <el-option v-for="option in sourceCompanyOptions" :key="option.value" :label="option.label" :value="option.value" />
+                <el-option v-for="option in sourceCompanyOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -162,7 +162,7 @@
                 placeholder="请选择工厂"
                 @change="handleFactoryChange"
               >
-                <el-option v-for="option in sourceFactoryOptions" :key="option.value" :label="option.label" :value="option.value" />
+                <el-option v-for="option in sourceFactoryOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -178,7 +178,7 @@
                 placeholder="请选择范围"
                 @change="handleScopeChange"
               >
-                <el-option v-for="option in sourceScopeOptions" :key="option.value" :label="option.label" :value="option.value" />
+                <el-option v-for="option in sourceScopeOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -194,7 +194,7 @@
                 placeholder="请选择范围子类别"
                 @change="handleSubcategoryChange"
               >
-                <el-option v-for="option in sourceSubcategoryOptions" :key="option.value" :label="option.label" :value="option.value" />
+                <el-option v-for="option in sourceSubcategoryOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -210,12 +210,12 @@
                 placeholder="请选择排放源识别"
                 @change="handleSourceIdentificationChange"
               >
-                <el-option v-for="option in sourceIdentificationOptions" :key="option.value" :label="option.label" :value="option.value" />
+                <el-option v-for="option in sourceIdentificationOptions" :key="String(option.value)" :label="option.label" :value="option.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="排放源名称" prop="emissionSourceName">
+            <el-form-item label="排放源" prop="emissionSourceName">
               <el-select
                 v-model="form.emissionSourceName"
                 class="w-full"
@@ -223,10 +223,15 @@
                 filterable
                 :loading="sourceNameLoading"
                 :disabled="formDrawer.readonly || !form.scopeSubcategory"
-                placeholder="请选择排放源名称"
+                placeholder="请选择排放源"
                 @change="handleSourceNameChange"
               >
-                <el-option v-for="option in sourceNameOptions" :key="option.value" :label="formatSourceOptionLabel(option)" :value="option.value" />
+                <el-option
+                  v-for="option in sourceNameOptions"
+                  :key="String(option.value)"
+                  :label="formatSourceOptionLabel(option)"
+                  :value="option.value"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -382,7 +387,7 @@
         :empty-row="sheetEmptyRow"
         :saving="sheetSaving"
         allow-empty-save
-        hint="在线填报仅用于新增活动数据；填写公司、工厂、范围、范围子类别、排放源名称、活动期间、日期、活动数据、负责部门、数据来源，其余字段由后端保存时自动解析。"
+        hint="在线填报仅用于新增活动数据；字段按 Source(A) 活动数据表头展示，年度、月份、日期、活动数据、负责部门和数据来源必须填写。"
         @save="saveSheetRows"
       />
     </el-drawer>
@@ -469,43 +474,37 @@ const ALL_FIELD_DESCRIPTORS: EmissionActivityFieldDescriptor[] = [
   {
     fieldOrder: 1,
     fieldCode: 'sourceIdentificationCode',
-    fieldName: '排放源识别编号',
+    fieldName: 'PK_排放源识别编号',
     sourceRequired: false,
     rowValueRequired: false,
-    derivedField: true
+    derivedField: false
   },
-  { fieldOrder: 2, fieldCode: 'companyCode', fieldName: '公司编号', sourceRequired: false, rowValueRequired: false, derivedField: true },
+  { fieldOrder: 2, fieldCode: 'companyCode', fieldName: 'FK_公司编号', sourceRequired: false, rowValueRequired: false, derivedField: false },
   { fieldOrder: 3, fieldCode: 'companyName', fieldName: '公司名称', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 4, fieldCode: 'factoryName', fieldName: '工厂', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 5, fieldCode: 'sourceCategoryKey', fieldName: '排放源分类', sourceRequired: false, rowValueRequired: false, derivedField: true },
+  { fieldOrder: 5, fieldCode: 'sourceCategoryKey', fieldName: 'FK_排放源分类', sourceRequired: false, rowValueRequired: false, derivedField: false },
   { fieldOrder: 6, fieldCode: 'scopeName', fieldName: '范围', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 7, fieldCode: 'scopeSubcategory', fieldName: '范围子类别', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 8, fieldCode: 'sourceIdentificationName', fieldName: '排放源识别', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 9, fieldCode: 'emissionSourceName', fieldName: '排放源名称', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 10, fieldCode: 'activityUnit', fieldName: '单位', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 11, fieldCode: 'activityPeriod', fieldName: '活动期间', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 12, fieldCode: 'activityYear', fieldName: '年度', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 13, fieldCode: 'activityMonth', fieldName: '月份', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 14, fieldCode: 'activityDate', fieldName: '日期', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 15, fieldCode: 'activityValue', fieldName: '活动数据', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 16, fieldCode: 'responsibleDept', fieldName: '负责部门', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 17, fieldCode: 'dataSource', fieldName: '数据来源', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 18, fieldCode: 'sourceRemark', fieldName: '备注', sourceRequired: false, rowValueRequired: false, derivedField: true },
-  { fieldOrder: 19, fieldCode: 'factorKey', fieldName: '排放因子', sourceRequired: false, rowValueRequired: false, derivedField: true }
+  {
+    fieldOrder: 8,
+    fieldCode: 'sourceIdentificationName',
+    fieldName: '排放源识别',
+    sourceRequired: false,
+    rowValueRequired: true,
+    derivedField: false
+  },
+  { fieldOrder: 9, fieldCode: 'emissionSourceName', fieldName: '排放源', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 10, fieldCode: 'activityUnit', fieldName: '单位', sourceRequired: false, rowValueRequired: false, derivedField: false },
+  { fieldOrder: 11, fieldCode: 'activityYear', fieldName: '年度', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 12, fieldCode: 'activityMonth', fieldName: '月份', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 13, fieldCode: 'activityDate', fieldName: '日期', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 14, fieldCode: 'activityValue', fieldName: '活动数据', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 15, fieldCode: 'responsibleDept', fieldName: '负责部门', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 16, fieldCode: 'dataSource', fieldName: '数据来源', sourceRequired: false, rowValueRequired: true, derivedField: false },
+  { fieldOrder: 17, fieldCode: 'sourceRemark', fieldName: '备注', sourceRequired: false, rowValueRequired: false, derivedField: false },
+  { fieldOrder: 18, fieldCode: 'factorKey', fieldName: 'FK_排放因子', sourceRequired: false, rowValueRequired: false, derivedField: false }
 ];
-const FALLBACK_ENTRY_FIELD_DESCRIPTORS: EmissionActivityFieldDescriptor[] = [
-  { fieldOrder: 1, fieldCode: 'companyName', fieldName: '公司名称', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 2, fieldCode: 'factoryName', fieldName: '工厂', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 3, fieldCode: 'scopeName', fieldName: '范围', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 4, fieldCode: 'scopeSubcategory', fieldName: '范围子类别', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 5, fieldCode: 'sourceIdentificationName', fieldName: '排放源识别', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 6, fieldCode: 'emissionSourceName', fieldName: '排放源名称', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 7, fieldCode: 'activityPeriod', fieldName: '活动期间', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 8, fieldCode: 'activityDate', fieldName: '日期', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 9, fieldCode: 'activityValue', fieldName: '活动数据', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 10, fieldCode: 'responsibleDept', fieldName: '负责部门', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 11, fieldCode: 'dataSource', fieldName: '数据来源', sourceRequired: false, rowValueRequired: true, derivedField: false }
-];
+const FALLBACK_ENTRY_FIELD_DESCRIPTORS: EmissionActivityFieldDescriptor[] = [...ALL_FIELD_DESCRIPTORS];
 
 const queryFormRef = ref<FormInstance>();
 const activityFormRef = ref<FormInstance>();
@@ -610,9 +609,12 @@ const form = reactive<ActivityEntryForm>({
 });
 
 const activityTableColumns: ActivityTableColumn[] = [
+  { prop: 'sourceIdentificationCode', label: 'PK_排放源识别编号', minWidth: 180 },
+  { prop: 'companyCode', label: 'FK_公司编号', minWidth: 130 },
   { prop: 'companyName', label: '公司名称', minWidth: 180 },
   { prop: 'factoryName', label: '工厂', minWidth: 150 },
-  { prop: 'scopeName', label: '核算范围', width: 110 },
+  { prop: 'sourceCategoryKey', label: 'FK_排放源分类', minWidth: 150 },
+  { prop: 'scopeName', label: '范围', width: 110 },
   { prop: 'scopeSubcategory', label: '范围子类别', minWidth: 190 },
   { prop: 'sourceIdentificationName', label: '排放源识别', minWidth: 170 },
   { prop: 'emissionSourceName', label: '排放源', minWidth: 160 },
@@ -623,8 +625,9 @@ const activityTableColumns: ActivityTableColumn[] = [
   { prop: 'activityValue', label: '活动数据', width: 130, align: 'right' },
   { prop: 'responsibleDept', label: '负责部门', width: 130 },
   { prop: 'dataSource', label: '数据来源', width: 130 },
-  { prop: 'dataStatus', label: '数据状态', width: 110 },
-  { prop: 'sourceRemark', label: '备注', minWidth: 160 }
+  { prop: 'sourceRemark', label: '备注', minWidth: 160 },
+  { prop: 'factorKey', label: 'FK_排放因子', minWidth: 130 },
+  { prop: 'dataStatus', label: '数据状态', width: 110 }
 ];
 const activityColumnOptions = ref<FieldOption[]>(
   activityTableColumns.map((column) => ({
@@ -711,13 +714,24 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() =>
         fillProps: ['companyName', 'factoryName', 'scopeName', 'scopeSubcategory', 'sourceIdentificationName', 'emissionSourceName']
       };
     }
-    if (field.fieldCode === 'activityPeriod') {
+    if (field.fieldCode === 'activityYear') {
       return {
         prop: field.fieldCode,
         label: field.fieldName,
-        type: 'month',
+        type: 'number',
         required: field.rowValueRequired,
-        width: 150
+        precision: 0,
+        width: 110
+      };
+    }
+    if (field.fieldCode === 'activityMonth') {
+      return {
+        prop: field.fieldCode,
+        label: field.fieldName,
+        type: 'number',
+        required: field.rowValueRequired,
+        precision: 0,
+        width: 100
       };
     }
     if (field.fieldCode === 'activityValue') {
@@ -782,7 +796,7 @@ const rules: FormRules<ActivityEntryForm> = {
   scopeName: [{ required: true, message: '请选择范围', trigger: 'change' }],
   scopeSubcategory: [{ required: true, message: '请选择范围子类别', trigger: 'change' }],
   sourceIdentificationName: [{ required: true, message: '请选择排放源识别', trigger: 'change' }],
-  emissionSourceName: [{ required: true, message: '请选择排放源名称', trigger: 'change' }],
+  emissionSourceName: [{ required: true, message: '请选择排放源', trigger: 'change' }],
   selectedPeriod: [{ required: true, message: '请选择活动期间', trigger: 'change' }],
   date: [{ required: true, message: '请选择日期', trigger: 'change' }],
   activityValue: [{ required: true, message: '请输入活动数据', trigger: 'blur' }],
@@ -904,7 +918,7 @@ const clearResolvedSourceFields = () => {
   form.factorKey = undefined;
 };
 
-const resetSourceCascadeOptions = (level: 'factory' | 'scope' | 'subcategory' | 'identification' | 'sourceName') => {
+const resetSourceCascadeOptions = (level: 'factory' | 'scope' | 'subcategory' | 'identification' | 'emissionSourceName') => {
   if (level === 'factory') {
     sourceFactoryOptions.value = [];
   }
@@ -917,7 +931,7 @@ const resetSourceCascadeOptions = (level: 'factory' | 'scope' | 'subcategory' | 
   if (level === 'factory' || level === 'scope' || level === 'subcategory' || level === 'identification') {
     sourceIdentificationOptions.value = [];
   }
-  if (level === 'factory' || level === 'scope' || level === 'subcategory' || level === 'identification' || level === 'sourceName') {
+  if (level === 'factory' || level === 'scope' || level === 'subcategory' || level === 'identification' || level === 'emissionSourceName') {
     sourceNameOptions.value = [];
   }
 };
@@ -964,9 +978,9 @@ const loadSourceScopeOptions = async (requestId = latestCascadeRequestId.value) 
   sourceScopeLoading.value = true;
   try {
     const options = await loadActivityEntrySourceScopeOptions({
-          companyName: form.sourceCompanyName,
-          factoryName: form.sourceFactoryName
-        });
+      companyName: form.sourceCompanyName,
+      factoryName: form.sourceFactoryName
+    });
     if (isLatestCascadeRequest(requestId)) {
       sourceScopeOptions.value = options;
     }
@@ -985,10 +999,10 @@ const loadSourceSubcategoryOptions = async (requestId = latestCascadeRequestId.v
   sourceSubcategoryLoading.value = true;
   try {
     const options = await loadActivityEntrySourceSubcategoryOptions({
-          companyName: form.sourceCompanyName,
-          factoryName: form.sourceFactoryName,
-          scopeName: form.scopeName
-        });
+      companyName: form.sourceCompanyName,
+      factoryName: form.sourceFactoryName,
+      scopeName: form.scopeName
+    });
     if (isLatestCascadeRequest(requestId)) {
       sourceSubcategoryOptions.value = options;
     }
@@ -1001,18 +1015,18 @@ const loadSourceSubcategoryOptions = async (requestId = latestCascadeRequestId.v
 
 const loadSourceNameOptions = async (requestId = latestCascadeRequestId.value) => {
   if (!form.sourceCompanyName || !form.sourceFactoryName || !form.scopeName || !form.scopeSubcategory) {
-    resetSourceCascadeOptions('sourceName');
+    resetSourceCascadeOptions('emissionSourceName');
     return;
   }
   sourceNameLoading.value = true;
   try {
     const options = await loadActivityEntryEmissionSourceNameOptions({
-            companyName: form.sourceCompanyName,
-            factoryName: form.sourceFactoryName,
-            scopeName: form.scopeName,
-            scopeSubcategory: form.scopeSubcategory,
-            sourceIdentificationName: form.sourceIdentificationName
-          });
+      companyName: form.sourceCompanyName,
+      factoryName: form.sourceFactoryName,
+      scopeName: form.scopeName,
+      scopeSubcategory: form.scopeSubcategory,
+      sourceIdentificationName: form.sourceIdentificationName
+    });
     if (isLatestCascadeRequest(requestId)) {
       sourceNameOptions.value = options;
     }
@@ -1110,7 +1124,7 @@ const handleSourceIdentificationChange = async () => {
   const requestId = nextCascadeRequestId();
   form.emissionSourceName = undefined;
   form.sourceIdentificationCode = undefined;
-  resetSourceCascadeOptions('sourceName');
+  resetSourceCascadeOptions('emissionSourceName');
   clearResolvedSourceFields();
   clearManualValidation();
   await loadSourceNameOptions(requestId);
@@ -1220,9 +1234,11 @@ const collectIssues = (result?: EmissionActivityImportValidationResult): Emissio
   ...(result?.rowResults?.flatMap((row) => row.issues ?? []) ?? [])
 ];
 
-const cloneFieldDescriptors = (fields: EmissionActivityFieldDescriptor[] = []): EmissionActivityFieldDescriptor[] => fields.map((field) => ({ ...field }));
+const cloneFieldDescriptors = (fields: EmissionActivityFieldDescriptor[] = []): EmissionActivityFieldDescriptor[] =>
+  fields.map((field) => ({ ...field }));
 
-const cloneFieldValues = (fieldValues: EmissionActivityFieldValue[] = []): EmissionActivityFieldValue[] => fieldValues.map((fieldValue) => ({ ...fieldValue }));
+const cloneFieldValues = (fieldValues: EmissionActivityFieldValue[] = []): EmissionActivityFieldValue[] =>
+  fieldValues.map((fieldValue) => ({ ...fieldValue }));
 
 const cloneImportValidationRequest = (request: EmissionActivityImportValidationRequest): EmissionActivityImportValidationRequest => ({
   headerFields: cloneFieldDescriptors(request.headerFields ?? []),
@@ -1233,6 +1249,7 @@ const cloneImportValidationRequest = (request: EmissionActivityImportValidationR
 });
 
 const buildFieldValues = (): EmissionActivityFieldValue[] => {
+  const { year, month } = splitPeriod(form.selectedPeriod);
   const values: DerivedValueMap = {
     ...currentDerivedValues(),
     companyName: form.sourceCompanyName ?? '',
@@ -1241,7 +1258,8 @@ const buildFieldValues = (): EmissionActivityFieldValue[] => {
     scopeSubcategory: form.scopeSubcategory ?? '',
     sourceIdentificationName: form.sourceIdentificationName ?? '',
     emissionSourceName: form.emissionSourceName ?? '',
-    activityPeriod: form.selectedPeriod ?? '',
+    activityYear: year ?? '',
+    activityMonth: month ?? '',
     activityDate: form.date ?? '',
     activityValue: valueToString(roundToTwoDecimal(form.activityValue)),
     responsibleDept: form.responsibleDept ?? '',
@@ -1265,6 +1283,7 @@ const buildActivityDataForm = (dataStatus?: string) => {
     sourceIdentificationCode: derivedValues.sourceIdentificationCode ?? form.sourceIdentificationCode,
     companyCode: derivedValues.companyCode,
     companyName: form.sourceCompanyName,
+    factoryCode: derivedValues.companyCode,
     factoryName: form.sourceFactoryName,
     sourceCategoryKey: derivedValues.sourceCategoryKey ?? form.sourceCategoryKey,
     scopeName: form.scopeName,
@@ -1586,7 +1605,7 @@ const parseUploadedFile = async (uploadFile: UploadFile | UploadRawFile) => {
   parsedUploadRequest.value = undefined;
   uploadValidation.value = undefined;
   try {
-    const parseRes = await parseLocalEmissionActivityFile(file);
+    const parseRes = await parseLocalEmissionActivityFile(file as File);
     parsedUploadRequest.value = cloneImportValidationRequest(parseRes.data);
     const validation = await runUploadServerValidation(parsedUploadRequest.value);
     if (parsedUploadRowCount.value === 0) {

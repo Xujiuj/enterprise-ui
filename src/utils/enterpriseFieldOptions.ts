@@ -21,10 +21,7 @@ const uniqueByValue = (options: SelectOption[]) => {
   });
 };
 
-export const loadEnterpriseOptions = async (
-  optionCode: string,
-  params?: EnterpriseOptionQuery
-) => {
+export const loadEnterpriseOptions = async (optionCode: string, params?: EnterpriseOptionQuery) => {
   const res = await listEnterpriseOptions(optionCode, params);
   return uniqueByValue(
     (res.data ?? [])
@@ -72,6 +69,8 @@ export const loadFactoryNameOptions = () => loadEnterpriseOptions('factory-name'
 export const loadFactoryOptions = loadFactoryCodeOptions;
 export const loadSourceCategoryOptions = () => loadEnterpriseOptions('source-category-key');
 export const loadResponsibleDeptOptions = () => loadEnterpriseOptions('responsible-dept');
+export const loadDataFrequencyOptions = () => loadEnterpriseOptions('data-frequency');
+export const loadResponsibleUserOptions = () => loadEnterpriseOptions('responsible-user');
 export const loadEmissionSourceCodeOptions = () => loadEnterpriseOptions('emission-source-code');
 export const loadEmissionSourceNameOptions = () => loadEnterpriseOptions('emission-source-name');
 export const loadFactorOptions = () => loadEnterpriseOptions('factor-key');

@@ -50,8 +50,10 @@ export interface FactorCacheRecordVO {
   gwpValue?: number;
   convertedFactor?: number;
   sourceRef?: string;
+  customFields?: string;
   enabledFlag?: boolean;
   syncedTime?: string;
+  remark?: string;
 }
 
 export interface FactorCacheRecordForm extends BaseEntity {
@@ -106,16 +108,22 @@ export interface FactorCacheRecordForm extends BaseEntity {
   gwpValue?: number;
   convertedFactor?: number;
   sourceRef?: string;
+  customFields?: string;
   enabledFlag?: boolean;
   syncedTime?: string;
+  remark?: string;
 }
 
 export interface FactorCacheRecordQuery extends PageQuery {
   cacheVersionId?: string | number;
   factorTableCode?: string;
   factorCode?: string;
+  factorKey?: string;
   factorName?: string;
   factorCategory?: string;
+  emissionSourceName?: string;
+  factorVersion?: string;
+  divisionName?: string;
   enabledFlag?: boolean;
   params?: any;
 }

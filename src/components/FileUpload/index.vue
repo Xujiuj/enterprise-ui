@@ -93,7 +93,7 @@ watch(
       if (Array.isArray(val)) {
         list = val;
       } else {
-        const res = await listByIds(val);
+        const res = await listByIds(String(val));
         list = res.data.map((oss) => {
           return {
             name: oss.originalName,

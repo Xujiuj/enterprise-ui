@@ -1,15 +1,15 @@
 <template>
   <div class="login-page auth-page">
     <div class="login-brand">
-      <span class="logo-mark"></span>
-      <span>企业温室气体核算数字化平台</span>
+      <img class="logo-mark" :src="systemLogo" alt="" />
+      <span>企业碳管理数字化平台</span>
     </div>
     <span class="portal-tag">企业端</span>
 
     <div class="login-box">
       <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-card">
         <div class="login-header">
-          <h2>企业温室气体核算数字化平台</h2>
+          <h2>企业碳管理数字化平台</h2>
           <p>统一数据 · 精准核算 · 管理赋能</p>
         </div>
 
@@ -94,6 +94,7 @@ import { to } from 'await-to-js';
 import { useI18n } from 'vue-i18n';
 import { buildVendorCashierFallbackUrl, createOnlinePurchaseOrder } from '@/api/enterprise/onlinePurchase';
 import type { OnlinePurchasePayChannel } from '@/api/enterprise/onlinePurchase/types';
+import systemLogo from '@/assets/logo/logo.png';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -355,7 +356,7 @@ html.dark .auth-page {
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  color: #1E7F4C;
+  color: #1e7f4c;
   pointer-events: auto;
 }
 
@@ -375,9 +376,7 @@ html.dark .auth-page {
 .logo-mark {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 44%), linear-gradient(135deg, #43A96E, #1E7F4C);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  object-fit: contain;
 }
 
 .portal-tag {

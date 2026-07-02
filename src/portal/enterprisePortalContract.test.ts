@@ -367,6 +367,7 @@ describe('enterprise dynamic router guard', () => {
         'system/role/index',
         'system/role/authUser',
         'system/menu/index',
+        'system/dept/index',
         'enterprise/extensionField/index',
         'monitor/operlog/index',
         'monitor/logininfor/index'
@@ -377,7 +378,6 @@ describe('enterprise dynamic router guard', () => {
         'legacy/tool-gen/index',
         'vendor/templateScope/index',
         'legacy/customer/index',
-        'system/dept/index',
         'system/post/index',
         'legacy/monitor-online/index',
         'system/license/index',
@@ -416,7 +416,7 @@ describe('enterprise dynamic router guard', () => {
       '/green-electricity': ['green-electricity-data'],
       '/intensity': ['intensity-denominator', 'intensity-target', 'denominator-fact', 'intensity-tolerance'],
       '/report-management': ['content', 'powerbi-report', 'data-validation', 'report-template-download'],
-      '/system': ['user', 'role', 'menu', 'extension-field'],
+      '/system': ['user', 'role', 'menu', 'dept', 'extension-field'],
       '/log': ['operlog', 'logininfor']
     });
     expect(filtered.map((route: any) => route.meta?.title)).toEqual([
@@ -430,6 +430,13 @@ describe('enterprise dynamic router guard', () => {
       '系统管理',
       '日志'
     ]);
+    expect(
+      filtered
+        .filter((route: any) =>
+          ['/emission-source-config', '/factor-confirm', '/activity-data', '/green-electricity', '/intensity'].includes(String(route.path))
+        )
+        .map((route: any) => route.meta?.icon)
+    ).toEqual(['list', 'list', 'list', 'list', 'list']);
     expect(visibleTitles(filtered)).toEqual([
       '系统授权',
       '授权管理',
@@ -463,12 +470,13 @@ describe('enterprise dynamic router guard', () => {
       '用户管理',
       '角色管理',
       '菜单管理',
+      '部门管理',
       '扩展字段配置',
       '日志',
       '操作日志',
       '登录日志'
     ]);
-    expect(visibleTitles(filtered)).not.toEqual(expect.arrayContaining(['活动数据录入', '因子确认记录', '因子缓存记录', '部门管理', '岗位管理']));
+    expect(visibleTitles(filtered)).not.toEqual(expect.arrayContaining(['活动数据录入', '因子确认记录', '因子缓存记录', '岗位管理']));
   });
 
   it('uses readable Chinese forbidden-title rules for the enterprise portal boundary', () => {
@@ -479,7 +487,7 @@ describe('enterprise dynamic router guard', () => {
     expect(isEnterpriseForbiddenMenuTitle('因子库管理')).toBe(true);
     expect(isEnterpriseForbiddenMenuTitle('模板分发')).toBe(true);
     expect(isEnterpriseForbiddenMenuTitle('续费订单')).toBe(true);
-    expect(isEnterpriseForbiddenMenuTitle('部门管理')).toBe(true);
+    expect(isEnterpriseForbiddenMenuTitle('部门管理')).toBe(false);
     expect(isEnterpriseForbiddenMenuTitle('岗位管理')).toBe(true);
     expect(isEnterpriseForbiddenMenuTitle('配置排放源')).toBe(false);
     expect(isEnterpriseForbiddenMenuTitle('企业本地业务')).toBe(true);
@@ -494,14 +502,14 @@ function flattenComponents(routes: Array<{ component?: unknown; children?: any[]
   return routes.flatMap((route) => [String(route.component ?? ''), ...flattenComponents(route.children ?? [])]).filter(Boolean);
 }
 
-function visibleTitles(routes: Array<{ hidden?: boolean; meta?: { title?: unknown }; children?: any[] }>): string[] {
+function visibleTitles(routes: Array<{ hidden?: unknown; meta?: { title?: unknown }; children?: any[] }>): string[] {
   return routes.flatMap((route) => {
     const own = route.hidden ? [] : [String(route.meta?.title ?? '')].filter(Boolean);
     return own.concat(visibleTitles(route.children ?? []));
   });
 }
 
-function visibleChildPathsByTopLevel(routes: Array<{ path?: unknown; hidden?: boolean; children?: any[] }>): Record<string, string[]> {
+function visibleChildPathsByTopLevel(routes: Array<{ path?: unknown; hidden?: unknown; children?: any[] }>): Record<string, string[]> {
   return Object.fromEntries(
     routes.map((route) => [
       String(route.path ?? ''),

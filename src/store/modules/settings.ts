@@ -9,7 +9,7 @@ const LEGACY_DEFAULT_THEME = '#409EFF';
 
 export const useSettingsStore = defineStore('setting', () => {
   const storageSetting = useStorage<LayoutSetting>('layout-setting', {
-    topNav: defaultSettings.topNav,
+    topNav: defaultSettings.topNav ?? false,
     tagsView: defaultSettings.tagsView,
     tagsIcon: defaultSettings.tagsIcon,
     fixedHeader: defaultSettings.fixedHeader,

@@ -58,14 +58,16 @@ const config = {
     ownerTableCode: 'ce_green_power_certificate' as const
   },
   columns: [
+    { prop: 'factoryCode', label: 'FK_工厂编号', minWidth: 150 },
     { prop: 'factoryName', label: '工厂', minWidth: 180 },
     { prop: 'activityYear', label: '年度', width: 90 },
     { prop: 'activityMonth', label: '月份', width: 90 },
-    { prop: 'scopeName', label: '核算范围', width: 110 },
+    { prop: 'sourceCategoryKey', label: 'FK_排放源分类', minWidth: 150 },
+    { prop: 'scopeName', label: '范围', width: 110 },
     { prop: 'scopeSubcategory', label: '范围子类别', minWidth: 170 },
     { prop: 'electricityType', label: '电力类型', minWidth: 120 },
     { prop: 'electricityTypeDesc', label: '电力类型说明', minWidth: 180 },
-    { prop: 'quantityKwh', label: '数量(kWh)', width: 130 },
+    { prop: 'quantityKwh', label: '数量_kWh', width: 130 },
     { prop: 'certificateCode', label: '证书编号', minWidth: 160 },
     { prop: 'issuingOrg', label: '证书签发机构', minWidth: 150 },
     { prop: 'purchaseDate', label: '购买日期', width: 120 },
@@ -74,7 +76,8 @@ const config = {
     { prop: 'offsetPowerSource', label: '抵消电力来源', minWidth: 150 },
     { prop: 'dataSource', label: '数据来源', minWidth: 150 },
     { prop: 'sourceRemark', label: '备注', minWidth: 180 },
-    { prop: 'emissionSourceName', label: '排放源', minWidth: 160 }
+    { prop: 'emissionSourceName', label: '排放源', minWidth: 160 },
+    { prop: 'factorKey', label: 'FK_排放因子', minWidth: 150 }
   ],
   searchFields: [
     { prop: 'factoryCode', label: '工厂', type: 'select', loadOptions: loadFactoryCodeOptions },

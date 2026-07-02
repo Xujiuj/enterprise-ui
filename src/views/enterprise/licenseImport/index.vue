@@ -361,7 +361,7 @@ function readLicenseFile(uploadFile: UploadFile | UploadRawFile): false {
   reader.onerror = () => {
     ElMessage.error('授权文件读取失败');
   };
-  reader.readAsText(file);
+  reader.readAsText(file as Blob);
   return false;
 }
 
