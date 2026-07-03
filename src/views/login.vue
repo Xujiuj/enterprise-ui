@@ -79,10 +79,19 @@
       <p>技术支持：15099663016 &nbsp;|&nbsp; service@fengxingdata.com</p>
       <p>
         <a :href="supportLinks.website" target="_blank" rel="noreferrer">官方网站</a> ·
-        <a :href="supportLinks.privacy">隐私政策</a> ·
-        <a :href="supportLinks.terms">服务条款</a>
+        <button type="button" class="footer-link" @click="openLegalDialog('privacy')">隐私政策</button> ·
+        <button type="button" class="footer-link" @click="openLegalDialog('terms')">服务条款</button>
       </p>
     </div>
+
+    <el-dialog v-model="legalDialogVisible" :title="legalDialogTitle" width="min(760px, calc(100vw - 32px))" append-to-body>
+      <div class="legal-dialog-body">
+        <section v-for="item in legalDialogItems" :key="item.title" class="legal-dialog-section">
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.content }}</p>
+        </section>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -136,9 +145,46 @@ const showExpiryNotice = computed(() => {
   return query.license === 'expired' || query.expired === '1';
 });
 const supportLinks = {
-  website: 'https://www.carbondata.com',
-  privacy: '/privacy',
-  terms: '/terms'
+  website: 'https://www.carbondata.com'
+};
+type LegalDialogType = 'privacy' | 'terms';
+const legalDialogVisible = ref(false);
+const legalDialogType = ref<LegalDialogType>('privacy');
+const privacyItems = [
+  {
+    title: '数据安全承诺',
+    content:
+      '我们高度重视客户数据的安全与隐私保护。平台支持完全本地化部署，或“本地化系统 + Power BI 云服务”的混合模式。在任何部署模式下，客户数据始终由客户自主掌控，我们不主动获取、存储或使用客户业务数据。'
+  },
+  { title: '数据所有权', content: '所有业务数据、核算数据及分析结果均归客户所有。平台仅提供技术能力支持，不对客户数据进行任何商业利用。' },
+  {
+    title: '数据存储与访问控制',
+    content:
+      '在本地化部署模式下，数据存储于客户自有服务器或云环境，访问权限完全由客户管理。在混合模式下，仅分析展示服务涉及 Power BI 云能力，数据源仍保留在客户环境。'
+  },
+  { title: '数据传输与加密', content: '平台采用安全的数据传输机制，支持访问控制、身份认证及日志审计功能，确保数据访问可控、可追溯。' },
+  { title: '第三方服务', content: '若客户选择使用 Power BI 云服务，相关数据处理遵循微软的安全与合规标准。客户应自行管理其 Power BI 租户及相关权限配置。' },
+  { title: '合规与法规遵循', content: '平台遵循中国相关法律法规及通行的数据安全规范，包括《网络安全法》《数据安全法》《个人信息保护法》等。' },
+  { title: '客户责任', content: '客户应妥善管理账号权限、访问控制及数据安全策略，确保系统使用过程中的信息安全。' }
+];
+const termItems = [
+  { title: '服务范围', content: '本平台提供企业碳数据管理、核算建模、排放分析及可视化展示等数字化服务能力。' },
+  { title: '使用许可', content: '客户在签订合同后获得系统使用权。未经许可，不得复制、转售或用于其他商业用途。' },
+  { title: '部署模式', content: '平台支持本地化部署或与 Power BI 云服务结合的混合部署方式，具体以双方合同约定为准。' },
+  { title: '账户与权限', content: '客户负责账号管理及权限配置，确保仅授权人员使用系统。' },
+  { title: '服务可用性', content: '我们提供稳定的系统服务及技术支持，但不对不可抗力导致的服务中断承担责任。' },
+  { title: '数据责任划分', content: '客户对其上传的数据真实性、合法性负责；平台不对数据内容承担法律责任。' },
+  { title: '系统更新与维护', content: '平台将根据需要进行功能优化和升级，确保系统持续稳定运行。' },
+  { title: '保密条款', content: '双方应对合作过程中涉及的商业信息和数据严格保密，未经对方许可不得披露。' },
+  { title: '责任限制', content: '在法律允许范围内，平台方对因系统使用产生的间接损失不承担责任。' },
+  { title: '法律适用', content: '本条款受中华人民共和国法律管辖。' }
+];
+const legalDialogTitle = computed(() => (legalDialogType.value === 'privacy' ? '隐私政策' : '服务条款'));
+const legalDialogItems = computed(() => (legalDialogType.value === 'privacy' ? privacyItems : termItems));
+
+const openLegalDialog = (type: LegalDialogType) => {
+  legalDialogType.value = type;
+  legalDialogVisible.value = true;
 };
 
 watch(
@@ -687,8 +733,42 @@ html.dark .auth-page {
   text-decoration: none;
 }
 
-.login-footer a:hover {
+.footer-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.login-footer a:hover,
+.footer-link:hover {
   text-decoration: underline;
+}
+
+.legal-dialog-body {
+  max-height: min(62vh, 560px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.legal-dialog-section + .legal-dialog-section {
+  margin-top: 18px;
+}
+
+.legal-dialog-section h3 {
+  margin: 0 0 8px;
+  color: #1f2937;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.legal-dialog-section p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.8;
 }
 
 @media (max-width: 720px) {
