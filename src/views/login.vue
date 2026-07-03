@@ -324,7 +324,21 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.auth-page::before,
+.auth-page::before {
+  content: '';
+  position: fixed;
+  inset: auto 0 0;
+  height: min(38vh, 360px);
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.28) 48%,
+    rgba(0, 0, 0, 0.58) 100%
+  );
+}
+
 .auth-page::after {
   display: none;
 }
