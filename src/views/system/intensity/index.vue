@@ -79,7 +79,6 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
         <el-table-column label="操作" align="center" width="150" fixed="right">
           <template #default="scope">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:intensity:edit']">编辑</el-button>
@@ -138,9 +137,6 @@
             <el-option label="下降" value="下降" />
             <el-option label="持平" value="持平" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
       <template #footer>

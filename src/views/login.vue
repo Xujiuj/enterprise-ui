@@ -79,8 +79,8 @@
       <p>技术支持：15099663016 &nbsp;|&nbsp; service@fengxingdata.com</p>
       <p>
         <a :href="supportLinks.website" target="_blank" rel="noreferrer">官方网站</a> ·
-        <a :href="supportLinks.privacy" target="_blank" rel="noreferrer">隐私政策</a> ·
-        <a :href="supportLinks.terms" target="_blank" rel="noreferrer">服务条款</a>
+        <a :href="supportLinks.privacy">隐私政策</a> ·
+        <a :href="supportLinks.terms">服务条款</a>
       </p>
     </div>
   </div>
@@ -137,8 +137,8 @@ const showExpiryNotice = computed(() => {
 });
 const supportLinks = {
   website: 'https://www.carbondata.com',
-  privacy: 'https://www.carbondata.com/privacy',
-  terms: 'https://www.carbondata.com/terms'
+  privacy: '/privacy',
+  terms: '/terms'
 };
 
 watch(

@@ -47,7 +47,6 @@
             </template>
           </el-table-column>
           <el-table-column label="排序" prop="displayOrder" width="90" align="center" />
-          <el-table-column label="备注" prop="remark" min-width="220" show-overflow-tooltip />
           <el-table-column label="操作" align="center" width="210" fixed="right">
             <template #default="{ row }">
               <el-button link type="primary" icon="View" @click="openDetail(row)">详情</el-button>
@@ -76,9 +75,6 @@
         <el-form-item label="排序" prop="displayOrder">
           <el-input-number v-model="form.displayOrder" class="w-full" :min="0" :precision="0" controls-position="right" />
         </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" :rows="4" maxlength="500" show-word-limit />
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="formDrawer.visible = false">取消</el-button>
@@ -91,7 +87,6 @@
         <el-descriptions-item label="目录">{{ formatDirectory(detailRecord) }}</el-descriptions-item>
         <el-descriptions-item label="子目录">{{ formatSubdirectory(detailRecord) }}</el-descriptions-item>
         <el-descriptions-item label="排序">{{ detailRecord.displayOrder ?? 0 }}</el-descriptions-item>
-        <el-descriptions-item label="备注">{{ detailRecord.remark || '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-drawer>
   </div>

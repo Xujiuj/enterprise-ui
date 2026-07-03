@@ -36,7 +36,6 @@ const config = {
       width: 100,
       tagMap: { draft: 'info', active: 'success', archived: 'warning' }
     },
-    { prop: 'remark', label: '备注', minWidth: 180 }
   ],
   searchFields: [
     { prop: 'metricName', label: '指标名称' },
@@ -56,7 +55,6 @@ const config = {
     { prop: 'intensityValue', label: '强度值', type: 'number', precision: 6 },
     { prop: 'targetCode', label: '目标', type: 'select', loadOptions: loadIntensityTargetOptions, allowCreate: true },
     { prop: 'metricStatus', label: '状态', type: 'select', loadOptions: loadIntensityMetricStatusOptions, required: true },
-    { prop: 'remark', label: '备注', type: 'textarea' }
   ],
   emptyForm: {
     metricStatus: 'draft'

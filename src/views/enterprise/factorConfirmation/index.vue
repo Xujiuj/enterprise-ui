@@ -62,7 +62,6 @@ const config = {
     },
     { prop: 'confirmedBy', label: '确认人', width: 120 },
     { prop: 'confirmedTime', label: '确认时间', minWidth: 170 },
-    { prop: 'remark', label: '备注', minWidth: 180 }
   ],
   searchFields: [
     { prop: 'factorCode', label: '因子编码' },
@@ -80,7 +79,6 @@ const config = {
     { prop: 'confirmedBy', label: '确认人', type: 'select', loadOptions: loadConfirmedByOptions, allowCreate: true },
     { prop: 'confirmedTime', label: '确认时间', type: 'date' },
     { prop: 'licenseId', label: '授权编号', type: 'select', loadOptions: loadLicenseIdOptions, allowCreate: true },
-    { prop: 'remark', label: '备注', type: 'textarea' }
   ],
   emptyForm: {
     confirmationStatus: 'pending'

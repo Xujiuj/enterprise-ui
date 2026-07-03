@@ -85,7 +85,6 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
         <el-table-column label="操作" align="center" width="150" fixed="right">
           <template #default="scope">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:factorConfirm:edit']">编辑</el-button>
@@ -147,9 +146,6 @@
             value-format="YYYY-MM-DD HH:mm:ss"
             placeholder="请选择确认时间" class="w-full">
           </el-date-picker>
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
       <template #footer>

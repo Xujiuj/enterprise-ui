@@ -96,7 +96,6 @@
             </template>
           </el-table-column>
           <el-table-column v-if="page.showSort !== false" label="排序" align="center" prop="sortOrder" width="80" />
-          <el-table-column v-if="page.showRemark !== false" label="备注" align="center" prop="remark" min-width="180" :show-overflow-tooltip="true" />
           <el-table-column v-if="isEditable" label="操作" align="center" width="150" fixed="right">
             <template #default="scope">
               <el-button
@@ -200,9 +199,6 @@
           </el-form-item>
           <el-form-item v-if="page.showSort !== false" label="排序" prop="sortOrder">
             <el-input-number v-model="form.sortOrder" :min="0" controls-position="right" class="w-full" />
-          </el-form-item>
-          <el-form-item v-if="page.showRemark !== false" label="备注" prop="remark">
-            <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
           </el-form-item>
         </el-form>
         <template #footer>
@@ -823,9 +819,6 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
   }
   if (page.value.showSort !== false) {
     columns.push({ prop: 'sortOrder', label: '排序', type: 'number', width: 110, min: 0, precision: 0 });
-  }
-  if (page.value.showRemark !== false) {
-    columns.push({ prop: 'remark', label: '备注', width: 220 });
   }
   return columns;
 });

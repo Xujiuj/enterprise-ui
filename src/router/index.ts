@@ -43,6 +43,16 @@ export const constantRoutes: RouteRecordRaw[] = [
     hidden: true
   },
   {
+    path: '/privacy',
+    component: () => import('@/views/legal/PrivacyPolicy.vue'),
+    hidden: true
+  },
+  {
+    path: '/terms',
+    component: () => import('@/views/legal/ServiceTerms.vue'),
+    hidden: true
+  },
+  {
     path: '/:pathMatch(.*)*',
     component: () => import('@/views/error/404.vue'),
     hidden: true

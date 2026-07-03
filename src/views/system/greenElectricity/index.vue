@@ -87,7 +87,6 @@
         </el-table-column>
         <el-table-column label="减排量(tCO2e)" align="center" prop="emissionReduction" />
         <el-table-column label="扩展字段" align="center" prop="extendJson" :show-overflow-tooltip="true" />
-        <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
         <el-table-column label="操作" align="center" width="150" fixed="right">
           <template #default="scope">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:greenElectricity:edit']">编辑</el-button>
@@ -162,9 +161,6 @@
         </el-form-item>
         <el-form-item label="扩展字段JSON" prop="extendJson">
           <el-input v-model="form.extendJson" type="textarea" placeholder="请输入扩展字段JSON" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
       <template #footer>

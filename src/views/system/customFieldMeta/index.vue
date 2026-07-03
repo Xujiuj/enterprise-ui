@@ -71,7 +71,6 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
         <el-table-column label="操作" align="center" width="150" fixed="right">
           <template #default="scope">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:customFieldMeta:edit']">编辑</el-button>
@@ -125,9 +124,6 @@
         </el-form-item>
         <el-form-item label="排序" prop="sortOrder">
           <el-input v-model="form.sortOrder" placeholder="请输入排序" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
       <template #footer>

@@ -94,7 +94,6 @@ const config = {
       width: 90,
       tagMap: { true: 'success', false: 'info' }
     },
-    { prop: 'remark', label: '备注', minWidth: 180 }
   ],
   searchFields: [
     { prop: 'templateCode', label: '模板编码' },

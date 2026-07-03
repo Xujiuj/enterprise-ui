@@ -75,7 +75,6 @@ const config = {
     { prop: 'powerGridRegion', label: '电网区域', minWidth: 150 },
     { prop: 'offsetPowerSource', label: '抵消电力来源', minWidth: 150 },
     { prop: 'dataSource', label: '数据来源', minWidth: 150 },
-    { prop: 'sourceRemark', label: '备注', minWidth: 180 },
     { prop: 'emissionSourceName', label: '排放源', minWidth: 160 },
     { prop: 'factorKey', label: 'FK_排放因子', minWidth: 150 }
   ],
@@ -108,7 +107,6 @@ const config = {
     { prop: 'powerGridRegion', label: '对应电网区域', type: 'select', loadOptions: loadPowerGridRegionOptions, allowCreate: true },
     { prop: 'offsetPowerSource', label: '抵消电力来源', type: 'select', loadOptions: loadOffsetPowerSourceOptions, allowCreate: true },
     { prop: 'dataSource', label: '数据来源', type: 'select', loadOptions: loadDataSourceOptions, allowCreate: true },
-    { prop: 'sourceRemark', label: '备注', type: 'textarea' },
     { prop: 'emissionSourceName', label: '排放源' },
     { prop: 'factorKey', label: '适用因子', type: 'select', loadOptions: loadFactorOptions, onChange: applyFactor, allowCreate: true }
   ],

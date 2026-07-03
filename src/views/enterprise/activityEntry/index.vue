@@ -501,7 +501,6 @@ const ALL_FIELD_DESCRIPTORS: EmissionActivityFieldDescriptor[] = [
   { fieldOrder: 14, fieldCode: 'activityValue', fieldName: '活动数据', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 15, fieldCode: 'responsibleDept', fieldName: '负责部门', sourceRequired: false, rowValueRequired: true, derivedField: false },
   { fieldOrder: 16, fieldCode: 'dataSource', fieldName: '数据来源', sourceRequired: false, rowValueRequired: true, derivedField: false },
-  { fieldOrder: 17, fieldCode: 'sourceRemark', fieldName: '备注', sourceRequired: false, rowValueRequired: false, derivedField: false },
   { fieldOrder: 18, fieldCode: 'factorKey', fieldName: 'FK_排放因子', sourceRequired: false, rowValueRequired: false, derivedField: false }
 ];
 const FALLBACK_ENTRY_FIELD_DESCRIPTORS: EmissionActivityFieldDescriptor[] = [...ALL_FIELD_DESCRIPTORS];
@@ -625,7 +624,6 @@ const activityTableColumns: ActivityTableColumn[] = [
   { prop: 'activityValue', label: '活动数据', width: 130, align: 'right' },
   { prop: 'responsibleDept', label: '负责部门', width: 130 },
   { prop: 'dataSource', label: '数据来源', width: 130 },
-  { prop: 'sourceRemark', label: '备注', minWidth: 160 },
   { prop: 'factorKey', label: 'FK_排放因子', minWidth: 130 },
   { prop: 'dataStatus', label: '数据状态', width: 110 }
 ];

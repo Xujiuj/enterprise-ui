@@ -77,7 +77,6 @@ const config = {
       valueMap: { true: '启用', false: '停用' }
     },
     { prop: 'sourceRef', label: '来源表', minWidth: 170 },
-    { prop: 'remark', label: '备注', minWidth: 180 },
     { prop: 'syncedTime', label: '同步时间', minWidth: 170 }
   ],
   searchFields: [
