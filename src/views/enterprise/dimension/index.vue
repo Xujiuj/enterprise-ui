@@ -14,7 +14,7 @@
             <label>{{ page.codeLabel }}</label>
             <el-input v-model="queryParams.recordCode" :placeholder="`请输入${page.codeLabel}`" clearable @keyup.enter="handleQuery" />
           </div>
-          <div class="search-item">
+          <div v-if="showRecordName" class="search-item">
             <label>{{ page.nameLabel }}</label>
             <el-input v-model="queryParams.recordName" :placeholder="`请输入${page.nameLabel}`" clearable @keyup.enter="handleQuery" />
           </div>
@@ -69,7 +69,7 @@
         <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange">
           <el-table-column v-if="isEditable" type="selection" width="42" align="center" />
           <el-table-column :label="page.codeLabel" align="center" prop="recordCode" min-width="150" />
-          <el-table-column :label="page.nameLabel" align="center" prop="recordName" min-width="180" :show-overflow-tooltip="true" />
+          <el-table-column v-if="showRecordName" :label="page.nameLabel" align="center" prop="recordName" min-width="180" :show-overflow-tooltip="true" />
           <el-table-column v-if="page.showParent" :label="page.parentLabel ?? '上级编码'" align="center" prop="parentCode" min-width="140">
             <template #default="scope">
               {{ formatParentDisplayValue(scope.row) }}
@@ -123,7 +123,7 @@
           <el-form-item :label="page.codeLabel" prop="recordCode">
             <el-input v-model="form.recordCode" :placeholder="`请输入${page.codeLabel}`" />
           </el-form-item>
-          <el-form-item :label="page.nameLabel" prop="recordName">
+          <el-form-item v-if="showRecordName" :label="page.nameLabel" prop="recordName">
             <el-select
               v-if="page.nameField"
               v-model="form.recordName"
@@ -233,7 +233,7 @@
           :rows="sheetRows"
           :empty-row="sheetEmptyRow"
           :saving="sheetSaving"
-          hint="在线填报仅用于新增数据。编码、名称和状态必填；带下拉的维度字段必须选择已有选项。"
+          :hint="sheetHint"
           @save="saveSheetRows"
         />
       </el-drawer>
@@ -327,6 +327,7 @@ interface PageConfig {
   parentPlaceholder?: string;
   showParent?: boolean;
   parentRequired?: boolean;
+  showName?: boolean;
   showStatus?: boolean;
   showSort?: boolean;
   showRemark?: boolean;
@@ -578,10 +579,10 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '确认排放因子',
     owner: '企业',
     mode: '企业确认',
-    codeLabel: '因子版本',
+    codeLabel: '因子版本编码',
     nameLabel: '版本说明',
+    showName: false,
     fields: [
-      { prop: 'factorVersion', label: '因子版本' },
       { prop: 'effectiveYear', label: '生效年份', type: 'number', required: true }
     ]
   },
@@ -733,6 +734,7 @@ const routeKey = computed(() => {
 const concreteTableRoute = computed(() => concreteTableRoutes[routeKey.value]);
 const page = computed(() => dimensionPages[routeKey.value]);
 const dimensionExtensionOwnerTable = computed(() => dimensionExtensionOwnerTables[routeKey.value]);
+const showRecordName = computed(() => page.value?.showName !== false);
 const visibleFields = computed(() => page.value?.fields.filter((field) => !field.hidden) ?? []);
 const isCompanyDerivedNameField = (field: FieldConfig) => routeKey.value === 'company' && companyDerivedNameFields.has(field.prop);
 const visibleFormFields = computed(() => visibleFields.value.filter((field) => !field.formHidden && !isCompanyDerivedNameField(field)));
@@ -778,8 +780,10 @@ const readOnlyMessage = '旧维度表已拆分为具体业务表，请到对应�
 const sheetColumns = computed<SpreadsheetColumn[]>(() => {
   if (!page.value) return [];
   const columns: SpreadsheetColumn[] = [
-    { prop: 'recordCode', label: page.value.codeLabel, required: true, width: 170 },
-    {
+    { prop: 'recordCode', label: page.value.codeLabel, required: true, width: 170 }
+  ];
+  if (showRecordName.value) {
+    columns.push({
       prop: 'recordName',
       label: page.value.nameLabel,
       type: page.value.nameField?.optionSource ? 'select' : 'text',
@@ -788,8 +792,8 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
       fillProps: page.value.nameField?.fillProps,
       required: true,
       width: 190
-    }
-  ];
+    });
+  }
   if (page.value.showParent) {
     columns.push({ prop: 'parentCode', label: page.value.parentLabel ?? '上级编码', required: page.value.parentRequired, width: 150 });
   }
@@ -821,6 +825,12 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
     columns.push({ prop: 'sortOrder', label: '排序', type: 'number', width: 110, min: 0, precision: 0 });
   }
   return columns;
+});
+const sheetHint = computed(() => {
+  const requiredBaseFields = [page.value?.codeLabel, showRecordName.value ? page.value?.nameLabel : undefined, page.value?.showStatus !== false ? '状态' : undefined]
+    .filter(Boolean)
+    .join('、');
+  return `在线填报仅用于新增数据。${requiredBaseFields}必填；带下拉的维度字段必须选择已有选项。`;
 });
 
 const recordList = ref<DimensionRecordVO[]>([]);
@@ -1310,15 +1320,18 @@ const parseXlsxRows = async (file: Blob) => {
       });
       if (!item.status) item.status = '0';
       const line = rowIndex + 2;
-      if (!item.recordCode || !item.recordName) {
+      const missingRequiredColumn = sheetColumns.value.find(
+        (column) => column.required && (item[column.prop] === undefined || item[column.prop] === null || item[column.prop] === '')
+      );
+      if (missingRequiredColumn) {
         const hasAnyValue = Object.values(item).some((value) => value !== undefined && value !== '');
         if (hasAnyValue) {
-          throw new Error(`第 ${line} 行缺少编码或名称`);
+          throw new Error(`第 ${line} 行缺少${missingRequiredColumn.label}`);
         }
       }
       return item;
     })
-    .filter((row) => row.recordCode && row.recordName);
+    .filter((row) => row.recordCode && (showRecordName.value ? row.recordName : true));
   return parsedRows;
 };
 
@@ -1327,7 +1340,7 @@ const validateDimensionPayloadRows = (rows: Record<string, any>[]) => {
   if (!currentPage) return;
   const requiredFields = [
     { prop: 'recordCode', label: currentPage.codeLabel },
-    { prop: 'recordName', label: currentPage.nameLabel },
+    ...(showRecordName.value ? [{ prop: 'recordName', label: currentPage.nameLabel }] : []),
     ...(currentPage.showParent && currentPage.parentRequired ? [{ prop: 'parentCode', label: currentPage.parentLabel ?? '上级编码' }] : []),
     ...sheetFields.value.filter((field) => field.required)
   ];
