@@ -3,7 +3,7 @@
     <section class="page-head">
       <div>
         <h1>部门管理</h1>
-        <p>维护公司、工厂和部门层级；工厂作为公司下的部门节点。</p>
+        <p>维护公司、工厂和部门层级；部门必须归属于工厂。</p>
       </div>
     </section>
 
@@ -151,6 +151,19 @@ const form = ref<DeptForm>({ ...defaultForm });
 const rules: FormRules = {
   deptName: [{ required: true, message: '部门名称不能为空', trigger: 'blur' }],
   deptCategory: [{ required: true, message: '请选择所属公司', trigger: 'change' }],
+  parentId: [
+    { required: true, message: '请选择所属工厂或上级部门', trigger: 'change' },
+    {
+      validator: (_rule: unknown, value: unknown, callback: (error?: Error) => void) => {
+        if (Number(value ?? 0) > 0) {
+          callback();
+          return;
+        }
+        callback(new Error('部门必须归属于工厂'));
+      },
+      trigger: 'change'
+    }
+  ],
   orderNum: [{ required: true, message: '显示排序不能为空', trigger: 'blur' }]
 };
 
@@ -201,17 +214,33 @@ const filterRowsByCompany = (rows: DeptVO[], companyCode?: string) => {
   return rows.filter((row) => String(row.deptCategory ?? '') === String(companyCode));
 };
 
-const rootDeptIdFromRows = (rows: DeptVO[]) => {
-  const root = rows.find((row) => Number(row.parentId ?? 0) === 0 && !row.deptCategory);
-  return root?.deptId ?? 0;
+const isCompanyNode = (row: DeptVO, rows: DeptVO[]) => {
+  if (!row.deptCategory) return false;
+  const parent = rows.find((item) => String(item.deptId) === String(row.parentId ?? 0));
+  return !parent?.deptCategory;
+};
+
+const isFactoryNode = (row: DeptVO, rows: DeptVO[]) => {
+  if (!row.deptCategory) return false;
+  const parent = rows.find((item) => String(item.deptId) === String(row.parentId ?? 0));
+  return !!parent && isCompanyNode(parent, rows);
+};
+
+const factoryRowsByCompany = (rows: DeptVO[], companyCode?: string) => {
+  const companyRows = filterRowsByCompany(rows, companyCode);
+  return companyRows.filter((row) => isFactoryNode(row, rows));
 };
 
 const loadParentOptions = async (companyCode?: string, excludeDeptId?: string | number) => {
   const rows = excludeDeptId ? ((await listDeptExcludeChild(excludeDeptId)).data ?? []) : await getRows({ pageNum: 1, pageSize: 1000 });
   const companyRows = filterRowsByCompany(rows as DeptVO[], companyCode);
-  const rootDeptId = rootDeptIdFromRows(rows as DeptVO[]);
-  parentOptions.value = [{ ...defaultForm, deptId: rootDeptId, id: rootDeptId, deptName: '公司直属部门', children: buildDeptTree(companyRows) } as DeptTreeRow];
-  return rootDeptId;
+  const factories = factoryRowsByCompany(rows as DeptVO[], companyCode);
+  const factoryIds = new Set(factories.map((row) => String(row.deptId)));
+  const selectableRows = companyRows.filter(
+    (row) => factoryIds.has(String(row.deptId)) || factoryIds.has(String(row.parentId ?? 0)) || factories.some((factory) => String(row.ancestors ?? '').split(',').includes(String(factory.deptId)))
+  );
+  parentOptions.value = buildDeptTree(selectableRows);
+  return factories[0]?.deptId ?? 0;
 };
 
 const reset = () => {
@@ -224,18 +253,19 @@ const handleQuery = () => {
 };
 
 const handleCompanyChange = async (value: string) => {
-  const rootDeptId = await loadParentOptions(value);
-  form.value.parentId = rootDeptId;
+  const defaultFactoryId = await loadParentOptions(value);
+  form.value.parentId = defaultFactoryId;
+  if (!defaultFactoryId && value) {
+    ElMessage.warning('请先在公司管理中维护该公司下的工厂');
+  }
 };
 
 const handleAdd = async (row?: DeptVO) => {
   reset();
-  form.value.parentId = row?.deptId ?? 0;
+  const rows = await getRows({ pageNum: 1, pageSize: 1000 });
   form.value.deptCategory = row?.deptCategory || queryParams.deptCategory || '';
-  const rootDeptId = await loadParentOptions(form.value.deptCategory);
-  if (!row) {
-    form.value.parentId = rootDeptId;
-  }
+  const defaultFactoryId = await loadParentOptions(form.value.deptCategory);
+  form.value.parentId = row && !isCompanyNode(row, rows) ? row.deptId : defaultFactoryId;
   dialog.title = '新增部门';
   dialog.visible = true;
 };
@@ -251,6 +281,10 @@ const handleUpdate = async (row: DeptVO) => {
 
 const submitForm = async () => {
   await deptFormRef.value?.validate();
+  if (!form.value.parentId || Number(form.value.parentId) <= 0) {
+    ElMessage.warning('部门必须归属于工厂，请先选择所属工厂或上级部门');
+    return;
+  }
   buttonLoading.value = true;
   try {
     if (form.value.deptId) {
