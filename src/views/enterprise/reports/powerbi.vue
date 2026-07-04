@@ -51,11 +51,27 @@ declare global {
   }
 }
 
-const reportId = 'fe3213fc-3659-4a24-a7d8-031353e805f5';
-const groupId = '3d918536-4851-4c7e-bc1a-0874d05eafdc';
-const tenantId = 'e6411fdb-6d77-4ffd-b015-619c75b13768';
-const embedUrl = `https://app.powerbi.com/reportEmbed?reportId=${reportId}&groupId=${groupId}`;
-const fallbackReportUrl = `https://app.powerbi.com/reportEmbed?reportId=${reportId}&groupId=${groupId}&autoAuth=true&ctid=${tenantId}`;
+const reportId = import.meta.env.VITE_POWERBI_REPORT_ID || 'fe3213fc-3659-4a24-a7d8-031353e805f5';
+const groupId = import.meta.env.VITE_POWERBI_GROUP_ID || '3d918536-4851-4c7e-bc1a-0874d05eafdc';
+const tenantId = import.meta.env.VITE_POWERBI_TENANT_ID || 'e6411fdb-6d77-4ffd-b015-619c75b13768';
+const powerBiAccount = import.meta.env.VITE_POWERBI_ACCOUNT || '';
+const powerBiParams = new URLSearchParams({
+  reportId,
+  groupId
+});
+const fallbackParams = new URLSearchParams({
+  reportId,
+  groupId,
+  autoAuth: 'true',
+  ctid: tenantId
+});
+
+if (powerBiAccount) {
+  fallbackParams.set('login_hint', powerBiAccount);
+}
+
+const embedUrl = `https://app.powerbi.com/reportEmbed?${powerBiParams.toString()}`;
+const fallbackReportUrl = `https://app.powerbi.com/reportEmbed?${fallbackParams.toString()}`;
 const powerBiClientSrc = 'https://cdn.jsdelivr.net/npm/powerbi-client/dist/powerbi.min.js';
 const tokenStorageKey = 'enterprisePowerBiEmbedToken';
 
@@ -74,7 +90,7 @@ const statusText = computed(() => {
     return '正在加载 Power BI Embedded SDK。';
   }
 
-  return '如内嵌登录无响应，请在新窗口完成 Microsoft 登录后返回刷新。';
+  return '正在使用绑定的 Power BI 账号加载报表。';
 });
 
 const normalizeBase64 = (value: string) => {
