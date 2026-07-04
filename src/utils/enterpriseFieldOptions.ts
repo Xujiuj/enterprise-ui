@@ -21,6 +21,13 @@ const uniqueByValue = (options: SelectOption[]) => {
   });
 };
 
+export const valueOnlyOptions =
+  (loader: () => Promise<SelectOption[]>) => async () =>
+    (await loader()).map((option) => ({
+      ...option,
+      label: String(option.value)
+    }));
+
 export const loadEnterpriseOptions = async (optionCode: string, params?: EnterpriseOptionQuery) => {
   const res = await listEnterpriseOptions(optionCode, params);
   return uniqueByValue(

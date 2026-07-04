@@ -15,8 +15,13 @@ import {
   loadFactoryNameOptions,
   loadResponsibleDeptOptions,
   loadResponsibleUserOptions,
-  loadSourceCategoryOptions
+  loadSourceCategoryOptions,
+  valueOnlyOptions
 } from '@/utils/enterpriseFieldOptions';
+
+const loadCompanyCodeOnlyOptions = valueOnlyOptions(loadCompanyCodeOptions);
+const loadSourceCategoryKeyOnlyOptions = valueOnlyOptions(loadSourceCategoryOptions);
+const loadEmissionSourceCodeOnlyOptions = valueOnlyOptions(loadEmissionSourceCodeOptions);
 
 const assignFromRecord = (form: Record<string, any>, record: Record<string, any> | undefined, props: string[]) => {
   if (!record) return;
@@ -80,10 +85,10 @@ const config = {
     { prop: 'factorKey', label: 'FK_排放因子', minWidth: 150 }
   ],
   searchFields: [
-    { prop: 'companyCode', label: '公司', type: 'select', loadOptions: loadCompanyCodeOptions },
+    { prop: 'companyCode', label: 'FK_公司编号', type: 'select', loadOptions: loadCompanyCodeOnlyOptions },
     { prop: 'factoryName', label: '工厂', type: 'select', loadOptions: loadFactoryNameOptions },
-    { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions },
-    { prop: 'sourceIdentificationCode', label: '排放源编号', type: 'select', loadOptions: loadEmissionSourceCodeOptions },
+    { prop: 'sourceCategoryKey', label: 'FK_排放源分类', type: 'select', loadOptions: loadSourceCategoryKeyOnlyOptions },
+    { prop: 'sourceIdentificationCode', label: 'PK_排放源识别编号', type: 'select', loadOptions: loadEmissionSourceCodeOnlyOptions },
     { prop: 'dataFrequency', label: '数据频次', type: 'select', loadOptions: loadDataFrequencyOptions },
     { prop: 'responsibleUserId', label: '负责人', type: 'select', loadOptions: loadResponsibleUserOptions },
     { prop: 'responsibleDept', label: '负责部门', type: 'select', loadOptions: loadResponsibleDeptOptions },
@@ -92,20 +97,20 @@ const config = {
     { prop: 'enabledFlag', label: '状态', type: 'select', loadOptions: loadBooleanStatusOptions }
   ],
   formFields: [
-    { prop: 'companyCode', label: '公司', type: 'select', loadOptions: loadCompanyCodeOptions, onChange: applyCompany, required: true },
+    { prop: 'companyCode', label: 'FK_公司编号', type: 'select', loadOptions: loadCompanyCodeOnlyOptions, onChange: applyCompany, required: true },
     { prop: 'factoryName', label: '工厂', type: 'select', loadOptions: loadFactoryNameOptions, onChange: applyFactory },
     {
       prop: 'sourceCategoryKey',
-      label: '排放源分类',
+      label: 'FK_排放源分类',
       type: 'select',
-      loadOptions: loadSourceCategoryOptions,
+      loadOptions: loadSourceCategoryKeyOnlyOptions,
       onChange: applySourceCategory,
       required: true
     },
     { prop: 'companyName', label: '公司名称', hidden: true },
     { prop: 'scopeName', label: '核算范围', hidden: true },
     { prop: 'scopeSubcategory', label: '范围子类别', hidden: true },
-    { prop: 'sourceIdentificationCode', label: '排放源编号', required: true },
+    { prop: 'sourceIdentificationCode', label: 'PK_排放源识别编号', required: true },
     { prop: 'sourceIdentificationName', label: '排放源识别' },
     { prop: 'emissionSourceName', label: '排放源' },
     { prop: 'dataFrequency', label: '数据频次', type: 'select', loadOptions: loadDataFrequencyOptions, required: true },

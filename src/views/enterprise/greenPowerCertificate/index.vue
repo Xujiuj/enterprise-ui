@@ -22,8 +22,12 @@ import {
   loadPowerGridRegionOptions,
   loadProofStatusOptions,
   loadSourceCategoryOptions,
-  loadYearOptions
+  loadYearOptions,
+  valueOnlyOptions
 } from '@/utils/enterpriseFieldOptions';
+
+const loadFactoryCodeOnlyOptions = valueOnlyOptions(loadFactoryCodeOptions);
+const loadSourceCategoryKeyOnlyOptions = valueOnlyOptions(loadSourceCategoryOptions);
 
 const assignFromRecord = (form: Record<string, any>, record: Record<string, any> | undefined, props: string[]) => {
   if (!record) return;
@@ -79,8 +83,8 @@ const config = {
     { prop: 'factorKey', label: 'FK_排放因子', minWidth: 150 }
   ],
   searchFields: [
-    { prop: 'factoryCode', label: '工厂', type: 'select', loadOptions: loadFactoryCodeOptions },
-    { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions },
+    { prop: 'factoryCode', label: 'FK_工厂编号', type: 'select', loadOptions: loadFactoryCodeOnlyOptions },
+    { prop: 'sourceCategoryKey', label: 'FK_排放源分类', type: 'select', loadOptions: loadSourceCategoryKeyOnlyOptions },
     { prop: 'activityYear', label: '年度', type: 'select', loadOptions: loadYearOptions },
     { prop: 'activityMonth', label: '月份', type: 'select', loadOptions: loadMonthOptions },
     { prop: 'electricityType', label: '电力类型', type: 'select', loadOptions: loadElectricityTypeOptions },
@@ -90,10 +94,10 @@ const config = {
     { prop: 'certificateCode', label: '证书编号' }
   ],
   formFields: [
-    { prop: 'factoryCode', label: '工厂', type: 'select', loadOptions: loadFactoryCodeOptions, onChange: applyFactory, required: true },
+    { prop: 'factoryCode', label: 'FK_工厂编号', type: 'select', loadOptions: loadFactoryCodeOnlyOptions, onChange: applyFactory, required: true },
     { prop: 'activityYear', label: '年度', type: 'select', loadOptions: loadYearOptions },
     { prop: 'activityMonth', label: '月份', type: 'select', loadOptions: loadMonthOptions },
-    { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions, onChange: applySourceCategory },
+    { prop: 'sourceCategoryKey', label: 'FK_排放源分类', type: 'select', loadOptions: loadSourceCategoryKeyOnlyOptions, onChange: applySourceCategory },
     { prop: 'factoryName', label: '工厂名称', hidden: true },
     { prop: 'scopeName', label: '核算范围', hidden: true },
     { prop: 'scopeSubcategory', label: '范围子类别', hidden: true },
