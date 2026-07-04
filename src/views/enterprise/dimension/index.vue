@@ -362,8 +362,7 @@ const dimensionPages: Record<string, PageConfig> = {
     mode: '同步后可维护',
     codeLabel: '行政区划代码',
     nameLabel: '行政区划名称',
-    showParent: true,
-    fields: [{ prop: 'levelType', label: '区划层级' }]
+    fields: []
   },
   company: {
     title: '公司表',
@@ -374,11 +373,11 @@ const dimensionPages: Record<string, PageConfig> = {
     nameLabel: '公司名称',
     showParent: true,
     parentRequired: true,
-    parentLabel: '工厂',
-    parentPlaceholder: '请选择或输入工厂',
+    parentLabel: '工厂编号',
+    parentPlaceholder: '请输入工厂编号',
     fields: [
       { prop: 'companySk', label: '公司内部键', hidden: true },
-      { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称', hidden: true },
+      { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称', required: true, width: 260 },
       {
         prop: 'provinceCode',
         label: '省份编码',
@@ -469,14 +468,12 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '配置排放源',
     owner: '链接厂商',
     mode: '同步后确认',
-    codeLabel: '分类编码',
-    nameLabel: '分类名称',
-    showParent: true,
+    codeLabel: 'SK_排放源分类',
+    nameLabel: '统一标准分类',
     fields: [
-      { prop: 'businessKey', label: '业务编码' },
-      { prop: 'categoryNameEn', label: '分类英文名' },
+      { prop: 'businessKey', label: 'BK_业务键' },
       { prop: 'ghgScope', label: 'GHG Protocol范围', optionSource: 'dimension-field' },
-      { prop: 'ghgScopeCategorySort', label: 'GHG范围分类排序', type: 'number' },
+      { prop: 'ghgScopeCategorySort', label: 'GHG Protocol范围子类别排序', type: 'number' },
       { prop: 'ghgScopeCategory', label: 'GHG Protocol范围子类别' },
       { prop: 'ghgScopeEn', label: 'GHG范围英文' },
       { prop: 'ghgScopeCategoryEn', label: 'GHG范围子类别英文' },
@@ -489,7 +486,7 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'gbSubcategory', label: '国标子分类' },
       { prop: 'effectiveDate', label: '生效日期', type: 'date' },
       { prop: 'expiryDate', label: '失效日期', type: 'date' },
-      { prop: 'currentFlag', label: '是否当前版本' },
+      { prop: 'currentFlag', label: '是否当前' },
       { prop: 'versionNo', label: '版本号' },
       { prop: 'unifiedStandardCategory', label: '统一标准分类' }
     ]
@@ -531,12 +528,12 @@ const dimensionPages: Record<string, PageConfig> = {
       },
       {
         prop: 'fuelMaterialCategory',
-        label: '燃料/物料类别',
+        label: '燃料/物质类别',
         optionSource: 'dimension-field',
         fillProps: ['fuelMaterialCategory', 'sourceUnit', 'applicableScope'],
         allowCreate: true
       },
-      { prop: 'sourceUnit', label: '源单位', optionSource: 'dimension-field', allowCreate: true },
+      { prop: 'sourceUnit', label: '排放源单位', optionSource: 'dimension-field', allowCreate: true },
       { prop: 'co2', label: 'CO2', type: 'number' },
       { prop: 'ch4', label: 'CH4', type: 'number' },
       { prop: 'n2o', label: 'N2O', type: 'number' },
@@ -562,16 +559,16 @@ const dimensionPages: Record<string, PageConfig> = {
     owner: '链接厂商',
     mode: '同步后确认',
     codeLabel: 'PK_因子版本省份代码',
-    nameLabel: '行政区划名称',
+    nameLabel: '行政区划',
     fields: [
       { prop: 'factorVersion', label: '因子版本' },
       { prop: 'divisionCode', label: '行政区划代码' },
-      { prop: 'regionName', label: '区域名称' },
+      { prop: 'regionName', label: '区域划分' },
       { prop: 'provinceFactor', label: '省级因子（kgCO2/kWh）', type: 'number', precision: 10 },
       { prop: 'regionFactor', label: '区域因子（kgCO2/kWh）', type: 'number', precision: 10 },
       { prop: 'nationalFactor', label: '全国因子（kgCO2/kWh）', type: 'number', precision: 10 },
-      { prop: 'nonFossilExcludedFactor', label: '不含市场化非化石因子', type: 'number', precision: 10 },
-      { prop: 'nationalFossilPowerFactor', label: '全国化石能源电力因子', type: 'number', precision: 10 }
+      { prop: 'nonFossilExcludedFactor', label: '不包括市场化交易的非化石能源电量因子（kgCO2/kWh）', type: 'number', precision: 10 },
+      { prop: 'nationalFossilPowerFactor', label: '全国化石能源电力二氧化碳排放因子（kgCO2/kWh）', type: 'number', precision: 10 }
     ]
   },
   'ef-electricity-version': {
@@ -579,11 +576,11 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '确认排放因子',
     owner: '企业',
     mode: '企业确认',
-    codeLabel: '因子版本编码',
-    nameLabel: '版本说明',
+    codeLabel: '对应因子版本',
+    nameLabel: '年份',
     showName: false,
     fields: [
-      { prop: 'effectiveYear', label: '生效年份', type: 'number', required: true }
+      { prop: 'effectiveYear', label: '年份', type: 'number', required: true }
     ]
   },
   'ef-electricity-scope': {
@@ -591,12 +588,9 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '确认排放因子',
     owner: '链接厂商',
     mode: '同步后确认',
-    codeLabel: '口径编码',
-    nameLabel: '口径名称',
-    fields: [
-      { prop: 'scopeKey', label: '口径类型', optionSource: 'dimension-field' },
-      { prop: 'scopeName', label: '适用说明', width: 220 }
-    ]
+    codeLabel: '因子口径Key',
+    nameLabel: '因子口径',
+    fields: []
   },
   'greenhouse-gas': {
     title: '温室气体维度',
@@ -605,12 +599,7 @@ const dimensionPages: Record<string, PageConfig> = {
     mode: '同步后确认',
     codeLabel: '气体编码',
     nameLabel: '气体名称',
-    fields: [
-      { prop: 'gasNameEn', label: '气体英文名' },
-      { prop: 'gwpValue', label: 'GWP值', type: 'number' },
-      { prop: 'gwpVersion', label: 'GWP版本' },
-      { prop: 'chemicalFormula', label: '化学式' }
-    ]
+    fields: []
   },
   'intensity-denominator': {
     title: '碳排放强度分母维度表',
@@ -747,7 +736,7 @@ const parentCodeOptions = computed(() => {
       const factoryCode = String(record.parentCode ?? '').trim();
       if (!factoryCode || uniqueFactories.has(factoryCode)) return;
       uniqueFactories.set(factoryCode, {
-        label: [record.factoryName, record.recordName].filter(Boolean).join(' / '),
+        label: [factoryCode, record.factoryName].filter(Boolean).join(' / '),
         value: factoryCode,
         record
       });
@@ -922,7 +911,7 @@ const statusLabel = (value?: string) => statusOptions.value.find((item) => item.
 
 const formatParentDisplayValue = (row: Record<string, any>) => {
   if (routeKey.value === 'company') {
-    return row.factoryName || row.parentCode || '-';
+    return row.parentCode || '-';
   }
   return row.parentCode || '-';
 };
@@ -1024,9 +1013,6 @@ const fillRowValueFromOption = (row: Record<string, any>, field: FieldConfig, pr
 
 const hydrateCompanyDerivedFields = (row: Record<string, any>) => {
   if (routeKey.value !== 'company') return row;
-  if (!row.factoryName && row.parentCode) {
-    row.factoryName = row.parentCode;
-  }
   const provinceField = fieldByProp('provinceCode');
   if (provinceField) {
     fillRowValueFromOption(row, provinceField, 'provinceName');
