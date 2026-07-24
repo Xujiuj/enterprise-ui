@@ -31,9 +31,11 @@ router.beforeEach(async (to) => {
         isRelogin.show = true;
         const [err] = await tos(useUserStore().getInfo());
         if (err) {
-          await useUserStore().logout();
+          useUserStore().clearAuthState();
+          isRelogin.show = false;
           ElMessage.error(err);
-          return { path: '/' };
+          const redirect = encodeURIComponent(to.fullPath || '/');
+          return `/login?redirect=${redirect}`;
         } else {
           isRelogin.show = false;
           const accessRoutes = await usePermissionStore().generateRoutes();
@@ -42,7 +44,7 @@ router.beforeEach(async (to) => {
               router.addRoute(route);
             }
           });
-          return { path: to.path, replace: true, params: to.params, query: to.query, hash: to.hash, name: to.name };
+          return { path: to.path, replace: true, query: to.query, hash: to.hash };
         }
       } else {
         return true;

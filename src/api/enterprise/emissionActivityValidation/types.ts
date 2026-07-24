@@ -22,6 +22,7 @@ export interface EmissionActivityResolvedRow {
   emissionSourceCode?: string;
   companyCode?: string;
   companyName?: string;
+  factoryCode?: string;
   factoryName?: string;
   emissionSourceCategoryCode?: string;
   scope?: string;
@@ -30,6 +31,8 @@ export interface EmissionActivityResolvedRow {
   emissionSourceName?: string;
   unit?: string;
   emissionFactorCode?: string;
+  responsibleDept?: string;
+  dataSource?: string;
 }
 
 export interface EmissionActivityImportValidationRequest {

@@ -45,3 +45,16 @@ export const delEmissionSource = (id: string | number | Array<string | number>) 
     method: 'delete'
   });
 };
+
+export const importEmissionSource = (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request({
+    url: '/enterprise/emission-source/importData',
+    method: 'post',
+    data: formData,
+    headers: {
+      repeatSubmit: false
+    }
+  });
+};

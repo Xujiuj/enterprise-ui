@@ -2,6 +2,7 @@ export interface EmissionSourceVO {
   id: string | number;
   companyCode?: string;
   companyName?: string;
+  factoryCode?: string;
   factoryName?: string;
   sourceCategoryKey?: string;
   scopeName?: string;
@@ -27,6 +28,7 @@ export interface EmissionSourceForm extends BaseEntity {
   id?: string | number;
   companyCode?: string;
   companyName?: string;
+  factoryCode?: string;
   factoryName?: string;
   sourceCategoryKey?: string;
   scopeName?: string;
@@ -48,6 +50,7 @@ export interface EmissionSourceForm extends BaseEntity {
 export interface EmissionSourceQuery extends PageQuery {
   companyCode?: string;
   companyName?: string;
+  factoryCode?: string;
   factoryName?: string;
   sourceCategoryKey?: string;
   scopeName?: string;

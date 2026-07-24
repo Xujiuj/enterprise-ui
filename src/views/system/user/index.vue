@@ -122,8 +122,12 @@
                 <template v-if="scope.row.userId !== 1">
                   <el-button v-hasPermi="['system:user:edit']" link type="primary" icon="Edit" @click="handleUpdate(scope.row)">修改</el-button>
                   <el-button v-hasPermi="['system:user:remove']" link type="danger" icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
-                  <el-button v-hasPermi="['system:user:resetPwd']" link type="warning" icon="Key" @click="handleResetPwd(scope.row)">重置密码</el-button>
-                  <el-button v-hasPermi="['system:user:edit']" link type="primary" icon="CircleCheck" @click="handleAuthRole(scope.row)">分配角色</el-button>
+                  <el-button v-hasPermi="['system:user:resetPwd']" link type="warning" icon="Key" @click="handleResetPwd(scope.row)"
+                    >重置密码</el-button
+                  >
+                  <el-button v-hasPermi="['system:user:edit']" link type="primary" icon="CircleCheck" @click="handleAuthRole(scope.row)"
+                    >分配角色</el-button
+                  >
                 </template>
                 <el-text v-else type="info" size="small">系统内置</el-text>
               </template>
@@ -233,8 +237,7 @@
           </el-col>
         </el-row>
         <el-row>
-          <el-col :span="24">
-          </el-col>
+          <el-col :span="24"> </el-col>
         </el-row>
       </el-form>
       <template #footer>
@@ -609,9 +612,7 @@ const handleUpdate = async (row?: UserForm) => {
   dialog.title = '修改用户';
   Object.assign(form.value, data.user);
   postOptions.value = data.posts;
-  roleOptions.value = Array.from(
-    new Map([...data.roles, ...data.user.roles].map(role => [role.roleId, role])).values()
-  );
+  roleOptions.value = Array.from(new Map([...data.roles, ...data.user.roles].map((role) => [role.roleId, role])).values());
   form.value.postIds = data.postIds;
   form.value.roleIds = data.roleIds;
   form.value.password = '';
@@ -621,22 +622,47 @@ const handleUpdate = async (row?: UserForm) => {
 const submitForm = () => {
   userFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
-      if (form.value.userId) {
+      const payload = normalizeUserPayload();
+      if (payload.userId) {
         // 自己编辑自己的情况下 不允许编辑角色部门岗位
-        if (form.value.userId == useUserStore().userId) {
-          form.value.roleIds = null;
-          form.value.deptId = null;
-          form.value.postIds = null;
+        if (payload.userId == useUserStore().userId) {
+          payload.roleIds = null;
+          payload.deptId = null;
+          payload.postIds = null;
         }
-        await api.updateUser(form.value);
+        await api.updateUser(payload);
       } else {
-        await api.addUser(form.value);
+        await api.addUser(payload);
       }
       proxy?.$modal.msgSuccess('操作成功');
       dialog.visible = false;
       await getList();
     }
   });
+};
+
+const normalizeId = (value: unknown) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  const numeric = Number(value);
+  return Number.isNaN(numeric) ? value : numeric;
+};
+
+const normalizeIdArray = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.map((item) => normalizeId(item)).filter((item) => item !== undefined);
+};
+
+const normalizeUserPayload = () => {
+  return {
+    ...form.value,
+    deptId: normalizeId(form.value.deptId),
+    roleIds: normalizeIdArray(form.value.roleIds),
+    postIds: normalizeIdArray(form.value.postIds)
+  } as any;
 };
 
 /**

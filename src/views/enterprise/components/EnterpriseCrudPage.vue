@@ -9,12 +9,30 @@
 
     <section class="panel">
       <el-form v-show="showSearch" :model="queryParams" inline label-width="96px" class="crud-search">
-        <el-form-item v-for="field in config.searchFields" :key="field.prop" :label="field.label">
-          <component :is="controlComponent(field)" v-bind="controlProps(field)" v-model="queryParams[field.prop]" @keyup.enter="handleQuery">
-            <template v-if="field.type === 'select'">
-              <el-option v-for="option in fieldOptions(field)" :key="String(option.value)" :label="option.label" :value="option.value" />
-            </template>
-          </component>
+        <el-form-item v-for="field in orderedSearchFields" :key="field.prop" :label="displayLabel(field.label)"> 
+          <el-select
+            v-if="field.type === 'select'"
+            v-model="queryParams[field.prop]"
+            :placeholder="field.placeholder ?? `请选择${displayLabel(field.label)}`"
+            clearable
+            filterable
+            :allow-create="Boolean(field.allowCreate)"
+            :default-first-option="false"
+            :reserve-keyword="false"
+            class="w-full"
+            :disabled="field.disabled"
+            @change="(value: CrudValue) => handleQueryFieldChange(field, value)"
+          >
+            <el-option v-for="option in fieldOptions(field, queryParams)" :key="String(option.value)" :label="displayLabel(option.label)" :value="option.value" />
+          </el-select>
+          <component
+            v-else
+            :is="controlComponent(field)"
+            v-bind="controlProps(field)"
+            v-model="queryParams[field.prop]"
+            @change="(value: CrudValue) => handleQueryFieldChange(field, value)"
+            @keyup.enter="handleQuery"
+          />
         </el-form-item>
         <div class="search-actions">
           <right-toolbar v-model:showSearch="showSearch" :columns="columnOptions" :gutter="0" @query-table="getList" />
@@ -27,10 +45,20 @@
       </div>
 
       <el-row :gutter="10" class="mb-3">
-        <el-col :span="1.5">
-          <el-button v-if="!config.readonly" type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="[`${config.permissionPrefix}:add`]"
-            >新增</el-button
-          >
+        <el-col :span="1.5"> 
+          <el-button v-if="!config.readonly" type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="[`${config.permissionPrefix}:add`]" 
+            >新增</el-button 
+          > 
+        </el-col> 
+        <el-col v-if="canOnlineFill" :span="1.5"> 
+          <el-button type="success" plain icon="Grid" @click="openSheetDrawer" v-hasPermi="[`${config.permissionPrefix}:add`]">在线填报</el-button> 
+        </el-col> 
+        <el-col v-if="canDownloadTemplate" :span="1.5">
+          <el-button type="warning" plain icon="Download" @click="handleTemplateDownload" v-hasPermi="[`${config.permissionPrefix}:add`]">模板下载</el-button>
+        </el-col>
+        <el-col v-if="canImportRows" :span="1.5">
+          <el-button :loading="importing" type="info" plain icon="Upload" @click="openImportFile" v-hasPermi="[`${config.permissionPrefix}:add`]">Excel上传</el-button>
+          <input ref="importFileRef" class="crud-import-input" type="file" accept=".xlsx" @change="handleImportFileChange" />
         </el-col>
         <el-col v-if="!config.readonly" :span="1.5">
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="[`${config.permissionPrefix}:remove`]"
@@ -47,7 +75,7 @@
         <el-table-column
           v-for="column in visibleColumns"
           :key="column.prop"
-          :label="column.label"
+          :label="displayLabel(column.label)" 
           :prop="column.prop"
           :width="column.width"
           :min-width="column.minWidth"
@@ -116,24 +144,36 @@
         <el-form-item
           v-for="field in visibleFormFields"
           :key="field.prop"
-          :label="field.label"
+          :label="displayLabel(field.label)" 
           :prop="field.required ? field.prop : undefined"
           :required="field.required"
         >
+          <el-select
+            v-if="field.type === 'select'"
+            v-model="form[field.prop]"
+            :placeholder="field.placeholder ?? `请选择${displayLabel(field.label)}`"
+            clearable
+            filterable
+            :allow-create="Boolean(field.allowCreate)"
+            :default-first-option="false"
+            :reserve-keyword="false"
+            class="w-full"
+            :disabled="field.disabled"
+            @change="(value: CrudValue) => handleFieldChange(field, value)"
+          >
+            <el-option v-for="option in fieldOptions(field, form)" :key="String(option.value)" :label="displayLabel(option.label)" :value="option.value" />
+          </el-select>
           <component
+            v-else
             :is="controlComponent(field)"
             v-bind="controlProps(field)"
             v-model="form[field.prop]"
             @change="(value: CrudValue) => handleFieldChange(field, value)"
-          >
-            <template v-if="field.type === 'select'">
-              <el-option v-for="option in fieldOptions(field)" :key="String(option.value)" :label="option.label" :value="option.value" />
-            </template>
-          </component>
+          />
         </el-form-item>
         <template v-if="showExtensionFieldsInCrudDrawer">
           <el-divider content-position="left">扩展字段</el-divider>
-          <el-form-item v-for="field in extensionFields" :key="String(field.id)" :label="field.fieldName || field.fieldCode">
+          <el-form-item v-for="field in extensionFields" :key="String(field.id)" :label="displayLabel(field.fieldName || field.fieldCode)"> 
             <component
               :is="extensionControlComponent(field)"
               v-bind="extensionControlProps(field)"
@@ -148,10 +188,10 @@
       </template>
     </el-drawer>
 
-    <el-drawer v-model="extensionDialog.visible" :title="extensionDialog.title" size="560px" append-to-body>
+    <el-drawer v-model="extensionDialog.visible" :title="extensionDialog.title" size="560px" append-to-body> 
       <el-form label-width="132px">
         <template v-if="extensionFields.length > 0">
-          <el-form-item v-for="field in extensionFields" :key="String(field.id)" :label="field.fieldName || field.fieldCode">
+          <el-form-item v-for="field in extensionFields" :key="String(field.id)" :label="displayLabel(field.fieldName || field.fieldCode)"> 
             <component
               :is="extensionControlComponent(field)"
               v-bind="extensionControlProps(field)"
@@ -163,19 +203,34 @@
       </el-form>
       <template #footer>
         <el-button :loading="extensionSaving" type="primary" @click="submitExtensionValues">保存</el-button>
-        <el-button @click="cancelExtensionDialog">取消</el-button>
-      </template>
-    </el-drawer>
-  </div>
-</template>
+        <el-button @click="cancelExtensionDialog">取消</el-button> 
+      </template> 
+    </el-drawer> 
+
+    <el-drawer v-model="sheetDrawer.visible" :title="`${config.title}在线填报`" size="92%" append-to-body destroy-on-close> 
+      <SpreadsheetEditor 
+        :title="config.title" 
+        :columns="sheetColumns" 
+        :rows="sheetRows" 
+        :empty-row="sheetEmptyRow" 
+        :saving="sheetSaving" 
+        :hint="sheetHint" 
+        @save="saveSheetRows" 
+      /> 
+    </el-drawer> 
+  </div> 
+</template> 
 
 <script setup name="EnterpriseCrudPage" lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { ElDatePicker, ElInput, ElInputNumber, ElMessage, ElMessageBox, ElSelect, ElSwitch, type FormInstance, type FormRules } from 'element-plus';
-import { listExtensionFields, listExtensionFieldValues, saveExtensionFieldValuesBatch } from '@/api/enterprise/extensionField';
-import type { ExtensionFieldVO, ExtensionFieldValueForm, ExtensionFieldValueVO } from '@/api/enterprise/extensionField/types';
-import { useAutoQuery } from '@/hooks/useAutoQuery';
+import { ElDatePicker, ElInput, ElInputNumber, ElMessage, ElMessageBox, ElSelect, ElSwitch, type FormInstance, type FormRules } from 'element-plus'; 
+import { listExtensionFields, listExtensionFieldValues, saveExtensionFieldValuesBatch } from '@/api/enterprise/extensionField'; 
+import type { ExtensionFieldVO, ExtensionFieldValueForm, ExtensionFieldValueVO } from '@/api/enterprise/extensionField/types'; 
+import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue'; 
+import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types'; 
+import { useAutoQuery } from '@/hooks/useAutoQuery'; 
+import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 
 type CrudValue = string | number | boolean | undefined | null;
 type CrudRecord = Record<string, any>;
@@ -190,8 +245,11 @@ interface FieldConfig {
   prop: string;
   label: string;
   type?: string;
-  loadOptions?: () => Promise<SelectOption[]>;
+  loadOptions?: (model?: CrudRecord) => Promise<SelectOption[]>;
+  reloadOnProps?: string[];
+  filterOptions?: (options: SelectOption[], model: CrudRecord) => SelectOption[];
   onChange?: (value: CrudValue, form: CrudRecord, option?: SelectOption) => void;
+  clearFields?: string[];
   required?: boolean;
   placeholder?: string;
   precision?: number;
@@ -209,6 +267,7 @@ interface ColumnConfig {
   showOverflow?: boolean;
   valueMap?: Record<string, string>;
   tagMap?: Record<string, string>;
+  formatOptions?: boolean;
 }
 
 interface RowActionConfig {
@@ -252,6 +311,7 @@ interface CrudApi {
   add: (data: CrudRecord) => Promise<unknown>;
   update: (data: CrudRecord) => Promise<unknown>;
   remove: (id: string | number | Array<string | number>) => Promise<unknown>;
+  importRows?: (file: File) => Promise<unknown>;
 }
 
 const props = defineProps<{
@@ -269,6 +329,8 @@ const ids = ref<Array<string | number>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const crudFormRef = ref<FormInstance>();
+const importFileRef = ref<HTMLInputElement>();
+const importing = ref(false);
 
 const queryParams = reactive<CrudRecord>({
   pageNum: 1,
@@ -286,18 +348,22 @@ const extensionValueRows = ref<Record<string, ExtensionFieldValueVO>>({});
 const extensionValues = reactive<Record<string, any>>({});
 const extensionSaving = ref(false);
 const extensionOwnerId = ref<string | number>();
-const extensionDialog = reactive({
-  visible: false,
-  title: ''
-});
-
-const rules = computed<FormRules>(() => {
-  return props.config.formFields.reduce<FormRules>((acc, field) => {
-    if (field.required) {
-      acc[field.prop] = [{ required: true, message: `${field.label}不能为空`, trigger: field.type === 'select' ? 'change' : 'blur' }];
-    }
-    return acc;
-  }, {});
+const extensionDialog = reactive({ 
+  visible: false, 
+  title: '' 
+}); 
+const sheetDrawer = reactive({ 
+  visible: false 
+}); 
+const sheetSaving = ref(false); 
+ 
+const rules = computed<FormRules>(() => { 
+  return props.config.formFields.reduce<FormRules>((acc, field) => { 
+    if (field.required) { 
+      acc[field.prop] = [{ required: true, message: `${displayLabel(field.label)}不能为空`, trigger: field.type === 'select' ? 'change' : 'blur' }]; 
+    } 
+    return acc; 
+  }, {}); 
 });
 
 const actionColumnWidth = computed(() => {
@@ -316,23 +382,23 @@ const showReadonlyExtensionAction = computed(() => extensionEnabled.value && Boo
 
 const showActionColumn = computed(() => !props.config.readonly || (props.config.rowActions?.length ?? 0) > 0 || showReadonlyExtensionAction.value);
 
-const columnOptions = ref<FieldOption[]>(
-  props.config.columns.map((column) => ({
-    key: column.prop,
-    label: column.label,
-    visible: true,
-    children: []
-  }))
+const columnOptions = ref<FieldOption[]>( 
+  props.config.columns.map((column) => ({ 
+    key: column.prop, 
+    label: displayLabel(column.label), 
+    visible: true, 
+    children: [] 
+  })) 
 );
 
 const syncColumnOptions = () => {
-  const visibleByProp = new Map(columnOptions.value.map((item) => [String(item.key), item.visible]));
-  columnOptions.value = props.config.columns.map((column) => ({
-    key: column.prop,
-    label: column.label,
-    visible: visibleByProp.get(column.prop) ?? true,
-    children: []
-  }));
+  const visibleByProp = new Map(columnOptions.value.map((item) => [String(item.key), item.visible])); 
+  columnOptions.value = props.config.columns.map((column) => ({ 
+    key: column.prop, 
+    label: displayLabel(column.label), 
+    visible: visibleByProp.get(column.prop) ?? true, 
+    children: [] 
+  })); 
 };
 
 const visibleColumns = computed(() => {
@@ -340,18 +406,112 @@ const visibleColumns = computed(() => {
   return props.config.columns.filter((column) => !hiddenKeys.has(column.prop));
 });
 
-const visibleFormFields = computed(() => props.config.formFields.filter((field) => !field.hidden));
+const orderedSearchFields = computed<FieldConfig[]>(() => {
+  const fieldsByProp = new Map(props.config.searchFields.map((field) => [field.prop, field]));
+  const ordered = props.config.columns
+    .map((column) => {
+      const field = fieldsByProp.get(column.prop);
+      return field ? { ...field, label: column.label } : undefined;
+    })
+    .filter((field): field is FieldConfig => Boolean(field));
+  const orderedProps = new Set(ordered.map((field) => field.prop));
+  return [...ordered, ...props.config.searchFields.filter((field) => !orderedProps.has(field.prop))];
+});
 
-const resetForm = () => {
-  form.value = { ...props.config.emptyForm };
-  crudFormRef.value?.resetFields();
+const visibleFormFields = computed(() => props.config.formFields.filter((field) => !field.hidden)); 
+const canOnlineFill = computed(() => !props.config.readonly && visibleFormFields.value.length > 0); 
+const canDownloadTemplate = computed(() => canOnlineFill.value);
+const canImportRows = computed(() => !props.config.readonly && Boolean(props.api.importRows));
+const sheetFields = computed(() => visibleFormFields.value); 
+const sheetColumns = computed<SpreadsheetColumn[]>(() => 
+  sheetFields.value.map((field) => ({ 
+    prop: field.prop, 
+    label: displayLabel(field.label), 
+    type: sheetColumnType(field), 
+    required: field.required, 
+    readonly: field.disabled, 
+    precision: field.precision, 
+    width: field.type === 'textarea' ? 220 : 170, 
+    options: sheetFieldOptions(field),
+    getOptions: field.type === 'select' ? (row) => sheetFieldOptions(field, row) : undefined,
+    allowCreate: field.allowCreate,
+    clearsOnChange: field.clearFields
+  })) 
+); 
+const sheetEmptyRow = computed(() => 
+  props.config.formFields.reduce<CrudRecord>((row, field) => { 
+    row[field.prop] = props.config.emptyForm[field.prop]; 
+    return row; 
+  }, {}) 
+); 
+const sheetRows = computed(() => [{ ...sheetEmptyRow.value }]); 
+const sheetHint = computed(() => `在线填报仅用于新增${props.config.title}。字段、必填项和联动规则与新增表单一致。`); 
+ 
+const resetForm = () => { 
+  form.value = { ...props.config.emptyForm }; 
+  crudFormRef.value?.resetFields(); 
+}; 
+ 
+const shouldKeepOptionForModel = (field: FieldConfig, option: SelectOption, model?: CrudRecord) => {
+  if (!model || !field.reloadOnProps?.length) {
+    return true;
+  }
+  const record = optionRecord(option);
+  if (!record) {
+    return true;
+  }
+  return field.reloadOnProps.every((prop) => {
+    const modelValue = model[prop];
+    if (modelValue === undefined || modelValue === null || modelValue === '') {
+      return true;
+    }
+    const recordValue = record[prop];
+    return recordValue === undefined || recordValue === null || recordValue === '' || String(recordValue) === String(modelValue);
+  });
 };
 
-const fieldOptions = (field: FieldConfig) => dynamicOptions[field.prop] ?? [];
+const fieldOptions = (field: FieldConfig, model?: CrudRecord) => {
+  const options = dynamicOptions[field.prop] ?? [];
+  const scopedOptions = options.filter((option) => shouldKeepOptionForModel(field, option, model));
+  return model && field.filterOptions ? field.filterOptions(scopedOptions, model) : scopedOptions;
+}; 
+
+const optionRecord = (option?: SelectOption) => option?.record?.record ?? option?.record;
+
+function displayLabel(label?: string) { 
+  return String(label ?? '').replace(/^(FK|PK|SK|BK)_/, ''); 
+} 
+
+const sheetColumnType = (field: FieldConfig): SpreadsheetColumn['type'] => { 
+  if (field.type === 'number') return 'number'; 
+  if (field.type === 'select' || field.type === 'switch') return 'select'; 
+  if (field.type === 'date') return 'date'; 
+  if (field.type === 'month') return 'month'; 
+  return 'text'; 
+}; 
+
+const sheetFieldOptions = (field: FieldConfig, row?: CrudRecord) => { 
+  if (field.type === 'switch') { 
+    return [ 
+      { label: '是', value: true }, 
+      { label: '否', value: false } 
+    ]; 
+  } 
+  return fieldOptions(field, row).map((option) => ({ ...option, label: displayLabel(option.label) })); 
+}; 
+
+const templateValidations = computed(() =>
+  sheetColumns.value.reduce<Record<string, string[]>>((acc, column) => {
+    if (column.type === 'select' && column.options?.length && !column.allowCreate) {
+      acc[column.label] = column.options.map((option) => String(option.label ?? option.value ?? '')).filter(Boolean);
+    }
+    return acc;
+  }, {})
+);
 
 const loadFieldOptions = async () => {
-  const fields = [...props.config.searchFields, ...props.config.formFields];
-  const uniqueLoaders = new Map<string, () => Promise<SelectOption[]>>();
+  const fields = [...orderedSearchFields.value, ...props.config.formFields];
+  const uniqueLoaders = new Map<string, (model?: CrudRecord) => Promise<SelectOption[]>>();
   fields.forEach((field) => {
     if (field.loadOptions) {
       uniqueLoaders.set(field.prop, field.loadOptions);
@@ -362,6 +522,13 @@ const loadFieldOptions = async () => {
       dynamicOptions[prop] = await loader();
     })
   );
+};
+
+const refreshDependentOptions = async (fields: FieldConfig[], model: CrudRecord, changedProp: string) => {
+  const dependents = fields.filter((field) => field.loadOptions && field.reloadOnProps?.includes(changedProp));
+  for (const field of dependents) {
+    dynamicOptions[field.prop] = (await field.loadOptions?.(model)) ?? [];
+  }
 };
 
 const resetExtensionValues = () => {
@@ -378,7 +545,7 @@ const firstQueryValue = (value: unknown) => {
 };
 
 const applyRouteQueryParams = () => {
-  for (const field of props.config.searchFields) {
+  for (const field of orderedSearchFields.value) {
     const value = firstQueryValue(route.query[field.prop]);
     if (value !== undefined && value !== null && value !== '') {
       queryParams[field.prop] = value;
@@ -389,7 +556,7 @@ const applyRouteQueryParams = () => {
 const getList = async () => {
   loading.value = true;
   try {
-    const res = await props.api.list(queryParams);
+    const res = await props.api.list(normalizedOptionPayload(queryParams, orderedSearchFields.value));
     rows.value = res.rows ?? res.data ?? [];
     total.value = Number(res.total ?? rows.value.length);
   } finally {
@@ -434,20 +601,125 @@ const handleUpdate = async (row: CrudRecord) => {
   const id = row.id ?? ids.value[0];
   const res = await props.api.get(id);
   form.value = unwrapData<CrudRecord>(res);
+  await Promise.all(
+    props.config.formFields
+      .filter((field) => field.loadOptions && field.reloadOnProps?.length)
+      .map(async (field) => {
+        dynamicOptions[field.prop] = (await field.loadOptions?.(form.value)) ?? [];
+      })
+  );
   await loadExtensionValues(id);
   dialog.visible = true;
   dialog.title = `编辑${props.config.title}`;
 };
 
-const handleFieldChange = (field: FieldConfig, value: CrudValue) => {
-  if (!field.onChange) {
-    return;
-  }
-  const option = fieldOptions(field).find((item) => item.value === value);
-  field.onChange(value, form.value, option);
+const handleQueryFieldChange = async (field: FieldConfig, _value: CrudValue) => {
+  field.clearFields?.forEach((prop) => {
+    queryParams[prop] = undefined;
+  });
+  await refreshDependentOptions(orderedSearchFields.value, queryParams, field.prop);
 };
 
-const resolveSavedRecordId = (response: unknown, fallback?: string | number) => {
+const handleFieldChange = async (field: FieldConfig, value: CrudValue) => { 
+  field.clearFields?.forEach((prop) => {
+    form.value[prop] = undefined;
+  });
+  const option = fieldOptions(field, form.value).find((item) => String(item.value ?? '') === String(value ?? '')); 
+  field.onChange?.(value, form.value, option);
+  await refreshDependentOptions(props.config.formFields, form.value, field.prop);
+}; 
+
+const applyFieldChangeToRecord = (field: FieldConfig, target: CrudRecord) => { 
+  if (!field.onChange) { 
+    return; 
+  } 
+  const value = target[field.prop]; 
+  const option = fieldOptions(field, target).find((item) => String(item.value ?? '') === String(value ?? '')); 
+  field.onChange(value, target, option); 
+}; 
+
+const normalizeOptionBackedValues = (payload: CrudRecord, fields: FieldConfig[] = props.config.formFields) => {
+  fields.forEach((field) => {
+    const selected = fieldOptions(field, payload).find((option) => String(option.value ?? '') === String(payload[field.prop] ?? ''));
+    const record = optionRecord(selected);
+    if (record?.[field.prop] !== undefined && record?.[field.prop] !== null && record?.[field.prop] !== '') {
+      payload[field.prop] = record[field.prop];
+    }
+    field.reloadOnProps?.forEach((prop) => {
+      if ((payload[prop] === undefined || payload[prop] === null || payload[prop] === '') && record?.[prop] !== undefined && record?.[prop] !== null) {
+        payload[prop] = record[prop];
+      }
+    });
+  });
+};
+
+const normalizedOptionPayload = (source: CrudRecord, fields: FieldConfig[]) => {
+  const payload = { ...source };
+  normalizeOptionBackedValues(payload, fields);
+  return payload;
+};
+
+const normalizeSheetRow = (row: CrudRecord) => { 
+  const payload = { ...props.config.emptyForm, ...row }; 
+  props.config.formFields.forEach((field) => applyFieldChangeToRecord(field, payload)); 
+  normalizeOptionBackedValues(payload);
+  return payload; 
+}; 
+
+const openSheetDrawer = () => { 
+  sheetDrawer.visible = true; 
+}; 
+
+const handleTemplateDownload = async () => {
+  await loadFieldOptions();
+  downloadXlsxTemplate({
+    fileName: `${props.config.title}导入模板.xlsx`,
+    sheetName: props.config.title,
+    headers: sheetColumns.value.map((column) => column.label),
+    validations: templateValidations.value
+  });
+};
+
+const openImportFile = () => {
+  importFileRef.value?.click();
+};
+
+const handleImportFileChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file || !props.api.importRows) {
+    return;
+  }
+  importing.value = true;
+  try {
+    await props.api.importRows(file);
+    ElMessage.success('Excel上传成功');
+    await getList();
+  } finally {
+    importing.value = false;
+  }
+};
+
+const saveSheetRows = async (sheetRowsToSave: CrudRecord[]) => { 
+  if (!sheetRowsToSave.length) { 
+    ElMessage.warning('没有可保存的数据'); 
+    return; 
+  } 
+  sheetSaving.value = true; 
+  try { 
+    for (const row of sheetRowsToSave) { 
+      await props.api.add(normalizeSheetRow(row)); 
+    } 
+    ElMessage.success(`在线填报已保存 ${sheetRowsToSave.length} 条`); 
+    sheetDrawer.visible = false; 
+    await getList(); 
+  } finally { 
+    sheetSaving.value = false; 
+  } 
+}; 
+ 
+const resolveSavedRecordId = (response: unknown, fallback?: string | number) => { 
   const payload = response as { data?: unknown; id?: string | number };
   const data = payload?.data;
   if (typeof data === 'string' || typeof data === 'number') {
@@ -463,6 +735,7 @@ const submitForm = async () => {
   await crudFormRef.value?.validate();
   buttonLoading.value = true;
   try {
+    normalizeOptionBackedValues(form.value);
     let savedId = form.value.id as string | number | undefined;
     if (form.value.id) {
       await props.api.update(form.value);
@@ -533,9 +806,10 @@ const controlComponent = (field: FieldConfig) => {
   return ElInput;
 };
 
-const controlProps = (field: FieldConfig) => {
-  const isSelectionField = field.type === 'select' || field.type === 'date';
-  const placeholder = field.placeholder ?? (isSelectionField ? `请选择${field.label}` : `请输入${field.label}`);
+const controlProps = (field: FieldConfig) => { 
+  const isSelectionField = field.type === 'select' || field.type === 'date'; 
+  const label = displayLabel(field.label); 
+  const placeholder = field.placeholder ?? (isSelectionField ? `请选择${label}` : `请输入${label}`); 
   if (field.type === 'number') {
     return { placeholder, min: 0, precision: field.precision ?? 2, controlsPosition: 'right', class: 'w-full', disabled: field.disabled };
   }
@@ -595,8 +869,8 @@ const extensionControlComponent = (field: ExtensionFieldVO) => {
   return ElInput;
 };
 
-const extensionControlProps = (field: ExtensionFieldVO) => {
-  const label = field.fieldName || field.fieldCode || '扩展字段';
+const extensionControlProps = (field: ExtensionFieldVO) => { 
+  const label = displayLabel(field.fieldName || field.fieldCode || '扩展字段'); 
   if (String(field.valueType ?? '').toLowerCase() === 'textarea') {
     return { placeholder: `请输入${label}`, type: 'textarea', rows: 3, maxlength: 500, showWordLimit: true };
   }
@@ -756,8 +1030,9 @@ const trimDecimalZeros = (value: CrudValue) => {
 
 const formatValue = (column: ColumnConfig, value: CrudValue) => {
   const key = String(value ?? '');
-  const optionLabel = dynamicOptions[column.prop]?.find((option) => String(option.value) === key)?.label;
-  return optionLabel ?? column.valueMap?.[key] ?? trimDecimalZeros(value) ?? '-';
+  const optionLabel = column.formatOptions === false ? undefined : dynamicOptions[column.prop]?.find((option) => String(option.value) === key)?.label;
+  const displayValue = optionLabel ?? column.valueMap?.[key] ?? trimDecimalZeros(value);
+  return displayValue === undefined || displayValue === null || displayValue === '' ? '-' : displayLabel(String(displayValue));
 };
 
 const resolveTagType = (column: ColumnConfig, value: CrudValue): any => {
@@ -772,8 +1047,8 @@ onMounted(async () => {
   syncColumnOptions();
   resetForm();
   applyRouteQueryParams();
-  await loadFieldOptions();
-  await loadExtensionFields();
+  void loadFieldOptions();
+  void loadExtensionFields();
   getList();
 });
 
@@ -830,5 +1105,9 @@ defineExpose({
 
 .w-full {
   width: 100%;
+}
+
+.crud-import-input {
+  display: none;
 }
 </style>

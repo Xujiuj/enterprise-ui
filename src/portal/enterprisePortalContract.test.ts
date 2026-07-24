@@ -496,6 +496,33 @@ describe('enterprise dynamic router guard', () => {
   it('keeps RuoYi system permissions available to the enterprise portal', () => {
     expect(enterpriseAllowedPermissionPrefixes).toEqual(['enterprise:', 'system:', 'monitor:']);
   });
+  it('keeps generated dynamic data pages', () => {
+    const routes = filterEnterprisePortalRoutes([
+      {
+        path: 'dynamic-data',
+        component: 'Layout',
+        meta: { title: '动态数据管理' },
+        children: [
+          {
+            path: 'module-generator',
+            component: 'enterprise/dynamicModule/index',
+            meta: { title: '页面生成管理' },
+            permissions: ['enterprise:dynamicModule:list']
+          },
+          {
+            path: 'supplier_emission',
+            component: 'enterprise/dynamic/index',
+            query: '{"moduleCode":"supplier_emission"}',
+            meta: { title: '供应商排放' },
+            permissions: ['enterprise:dynamic_supplier_emission:list']
+          }
+        ]
+      }
+    ] as any);
+
+    expect(routes).toHaveLength(1);
+    expect(routes[0].children?.map((child) => child.path)).toEqual(['module-generator', 'supplier_emission']);
+  });
 });
 
 function flattenComponents(routes: Array<{ component?: unknown; children?: any[] }>): string[] {

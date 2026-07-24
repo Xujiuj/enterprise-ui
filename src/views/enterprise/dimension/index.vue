@@ -10,13 +10,20 @@
 
       <section class="panel">
         <div class="search-bar wide" v-show="showSearch">
-          <div class="search-item">
-            <label>{{ page.codeLabel }}</label>
-            <el-input v-model="queryParams.recordCode" :placeholder="`请输入${page.codeLabel}`" clearable @keyup.enter="handleQuery" />
-          </div>
           <div v-if="showRecordName" class="search-item">
             <label>{{ page.nameLabel }}</label>
             <el-input v-model="queryParams.recordName" :placeholder="`请输入${page.nameLabel}`" clearable @keyup.enter="handleQuery" />
+          </div>
+          <div v-if="isEmissionSourceCategoryHistory" class="search-item">
+            <label>是否当前</label>
+            <el-select v-model="queryParams.currentFlag" placeholder="请选择" clearable>
+              <el-option label="是" value="Y" />
+              <el-option label="否" value="N" />
+            </el-select>
+          </div>
+          <div v-if="isEmissionSourceCategoryHistory" class="search-item">
+            <label>版本号</label>
+            <el-input v-model="queryParams.versionNo" placeholder="请输入版本号" clearable @keyup.enter="handleQuery" />
           </div>
           <div v-if="page.showStatus !== false" class="search-item">
             <label>状态</label>
@@ -68,9 +75,16 @@
 
         <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange">
           <el-table-column v-if="isEditable" type="selection" width="42" align="center" />
-          <el-table-column :label="page.codeLabel" align="center" prop="recordCode" min-width="150" />
-          <el-table-column v-if="showRecordName" :label="page.nameLabel" align="center" prop="recordName" min-width="180" :show-overflow-tooltip="true" />
-          <el-table-column v-if="page.showParent" :label="page.parentLabel ?? '上级编码'" align="center" prop="parentCode" min-width="140">
+          <el-table-column :label="displayLabel(page.codeLabel)" align="center" prop="recordCode" min-width="150" />
+          <el-table-column
+            v-if="showRecordName"
+            :label="page.nameLabel"
+            align="center"
+            prop="recordName"
+            min-width="180"
+            :show-overflow-tooltip="true"
+          />
+          <el-table-column v-if="page.showParent" :label="displayLabel(page.parentLabel ?? '上级编码')" align="center" prop="parentCode" min-width="140">
             <template #default="scope">
               {{ formatParentDisplayValue(scope.row) }}
             </template>
@@ -78,7 +92,7 @@
           <el-table-column
             v-for="field in visibleFields"
             :key="field.prop"
-            :label="field.label"
+            :label="displayLabel(field.label)"
             align="center"
             :prop="field.prop"
             :min-width="field.width ?? 140"
@@ -120,8 +134,8 @@
 
       <el-drawer v-model="dialog.visible" :title="dialog.title" size="620px" append-to-body>
         <el-form ref="dimensionFormRef" :model="form" :rules="rules" label-width="120px">
-          <el-form-item :label="page.codeLabel" prop="recordCode">
-            <el-input v-model="form.recordCode" :placeholder="`请输入${page.codeLabel}`" />
+          <el-form-item v-if="!autoRecordCodePage" :label="displayLabel(page.codeLabel)" prop="recordCode">
+            <el-input v-model="form.recordCode" :placeholder="`请输入${displayLabel(page.codeLabel)}`" />
           </el-form-item>
           <el-form-item v-if="showRecordName" :label="page.nameLabel" prop="recordName">
             <el-select
@@ -140,13 +154,13 @@
           </el-form-item>
           <el-form-item
             v-if="page.showParent"
-            :label="page.parentLabel ?? '上级编码'"
+            :label="displayLabel(page.parentLabel ?? '上级编码')"
             :prop="page.parentRequired ? 'parentCode' : undefined"
             :required="page.parentRequired"
           >
             <el-select
               v-model="form.parentCode"
-              :placeholder="page.parentPlaceholder ?? `请选择${page.parentLabel ?? '上级编码'}`"
+              :placeholder="page.parentPlaceholder ?? `请选择${displayLabel(page.parentLabel ?? '上级编码')}`"
               clearable
               filterable
               allow-create
@@ -159,18 +173,19 @@
           <el-form-item
             v-for="field in visibleFormFields"
             :key="field.prop"
-            :label="field.formLabel ?? field.label"
+            :label="displayLabel(field.formLabel ?? field.label)"
             :prop="field.required ? field.prop : undefined"
             :required="field.required"
           >
             <el-select
               v-if="field.optionSource"
               v-model="form[field.prop]"
-              :placeholder="field.placeholder ?? `请选择${field.formLabel ?? field.label}`"
+              :placeholder="field.placeholder ?? `请选择${displayLabel(field.formLabel ?? field.label)}`"
               clearable
               :filterable="field.filterable ?? true"
               :allow-create="field.allowCreate ?? false"
               class="w-full"
+              :disabled="field.readonly"
               @change="handleFieldSelect(field, $event)"
             >
               <el-option v-for="item in fieldOptions(field, form)" :key="String(item.value)" :label="item.label" :value="item.value" />
@@ -180,16 +195,18 @@
               v-model="form[field.prop]"
               value-format="YYYY-MM-DD"
               type="date"
-              :placeholder="field.placeholder ?? `请选择${field.formLabel ?? field.label}`"
+              :placeholder="field.placeholder ?? `请选择${displayLabel(field.formLabel ?? field.label)}`"
               class="w-full"
+              :disabled="field.readonly"
             />
             <el-input
               v-else-if="field.type === 'number'"
               v-model="form[field.prop]"
               type="number"
-              :placeholder="field.placeholder ?? `请输入${field.formLabel ?? field.label}`"
+              :placeholder="field.placeholder ?? `请输入${displayLabel(field.formLabel ?? field.label)}`"
+              :disabled="field.readonly"
             />
-            <el-input v-else v-model="form[field.prop]" :placeholder="field.placeholder ?? `请输入${field.formLabel ?? field.label}`" />
+            <el-input v-else v-model="form[field.prop]" :placeholder="field.placeholder ?? `请输入${displayLabel(field.formLabel ?? field.label)}`" :disabled="field.readonly" />
           </el-form-item>
           <el-form-item v-if="page.showStatus !== false" label="状态" prop="status">
             <el-radio-group v-model="form.status">
@@ -210,7 +227,7 @@
       <el-drawer v-model="extensionDialog.visible" :title="extensionDialog.title" size="560px" append-to-body>
         <el-form label-width="132px">
           <template v-if="dimensionExtensionFields.length > 0">
-            <el-form-item v-for="field in dimensionExtensionFields" :key="String(field.id)" :label="field.fieldName || field.fieldCode">
+            <el-form-item v-for="field in dimensionExtensionFields" :key="String(field.id)" :label="displayLabel(field.fieldName || field.fieldCode)">
               <component
                 :is="extensionControlComponent(field)"
                 v-bind="extensionControlProps(field)"
@@ -259,7 +276,7 @@
       </el-dialog>
     </template>
 
-    <el-result v-else icon="error" title="未配置合法维度" :sub-title="routeKey">
+    <el-result v-else-if="showInvalidDimensionResult" icon="error" title="未配置合法维度" :sub-title="rawRouteKey">
       <template #extra>
         <el-button type="primary" @click="$router.back()">返回</el-button>
       </template>
@@ -285,7 +302,13 @@ import { DimensionRecordForm, DimensionRecordQuery, DimensionRecordVO } from '@/
 import { downloadXlsxTemplate } from '@/utils/xlsxTemplate';
 import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
 import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
-import { loadDimensionFieldOptions, loadEmissionSourceNameOptions, loadRecordStatusOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
+import {
+  loadDimensionFieldOptions,
+  loadEmissionSourceNameOptions,
+  loadRecordStatusOptions,
+  loadSourceScopeOptions,
+  type SelectOption
+} from '@/utils/enterpriseFieldOptions';
 import { listExtensionFields, listExtensionFieldValues, saveExtensionFieldValuesBatch } from '@/api/enterprise/extensionField';
 import type { ExtensionFieldVO, ExtensionFieldValueForm, ExtensionFieldValueVO } from '@/api/enterprise/extensionField/types';
 
@@ -296,19 +319,21 @@ interface FieldConfig {
   label: string;
   formLabel?: string;
   type?: 'text' | 'number' | 'date';
-  optionSource?: 'dimension-field' | 'emission-source-name';
+  optionSource?: 'dimension-field' | 'emission-source-name' | 'source-scope';
   optionDimensionCode?: string;
   fillProps?: FieldProp[];
   width?: number;
   precision?: number;
   hidden?: boolean;
   formHidden?: boolean;
+  readonly?: boolean;
   required?: boolean;
   allowCreate?: boolean;
   filterable?: boolean;
   placeholder?: string;
   parentProp?: FieldProp;
   clearsOnChange?: FieldProp[];
+  formula?: 'efFactorGwp';
 }
 
 type CompanyIndustryFieldPair = {
@@ -335,18 +360,23 @@ interface PageConfig {
   fields: FieldConfig[];
 }
 
-interface ZipEntry {
-  path: string;
-  method: number;
-  compressed: Uint8Array;
-}
+interface ZipEntry { 
+  path: string; 
+  method: number; 
+  compressed: Uint8Array; 
+} 
 
-const route = useRoute();
+function displayLabel(label?: string) { 
+  return String(label ?? '').replace(/^(FK|PK|SK|BK)_/, ''); 
+} 
+ 
+const route = useRoute(); 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const statusOptions = ref<SelectOption[]>([]);
 const dynamicFieldOptions = reactive<Record<string, SelectOption[]>>({});
+const fieldOptionLoading = new Set<string>();
 const companyIndustryFieldPairs: CompanyIndustryFieldPair[] = [
   { code: 'industrySectionCode', name: 'industrySectionName' },
   { code: 'industryDivisionCode', name: 'industryDivisionName' },
@@ -354,6 +384,26 @@ const companyIndustryFieldPairs: CompanyIndustryFieldPair[] = [
   { code: 'industryClassCode', name: 'industryClassName' }
 ];
 const companyDerivedNameFields = new Set<FieldProp>(['provinceName', ...companyIndustryFieldPairs.map((item) => item.name)]);
+const emissionSourceCategoryFields: FieldConfig[] = [
+  { prop: 'businessKey', label: '业务键', hidden: true },
+  { prop: 'ghgScope', label: 'GHG Protocol范围', optionSource: 'dimension-field' },
+  { prop: 'ghgScopeCategorySort', label: 'GHG Protocol范围子类别排序', type: 'number' },
+  { prop: 'ghgScopeCategory', label: 'GHG Protocol范围子类别' },
+  { prop: 'ghgScopeEn', label: 'GHG范围英文' },
+  { prop: 'ghgScopeCategoryEn', label: 'GHG范围子类别英文' },
+  { prop: 'isoCategory', label: 'ISO 14064-1类别' },
+  { prop: 'isoCategoryEn', label: 'ISO类别英文' },
+  { prop: 'isoCategoryDescription', label: 'ISO类别描述', width: 220 },
+  { prop: 'isoCategoryDescriptionEn', label: 'ISO类别英文描述', width: 240 },
+  { prop: 'isoCustomSubcategory', label: 'ISO自定义子分类', width: 180 },
+  { prop: 'gbScopeCategory', label: 'GB/T 32150-2025范围分类' },
+  { prop: 'gbSubcategory', label: '国标子分类' },
+  { prop: 'effectiveDate', label: '生效日期', type: 'date' },
+  { prop: 'expiryDate', label: '失效日期', type: 'date' },
+  { prop: 'currentFlag', label: '是否当前' },
+  { prop: 'versionNo', label: '版本号' },
+  { prop: 'unifiedStandardCategory', label: '统一标准分类' }
+];
 const dimensionPages: Record<string, PageConfig> = {
   'admin-division': {
     title: '行政区划',
@@ -468,28 +518,20 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '配置排放源',
     owner: '链接厂商',
     mode: '同步后确认',
-    codeLabel: 'SK_排放源分类',
+    codeLabel: '排放源分类',
     nameLabel: '统一标准分类',
-    fields: [
-      { prop: 'businessKey', label: 'BK_业务键' },
-      { prop: 'ghgScope', label: 'GHG Protocol范围', optionSource: 'dimension-field' },
-      { prop: 'ghgScopeCategorySort', label: 'GHG Protocol范围子类别排序', type: 'number' },
-      { prop: 'ghgScopeCategory', label: 'GHG Protocol范围子类别' },
-      { prop: 'ghgScopeEn', label: 'GHG范围英文' },
-      { prop: 'ghgScopeCategoryEn', label: 'GHG范围子类别英文' },
-      { prop: 'isoCategory', label: 'ISO 14064-1类别' },
-      { prop: 'isoCategoryEn', label: 'ISO类别英文' },
-      { prop: 'isoCategoryDescription', label: 'ISO类别描述', width: 220 },
-      { prop: 'isoCategoryDescriptionEn', label: 'ISO类别英文描述', width: 240 },
-      { prop: 'isoCustomSubcategory', label: 'ISO自定义子分类', width: 180 },
-      { prop: 'gbScopeCategory', label: 'GB/T 32150-2025范围分类' },
-      { prop: 'gbSubcategory', label: '国标子分类' },
-      { prop: 'effectiveDate', label: '生效日期', type: 'date' },
-      { prop: 'expiryDate', label: '失效日期', type: 'date' },
-      { prop: 'currentFlag', label: '是否当前' },
-      { prop: 'versionNo', label: '版本号' },
-      { prop: 'unifiedStandardCategory', label: '统一标准分类' }
-    ]
+    showName: false,
+    fields: emissionSourceCategoryFields
+  },
+  'emission-source-category-history': {
+    title: '103 排放源分类版本记录',
+    stage: '报表管理',
+    owner: '链接厂商',
+    mode: '全部历史版本',
+    codeLabel: '排放源分类',
+    nameLabel: '统一标准分类',
+    showName: false,
+    fields: emissionSourceCategoryFields
   },
   'base-year': {
     title: '基准年维度表',
@@ -508,22 +550,22 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '确认排放因子',
     owner: '企业',
     mode: '确认引用',
-    codeLabel: 'SK_排放因子',
+    codeLabel: '排放因子',
     nameLabel: '排放源名称',
+    showSort: false,
     nameField: {
       prop: 'recordName',
       label: '排放源名称',
-      optionSource: 'emission-source-name',
       fillProps: ['recordName', 'sourceUnit'],
       allowCreate: true,
-      placeholder: '请选择104排放源或输入新的排放源名称'
+      placeholder: '请输入排放源名称，如“天然气”'
     },
     fields: [
       {
         prop: 'emissionSourceNameEn',
         label: '排放源英文名',
         optionSource: 'dimension-field',
-        fillProps: ['emissionSourceNameEn', 'fuelMaterialCategory', 'sourceUnit', 'applicableScope', 'factorSource', 'factorUnit'],
+        fillProps: ['emissionSourceNameEn', 'fuelMaterialCategory', 'sourceUnit', 'applicableScope', 'factorUnit'],
         allowCreate: true
       },
       {
@@ -541,15 +583,15 @@ const dimensionPages: Record<string, PageConfig> = {
       { prop: 'pfcs', label: 'PFCs', type: 'number' },
       { prop: 'sf6', label: 'SF6', type: 'number' },
       { prop: 'nf3', label: 'NF3', type: 'number' },
-      { prop: 'applicableScope', label: '适用范围', optionSource: 'dimension-field', allowCreate: true },
-      { prop: 'factorSource', label: '因子来源', optionSource: 'dimension-field', allowCreate: true },
+      { prop: 'applicableScope', label: '适用范围', optionSource: 'source-scope' },
+      { prop: 'factorSource', label: '因子来源', placeholder: '请输入因子来源，如“IPCC 2006”' },
       { prop: 'gwpCh4', label: 'GWP_CH4', type: 'number' },
       { prop: 'gwpN2o', label: 'GWP_N2O', type: 'number' },
       { prop: 'gwpHfcs', label: 'GWP_HFCs', type: 'number' },
       { prop: 'gwpPfcs', label: 'GWP_PFCs', type: 'number' },
       { prop: 'gwpSf6', label: 'GWP_SF6', type: 'number' },
       { prop: 'gwpNf3', label: 'GWP_NF3', type: 'number' },
-      { prop: 'factorGwp', label: '因子GWP', type: 'number' },
+      { prop: 'factorGwp', label: '因子GWP', type: 'number', readonly: true, formula: 'efFactorGwp' },
       { prop: 'factorUnit', label: '因子单位', optionSource: 'dimension-field', allowCreate: true }
     ]
   },
@@ -558,7 +600,7 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '确认排放因子',
     owner: '链接厂商',
     mode: '同步后确认',
-    codeLabel: 'PK_因子版本省份代码',
+    codeLabel: '因子版本省份代码',
     nameLabel: '行政区划',
     fields: [
       { prop: 'factorVersion', label: '因子版本' },
@@ -576,12 +618,9 @@ const dimensionPages: Record<string, PageConfig> = {
     stage: '确认排放因子',
     owner: '企业',
     mode: '企业确认',
-    codeLabel: '对应因子版本',
-    nameLabel: '年份',
-    showName: false,
-    fields: [
-      { prop: 'effectiveYear', label: '年份', type: 'number', required: true }
-    ]
+    codeLabel: '年份',
+    nameLabel: '对应因子版本',
+    fields: []
   },
   'ef-electricity-scope': {
     title: 'EF电力因子口径维度',
@@ -676,10 +715,12 @@ const concreteTableRoutes: Record<string, string> = {
   'emission-activity-data': '/activity-data/emission-activity-data',
   'green-electricity-data': '/green-electricity/green-electricity-data'
 };
+const dimensionRouteScopes = new Set(['emission-source-config', 'factor-confirm', 'intensity']);
 
 const vendorOnlyDimensionCodes = new Set([
   'admin-division',
   'emission-source-category',
+  'emission-source-category-history',
   'ef-electricity-factor',
   'ef-electricity-scope',
   'greenhouse-gas'
@@ -714,20 +755,39 @@ const enabledFlagOptions: SelectOption[] = [
   { label: '停用', value: '0' }
 ];
 
-const routeKey = computed(() => {
+const rawRouteKey = computed(() => {
   const queryCode = typeof route.query.code === 'string' ? route.query.code : '';
   const pathParts = route.path.split('/').filter(Boolean);
   const leafPath = pathParts[pathParts.length - 1] ?? '';
   return queryCode || leafPath;
 });
+const isCurrentDimensionScopeRoute = computed(() => {
+  const [scope] = route.path.split('/').filter(Boolean);
+  return dimensionRouteScopes.has(scope ?? '');
+});
+const acceptsDimensionRouteKey = (key: string) => Boolean(key && (dimensionPages[key] || concreteTableRoutes[key]));
+const activeRouteKey = ref(rawRouteKey.value);
+watch(
+  () => [rawRouteKey.value, isCurrentDimensionScopeRoute.value] as const,
+  ([key, isDimensionScope]) => {
+    if (acceptsDimensionRouteKey(key) || isDimensionScope) {
+      activeRouteKey.value = key;
+    }
+  },
+  { immediate: true }
+);
+const routeKey = computed(() => activeRouteKey.value);
+const isEmissionSourceCategoryHistory = computed(() => routeKey.value === 'emission-source-category-history');
 const concreteTableRoute = computed(() => concreteTableRoutes[routeKey.value]);
 const page = computed(() => dimensionPages[routeKey.value]);
+const showInvalidDimensionResult = computed(() => isCurrentDimensionScopeRoute.value && !page.value && !concreteTableRoutes[rawRouteKey.value]);
 const dimensionExtensionOwnerTable = computed(() => dimensionExtensionOwnerTables[routeKey.value]);
 const showRecordName = computed(() => page.value?.showName !== false);
 const visibleFields = computed(() => page.value?.fields.filter((field) => !field.hidden) ?? []);
 const isCompanyDerivedNameField = (field: FieldConfig) => routeKey.value === 'company' && companyDerivedNameFields.has(field.prop);
 const visibleFormFields = computed(() => visibleFields.value.filter((field) => !field.formHidden && !isCompanyDerivedNameField(field)));
 const sheetFields = computed(() => visibleFields.value);
+const autoRecordCodePage = computed(() => routeKey.value === 'ef-factor');
 const parentCodeOptions = computed(() => {
   const records = recordList.value ?? [];
   if (routeKey.value === 'company') {
@@ -736,7 +796,7 @@ const parentCodeOptions = computed(() => {
       const factoryCode = String(record.parentCode ?? '').trim();
       if (!factoryCode || uniqueFactories.has(factoryCode)) return;
       uniqueFactories.set(factoryCode, {
-        label: [factoryCode, record.factoryName].filter(Boolean).join(' / '),
+        label: record.factoryName || factoryCode,
         value: factoryCode,
         record
       });
@@ -746,7 +806,7 @@ const parentCodeOptions = computed(() => {
   return records
     .filter((r: any) => r.recordCode)
     .map((r: any) => ({
-      label: [r.recordCode, r.recordName].filter(Boolean).join(' / '),
+      label: r.recordName || r.recordCode,
       value: r.recordCode,
       record: r
     }));
@@ -768,9 +828,9 @@ const syncLoading = ref(false);
 const readOnlyMessage = '旧维度表已拆分为具体业务表，请到对应页面维护。';
 const sheetColumns = computed<SpreadsheetColumn[]>(() => {
   if (!page.value) return [];
-  const columns: SpreadsheetColumn[] = [
-    { prop: 'recordCode', label: page.value.codeLabel, required: true, width: 170 }
-  ];
+  const columns: SpreadsheetColumn[] = autoRecordCodePage.value
+    ? []
+    : [{ prop: 'recordCode', label: displayLabel(page.value.codeLabel), required: true, width: 170 }];
   if (showRecordName.value) {
     columns.push({
       prop: 'recordName',
@@ -784,18 +844,18 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
     });
   }
   if (page.value.showParent) {
-    columns.push({ prop: 'parentCode', label: page.value.parentLabel ?? '上级编码', required: page.value.parentRequired, width: 150 });
+    columns.push({ prop: 'parentCode', label: displayLabel(page.value.parentLabel ?? '上级编码'), required: page.value.parentRequired, width: 150 }); 
   }
   sheetFields.value.forEach((field) => {
     columns.push({
       prop: field.prop,
-      label: field.formLabel ?? field.label,
+      label: displayLabel(field.formLabel ?? field.label), 
       type: field.optionSource ? 'select' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text',
       getOptions: field.optionSource && !field.formHidden ? (row) => fieldOptions(field, row) : undefined,
       clearsOnChange: field.clearsOnChange,
       fillProps: field.fillProps,
       required: field.required,
-      readonly: field.formHidden,
+      readonly: field.formHidden || field.readonly,
       width: field.width ?? 150,
       precision: field.type === 'number' ? 2 : undefined
     });
@@ -816,7 +876,11 @@ const sheetColumns = computed<SpreadsheetColumn[]>(() => {
   return columns;
 });
 const sheetHint = computed(() => {
-  const requiredBaseFields = [page.value?.codeLabel, showRecordName.value ? page.value?.nameLabel : undefined, page.value?.showStatus !== false ? '状态' : undefined]
+  const requiredBaseFields = [
+    autoRecordCodePage.value ? undefined : displayLabel(page.value?.codeLabel),
+    showRecordName.value ? page.value?.nameLabel : undefined,
+    page.value?.showStatus !== false ? '状态' : undefined
+  ]
     .filter(Boolean)
     .join('、');
   return `在线填报仅用于新增数据。${requiredBaseFields}必填；带下拉的维度字段必须选择已有选项。`;
@@ -884,12 +948,14 @@ const data = reactive<PageData<DimensionRecordForm, DimensionRecordQuery>>({
     recordCode: undefined,
     recordName: undefined,
     parentCode: undefined,
-    status: undefined
+    status: undefined,
+    currentFlag: undefined,
+    versionNo: undefined
   },
   rules: {
     recordCode: [{ required: true, message: '编码不能为空', trigger: 'blur' }],
     recordName: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
-    parentCode: [{ required: true, message: '工厂不能为空', trigger: 'change' }],
+    parentCode: [{ required: true, message: '工厂编号不能为空', trigger: 'change' }],
     factoryName: [{ required: true, message: '工厂名称不能为空', trigger: 'blur' }],
     baseYear: [{ required: true, message: '基准年不能为空', trigger: 'blur' }],
     effectiveYear: [{ required: true, message: '生效年份不能为空', trigger: 'blur' }],
@@ -937,20 +1003,82 @@ const formatDisplayValue = (value: unknown, field?: FieldConfig) => {
 };
 
 const fieldOptionDimensionCode = (field: FieldConfig) => field.optionDimensionCode ?? routeKey.value;
-const fieldOptionKey = (dimensionCode: string, field: FieldConfig) => `${dimensionCode}:${field.prop}`;
+const hasValue = (value: unknown) => value !== undefined && value !== null && value !== '';
+const fieldParentValue = (field: FieldConfig, row: Record<string, any> = form.value) => (field.parentProp ? row[field.parentProp] : undefined);
+const isParentScopedField = (field: FieldConfig) => routeKey.value === 'company' && Boolean(field.parentProp);
+const fieldOptionKey = (dimensionCode: string, field: FieldConfig, parentValue?: unknown) => {
+  const baseKey = `${dimensionCode}:${field.prop}`;
+  return hasValue(parentValue) ? `${baseKey}:${encodeURIComponent(String(parentValue))}` : baseKey;
+};
 const optionRecord = (option?: SelectOption) => option?.record?.record ?? option?.record;
 const optionValueEquals = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '');
+const fieldOptionCacheKey = (field: FieldConfig, row: Record<string, any> = form.value) =>
+  fieldOptionKey(fieldOptionDimensionCode(field), field, isParentScopedField(field) ? fieldParentValue(field, row) : undefined);
+const loadFieldOptions = async (field: FieldConfig, row: Record<string, any> = form.value, force = false) => {
+  if (!field.optionSource || field.prop === 'enabledText' || isCompanyDerivedNameField(field)) {
+    return;
+  }
+  const optionDimensionCode = fieldOptionDimensionCode(field);
+  const parentValue = isParentScopedField(field) ? fieldParentValue(field, row) : undefined;
+  const cacheKey = fieldOptionKey(optionDimensionCode, field, parentValue);
+  if (isParentScopedField(field) && !hasValue(parentValue)) {
+    dynamicFieldOptions[cacheKey] = [];
+    return;
+  }
+  if (!force && dynamicFieldOptions[cacheKey]) {
+    return;
+  }
+  if (fieldOptionLoading.has(cacheKey)) {
+    return;
+  }
+  fieldOptionLoading.add(cacheKey);
+  try {
+    dynamicFieldOptions[cacheKey] =
+      field.optionSource === 'emission-source-name'
+        ? await loadEmissionSourceNameOptions()
+        : field.optionSource === 'source-scope'
+          ? await loadSourceScopeOptions()
+          : await loadDimensionFieldOptions(optionDimensionCode, field.prop, {
+              parentField: isParentScopedField(field) ? field.parentProp : undefined,
+              parentValue: isParentScopedField(field) ? parentValue : undefined
+            });
+  } finally {
+    fieldOptionLoading.delete(cacheKey);
+  }
+};
+const loadChildFieldOptions = async (parentProp: FieldProp, row: Record<string, any> = form.value) => {
+  const fields = page.value?.fields.filter((field) => field.parentProp === parentProp) ?? [];
+  await Promise.all(fields.map((field) => loadFieldOptions(field, row)));
+};
+const loadCompanyDependentOptions = async (row: Record<string, any> = form.value) => {
+  if (routeKey.value !== 'company') {
+    return;
+  }
+  const fields = page.value?.fields.filter((field) => field.parentProp) ?? [];
+  for (const field of fields) {
+    await loadFieldOptions(field, row);
+  }
+};
 const fieldOptions = (field: FieldConfig, row: Record<string, any> = form.value) => {
   if (field.prop === 'enabledText') {
     return enabledFlagOptions;
   }
-  const options = page.value ? (dynamicFieldOptions[fieldOptionKey(fieldOptionDimensionCode(field), field)] ?? []) : [];
-  if (routeKey.value !== 'company' || !field.parentProp) {
-    return options;
-  }
-  const parentValue = row[field.parentProp];
-  if (parentValue === undefined || parentValue === null || parentValue === '') {
+  if (!page.value) {
     return [];
+  }
+  if (!isParentScopedField(field)) {
+    return dynamicFieldOptions[fieldOptionCacheKey(field, row)] ?? [];
+  }
+  const parentValue = fieldParentValue(field, row);
+  if (!hasValue(parentValue)) {
+    return [];
+  }
+  const options = dynamicFieldOptions[fieldOptionCacheKey(field, row)] ?? [];
+  if (!options.length && !fieldOptionLoading.has(fieldOptionCacheKey(field, row))) {
+    void loadFieldOptions(field, row);
+  }
+  if (!field.parentProp) {
+    return options;
   }
   return options.filter((option) => optionValueEquals(optionRecord(option)?.[field.parentProp as string], parentValue));
 };
@@ -968,6 +1096,44 @@ const clearFormFields = (props?: FieldProp[]) => {
   });
 };
 
+const numericValue = (value: unknown) => {
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+};
+
+const hasAnyEfFactorGwpInput = (row: Record<string, any>) =>
+  ['co2', 'ch4', 'n2o', 'hfcs', 'pfcs', 'sf6', 'nf3', 'gwpCh4', 'gwpN2o', 'gwpHfcs', 'gwpPfcs', 'gwpSf6', 'gwpNf3'].some((prop) => {
+    const value = row[prop];
+    return value !== undefined && value !== null && value !== '';
+  });
+
+const calculateEfFactorGwp = (row: Record<string, any>) => {
+  if (!hasAnyEfFactorGwpInput(row)) {
+    return undefined;
+  }
+  const value =
+    numericValue(row.co2) * 1 +
+    numericValue(row.ch4) * numericValue(row.gwpCh4) +
+    numericValue(row.n2o) * numericValue(row.gwpN2o) +
+    numericValue(row.hfcs) * numericValue(row.gwpHfcs) +
+    numericValue(row.pfcs) * numericValue(row.gwpPfcs) +
+    numericValue(row.sf6) * numericValue(row.gwpSf6) +
+    numericValue(row.nf3) * numericValue(row.gwpNf3);
+  return Number(value.toFixed(10));
+};
+
+const applyComputedFields = (row: Record<string, any>) => {
+  page.value?.fields.forEach((field) => {
+    if (field.formula !== 'efFactorGwp') {
+      return;
+    }
+    const value = calculateEfFactorGwp(row);
+    if (row[field.prop] !== value) {
+      row[field.prop] = value;
+    }
+  });
+};
+
 const handleParentCodeChange = (value: unknown) => {
   if (routeKey.value !== 'company') return;
   const selected = parentCodeOptions.value.find((option) => optionValueEquals(option.value, value));
@@ -978,7 +1144,7 @@ const handleParentCodeChange = (value: unknown) => {
   form.value.factoryName = value == null ? undefined : String(value);
 };
 
-const handleFieldSelect = (field: FieldConfig, value: unknown) => {
+const handleFieldSelect = async (field: FieldConfig, value: unknown) => {
   clearFormFields(field.clearsOnChange);
   const selected = fieldOptions(field, form.value).find((option) => optionValueEquals(option.value, value));
   const record = optionRecord(selected);
@@ -997,6 +1163,8 @@ const handleFieldSelect = (field: FieldConfig, value: unknown) => {
       assignFormValueFromRecord(record, 'provinceName');
     }
   }
+  applyComputedFields(form.value);
+  await loadChildFieldOptions(field.prop, form.value);
 };
 
 const fieldByProp = (prop: FieldProp) => page.value?.fields.find((field) => field.prop === prop);
@@ -1011,8 +1179,9 @@ const fillRowValueFromOption = (row: Record<string, any>, field: FieldConfig, pr
   }
 };
 
-const hydrateCompanyDerivedFields = (row: Record<string, any>) => {
+const hydrateCompanyDerivedFields = async (row: Record<string, any>) => {
   if (routeKey.value !== 'company') return row;
+  await loadCompanyDependentOptions(row);
   const provinceField = fieldByProp('provinceCode');
   if (provinceField) {
     fillRowValueFromOption(row, provinceField, 'provinceName');
@@ -1026,6 +1195,20 @@ const hydrateCompanyDerivedFields = (row: Record<string, any>) => {
   return row;
 };
 
+const deriveDimensionRecordName = (row: Record<string, any>) => {
+  return row.recordName;
+};
+
+const normalizeDimensionPayload = async (row: Record<string, any>) => {
+  applyComputedFields(row);
+  const payload = await hydrateCompanyDerivedFields(row);
+  const recordName = deriveDimensionRecordName(payload);
+  if (recordName) {
+    payload.recordName = recordName;
+  }
+  return payload;
+};
+
 const loadPageFieldOptions = async () => {
   statusOptions.value = await loadRecordStatusOptions();
   const currentPage = page.value;
@@ -1033,17 +1216,9 @@ const loadPageFieldOptions = async () => {
     return;
   }
   const fields = [...(currentPage.nameField ? [currentPage.nameField] : []), ...currentPage.fields].filter(
-    (field) => field.optionSource && field.prop !== 'enabledText' && !isCompanyDerivedNameField(field)
+    (field) => field.optionSource && field.prop !== 'enabledText' && !isCompanyDerivedNameField(field) && !isParentScopedField(field)
   );
-  await Promise.all(
-    fields.map(async (field) => {
-      const optionDimensionCode = fieldOptionDimensionCode(field);
-      dynamicFieldOptions[fieldOptionKey(optionDimensionCode, field)] =
-        field.optionSource === 'emission-source-name'
-          ? await loadEmissionSourceNameOptions()
-          : await loadDimensionFieldOptions(optionDimensionCode, field.prop);
-    })
-  );
+  await Promise.all(fields.map((field) => loadFieldOptions(field, form.value, true)));
 };
 
 const resetExtensionValues = () => {
@@ -1317,7 +1492,7 @@ const parseXlsxRows = async (file: Blob) => {
       }
       return item;
     })
-    .filter((row) => row.recordCode && (showRecordName.value ? row.recordName : true));
+    .filter((row) => (autoRecordCodePage.value || row.recordCode) && (showRecordName.value ? row.recordName : true));
   return parsedRows;
 };
 
@@ -1325,10 +1500,10 @@ const validateDimensionPayloadRows = (rows: Record<string, any>[]) => {
   const currentPage = page.value;
   if (!currentPage) return;
   const requiredFields = [
-    { prop: 'recordCode', label: currentPage.codeLabel },
+    ...(autoRecordCodePage.value ? [] : [{ prop: 'recordCode', label: displayLabel(currentPage.codeLabel) }]),
     ...(showRecordName.value ? [{ prop: 'recordName', label: currentPage.nameLabel }] : []),
-    ...(currentPage.showParent && currentPage.parentRequired ? [{ prop: 'parentCode', label: currentPage.parentLabel ?? '上级编码' }] : []),
-    ...sheetFields.value.filter((field) => field.required)
+    ...(currentPage.showParent && currentPage.parentRequired ? [{ prop: 'parentCode', label: displayLabel(currentPage.parentLabel ?? '上级编码') }] : []), 
+    ...sheetFields.value.filter((field) => field.required).map((field) => ({ ...field, label: displayLabel(field.formLabel ?? field.label) })) 
   ];
   rows.forEach((row, rowIndex) => {
     const missing = requiredFields.find((field) => row[field.prop] === undefined || row[field.prop] === null || row[field.prop] === '');
@@ -1385,7 +1560,9 @@ const resetQuery = () => {
     recordCode: undefined,
     recordName: undefined,
     parentCode: undefined,
-    status: undefined
+    status: undefined,
+    currentFlag: undefined,
+    versionNo: undefined
   };
   getList();
 };
@@ -1412,12 +1589,14 @@ const openUploadDialog = () => {
   uploadDialog.visible = true;
 };
 
-const downloadDimensionTemplate = () => {
+const downloadDimensionTemplate = async () => {
   if (!isEditable.value || !page.value) return;
+  await loadPageFieldOptions();
   const validations = Object.fromEntries(
     sheetColumns.value
       .filter((column) => column.type === 'select')
-      .map((column) => [column.label, (column.options ?? []).map((option) => String(option.value))])
+      .map((column) => [column.label, (column.options ?? column.getOptions?.({}) ?? []).map((option) => String(option.value))])
+      .filter(([, options]) => options.length > 0)
   );
   downloadXlsxTemplate({
     fileName: `${routeKey.value}_dimension_template_${new Date().getTime()}.xlsx`,
@@ -1433,6 +1612,7 @@ const handleUpdate = async (row?: DimensionRecordVO) => {
   const id = row?.id || ids.value[0];
   const res = await getDimensionRecord(id, routeKey.value);
   Object.assign(form.value, res.data);
+  await loadCompanyDependentOptions(form.value);
   dialog.visible = true;
   dialog.title = `修改${page.value?.title ?? ''}`;
 };
@@ -1467,7 +1647,7 @@ const submitForm = () => {
     buttonLoading.value = true;
     form.value.dimensionCode = routeKey.value;
     try {
-      hydrateCompanyDerivedFields(form.value);
+      await normalizeDimensionPayload(form.value);
       if (form.value.id) {
         await updateDimensionRecord(form.value);
       } else {
@@ -1488,7 +1668,7 @@ const persistDimensionRows = async (rows: Record<string, any>[], successMessage:
   sheetSaving.value = true;
   try {
     for (const row of rows) {
-      const entryRow = hydrateCompanyDerivedFields({ ...row });
+      const entryRow = await normalizeDimensionPayload({ ...row });
       delete entryRow.id;
       const payload: DimensionRecordForm = {
         ...sheetEmptyRow.value,
@@ -1551,10 +1731,20 @@ watch(
       router.replace(concreteTableRoute.value);
       return;
     }
-    loadPageFieldOptions();
-    loadDimensionExtensionFields();
     resetQuery();
+    void loadPageFieldOptions();
+    void loadDimensionExtensionFields();
   }
+);
+
+watch(
+  form,
+  () => {
+    if (page.value?.fields.some((field) => field.formula)) {
+      applyComputedFields(form.value);
+    }
+  },
+  { deep: true }
 );
 
 const handleRefresh = async () => {
@@ -1576,13 +1766,13 @@ const handleRefresh = async () => {
 };
 
 onMounted(async () => {
-  await loadPageFieldOptions();
-  await loadDimensionExtensionFields();
   if (concreteTableRoute.value) {
     router.replace(concreteTableRoute.value);
     return;
   }
   resetQuery();
+  void loadPageFieldOptions();
+  void loadDimensionExtensionFields();
 });
 
 useAutoQuery(queryParams, () => handleQuery());

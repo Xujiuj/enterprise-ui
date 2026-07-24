@@ -31,7 +31,7 @@ describe('enterprise dimension required field UX', () => {
 
   it('marks company factory fields required before submit', () => {
     expect(source).toContain('parentRequired: true');
-    expect(source).toContain("{ prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称', required: true }");
+    expect(source).toMatch(/prop:\s*'factoryName'[\s\S]*label:\s*'工厂'[\s\S]*placeholder:\s*'请输入工厂名称'[\s\S]*required:\s*true/);
     expect(source).toContain("parentCode: [{ required: true, message: '工厂编号不能为空', trigger: 'change' }]");
     expect(source).toContain("factoryName: [{ required: true, message: '工厂名称不能为空', trigger: 'blur' }]");
   });

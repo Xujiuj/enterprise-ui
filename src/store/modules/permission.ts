@@ -15,6 +15,7 @@ export { filterEnterprisePortalRoutes };
 
 // 匹配views里面所有的.vue文件
 const modules = import.meta.glob('./../../views/**/*.vue');
+const notFoundView = modules['./../../views/error/404.vue'];
 
 export const usePermissionStore = defineStore('permission', () => {
   const routes = ref<RouteRecordRaw[]>([]);
@@ -149,17 +150,19 @@ export const filterDynamicRoutes = (routes: RouteRecordRaw[]) => {
 };
 
 export const loadView = (view: any, name: string) => {
-  let res;
+  const normalizedView = String(view || '')
+    .replace(/^\/+/, '')
+    .replace(/\.vue$/, '');
   for (const path in modules) {
     const viewsIndex = path.indexOf('/views/');
     let dir = path.substring(viewsIndex + 7);
     dir = dir.substring(0, dir.lastIndexOf('.vue'));
-    if (dir === view) {
-      res = createCustomNameComponent(modules[path], { name });
-      return res;
+    if (dir === normalizedView) {
+      return createCustomNameComponent(modules[path], { name });
     }
   }
-  return res;
+  console.error(`Cannot resolve route component: ${normalizedView || view}`);
+  return createCustomNameComponent(notFoundView, { name: name || 'MissingRouteView' });
 };
 
 // 非setup

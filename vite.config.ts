@@ -27,11 +27,26 @@ export default defineConfig(({ mode, command }) => {
             if (!id.includes('node_modules')) {
               return undefined;
             }
+            if (id.includes('element-plus') || id.includes('@element-plus')) {
+              return 'vendor-element-plus';
+            }
+            if (
+              id.includes('/vue/') ||
+              id.includes('/vue-router/') ||
+              id.includes('/pinia/') ||
+              id.includes('/vue-i18n/') ||
+              id.includes('@vueuse')
+            ) {
+              return 'vendor-vue';
+            }
             if (id.includes('vxe-table')) {
               return 'vendor-vxe-table';
             }
             if (id.includes('echarts')) {
               return 'vendor-echarts';
+            }
+            if (id.includes('axios')) {
+              return 'vendor-request';
             }
             return undefined;
           }

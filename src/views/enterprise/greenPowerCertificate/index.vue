@@ -14,20 +14,17 @@ import {
 import {
   loadDataSourceOptions,
   loadElectricityTypeOptions,
-  loadFactorOptions,
   loadFactoryCodeOptions,
+  loadFactorOptions,
+  loadFactoryNameOptions,
   loadIssuingOrgOptions,
   loadMonthOptions,
   loadOffsetPowerSourceOptions,
   loadPowerGridRegionOptions,
   loadProofStatusOptions,
   loadSourceCategoryOptions,
-  loadYearOptions,
-  valueOnlyOptions
+  loadYearOptions
 } from '@/utils/enterpriseFieldOptions';
-
-const loadFactoryCodeOnlyOptions = valueOnlyOptions(loadFactoryCodeOptions);
-const loadSourceCategoryKeyOnlyOptions = valueOnlyOptions(loadSourceCategoryOptions);
 
 const assignFromRecord = (form: Record<string, any>, record: Record<string, any> | undefined, props: string[]) => {
   if (!record) return;
@@ -62,11 +59,11 @@ const config = {
     ownerTableCode: 'ce_green_power_certificate' as const
   },
   columns: [
-    { prop: 'factoryCode', label: 'FK_工厂编号', minWidth: 150 },
+    { prop: 'factoryCode', label: '工厂编号', minWidth: 150, formatOptions: false },
     { prop: 'factoryName', label: '工厂', minWidth: 180 },
     { prop: 'activityYear', label: '年度', width: 90 },
     { prop: 'activityMonth', label: '月份', width: 90 },
-    { prop: 'sourceCategoryKey', label: 'FK_排放源分类', minWidth: 150 },
+    { prop: 'sourceCategoryKey', label: '排放源分类', minWidth: 150 },
     { prop: 'scopeName', label: '范围', width: 110 },
     { prop: 'scopeSubcategory', label: '范围子类别', minWidth: 170 },
     { prop: 'electricityType', label: '电力类型', minWidth: 120 },
@@ -80,24 +77,21 @@ const config = {
     { prop: 'offsetPowerSource', label: '抵消电力来源', minWidth: 150 },
     { prop: 'dataSource', label: '数据来源', minWidth: 150 },
     { prop: 'emissionSourceName', label: '排放源', minWidth: 160 },
-    { prop: 'factorKey', label: 'FK_排放因子', minWidth: 150 }
+    { prop: 'factorKey', label: '排放因子', minWidth: 150 }
   ],
   searchFields: [
-    { prop: 'factoryCode', label: 'FK_工厂编号', type: 'select', loadOptions: loadFactoryCodeOnlyOptions },
-    { prop: 'sourceCategoryKey', label: 'FK_排放源分类', type: 'select', loadOptions: loadSourceCategoryKeyOnlyOptions },
+    { prop: 'factoryName', label: '工厂', type: 'select', loadOptions: loadFactoryNameOptions },
     { prop: 'activityYear', label: '年度', type: 'select', loadOptions: loadYearOptions },
     { prop: 'activityMonth', label: '月份', type: 'select', loadOptions: loadMonthOptions },
     { prop: 'electricityType', label: '电力类型', type: 'select', loadOptions: loadElectricityTypeOptions },
     { prop: 'dataSource', label: '数据来源', type: 'select', loadOptions: loadDataSourceOptions },
-    { prop: 'factorKey', label: '适用因子', type: 'select', loadOptions: loadFactorOptions },
-    { prop: 'proofStatus', label: '核验状态', type: 'select', loadOptions: loadProofStatusOptions },
-    { prop: 'certificateCode', label: '证书编号' }
+    { prop: 'proofStatus', label: '核验状态', type: 'select', loadOptions: loadProofStatusOptions }
   ],
   formFields: [
-    { prop: 'factoryCode', label: 'FK_工厂编号', type: 'select', loadOptions: loadFactoryCodeOnlyOptions, onChange: applyFactory, required: true },
+    { prop: 'factoryCode', label: '工厂', type: 'select', loadOptions: loadFactoryCodeOptions, onChange: applyFactory, required: true },
     { prop: 'activityYear', label: '年度', type: 'select', loadOptions: loadYearOptions },
     { prop: 'activityMonth', label: '月份', type: 'select', loadOptions: loadMonthOptions },
-    { prop: 'sourceCategoryKey', label: 'FK_排放源分类', type: 'select', loadOptions: loadSourceCategoryKeyOnlyOptions, onChange: applySourceCategory },
+    { prop: 'sourceCategoryKey', label: '排放源分类', type: 'select', loadOptions: loadSourceCategoryOptions, onChange: applySourceCategory },
     { prop: 'factoryName', label: '工厂名称', hidden: true },
     { prop: 'scopeName', label: '核算范围', hidden: true },
     { prop: 'scopeSubcategory', label: '范围子类别', hidden: true },

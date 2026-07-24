@@ -96,7 +96,6 @@ const config = {
     },
   ],
   searchFields: [
-    { prop: 'templateCode', label: '模板编码' },
     { prop: 'templateName', label: '模板名称' },
     { prop: 'templateType', label: '类型', type: 'select', loadOptions: loadTemplateTypeOptions },
     { prop: 'enabledFlag', label: '状态', type: 'select', loadOptions: loadBooleanStatusOptions }

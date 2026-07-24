@@ -18,6 +18,7 @@ export interface SpreadsheetColumn {
   placeholder?: string;
   options?: SpreadsheetOption[];
   getOptions?: (row: Record<string, any>) => SpreadsheetOption[];
+  allowCreate?: boolean;
   clearsOnChange?: string[];
   fillProps?: string[];
 }

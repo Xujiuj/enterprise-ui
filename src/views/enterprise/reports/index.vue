@@ -8,6 +8,7 @@
       <div class="page-actions">
         <el-button icon="Refresh" :loading="loading" @click="loadContent">刷新</el-button>
         <el-button type="primary" plain icon="Plus" @click="handleAdd">新增</el-button>
+        <el-button type="success" plain icon="Grid" @click="openSheetDrawer">在线填报</el-button>
         <el-button type="success" plain icon="Connection" :loading="syncing" @click="handleSync">补充厂商目录</el-button>
       </div>
     </section>
@@ -89,6 +90,18 @@
         <el-descriptions-item label="排序">{{ detailRecord.displayOrder ?? 0 }}</el-descriptions-item>
       </el-descriptions>
     </el-drawer>
+
+    <el-drawer v-model="sheetDrawer.visible" title="报表内容在线填报" size="92%" append-to-body destroy-on-close>
+      <SpreadsheetEditor
+        title="report_content"
+        :columns="sheetColumns"
+        :rows="sheetRows"
+        :empty-row="sheetEmptyRow"
+        :saving="sheetSaving"
+        hint="在线填报仅用于新增报表内容。字段、必填项和新增表单一致。"
+        @save="saveSheetRows"
+      />
+    </el-drawer>
   </div>
 </template>
 
@@ -96,6 +109,8 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import SpreadsheetEditor from '@/components/SpreadsheetEditor/index.vue';
+import type { SpreadsheetColumn } from '@/components/SpreadsheetEditor/types';
 import {
   addReportContent,
   deleteReportContent,
@@ -115,13 +130,32 @@ interface DirectoryItem {
 const loading = ref(false);
 const syncing = ref(false);
 const submitLoading = ref(false);
+const sheetSaving = ref(false);
 const rows = ref<ReportContentVO[]>([]);
 const selectedIds = ref<Array<string | number>>([]);
 const activeDirectoryKey = ref('');
 const formRef = ref<FormInstance>();
 const formDrawer = reactive({ visible: false, title: '' });
 const detailDrawer = reactive({ visible: false });
+const sheetDrawer = reactive({ visible: false });
 const detailRecord = ref<ReportContentVO>();
+
+const sheetColumns: SpreadsheetColumn[] = [
+  { prop: 'directoryNo', label: '目录序号', type: 'number', required: true, precision: 0, width: 120 },
+  { prop: 'directoryName', label: '目录名称', required: true, width: 220 },
+  { prop: 'subdirectoryNo', label: '子目录序号', type: 'number', required: true, precision: 0, width: 130 },
+  { prop: 'subdirectoryName', label: '子目录名称', required: true, width: 240 },
+  { prop: 'displayOrder', label: '排序', type: 'number', precision: 0, width: 100 }
+];
+const sheetEmptyRow: ReportContentForm = {
+  directoryNo: 1,
+  directoryName: '',
+  subdirectoryNo: 1,
+  subdirectoryName: '',
+  displayOrder: 0,
+  remark: ''
+};
+const sheetRows = [{ ...sheetEmptyRow }];
 
 const form = reactive<ReportContentForm>({
   id: undefined,
@@ -229,6 +263,37 @@ const handleAdd = () => {
   resetForm();
   formDrawer.title = '新增报表内容';
   formDrawer.visible = true;
+};
+
+const openSheetDrawer = () => {
+  sheetDrawer.visible = true;
+};
+
+const normalizeSheetRow = (row: ReportContentForm): ReportContentForm => ({
+  directoryNo: Number(row.directoryNo ?? 1),
+  directoryName: String(row.directoryName ?? '').trim(),
+  subdirectoryNo: Number(row.subdirectoryNo ?? 1),
+  subdirectoryName: String(row.subdirectoryName ?? '').trim(),
+  displayOrder: Number(row.displayOrder ?? 0),
+  remark: ''
+});
+
+const saveSheetRows = async (sheetRowsToSave: ReportContentForm[]) => {
+  if (!sheetRowsToSave.length) {
+    ElMessage.warning('没有可保存的数据');
+    return;
+  }
+  sheetSaving.value = true;
+  try {
+    for (const row of sheetRowsToSave) {
+      await addReportContent(normalizeSheetRow(row));
+    }
+    ElMessage.success(`在线填报已保存 ${sheetRowsToSave.length} 条`);
+    sheetDrawer.visible = false;
+    await loadContent();
+  } finally {
+    sheetSaving.value = false;
+  }
 };
 
 const handleUpdate = async (row: ReportContentVO) => {

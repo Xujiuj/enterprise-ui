@@ -15,6 +15,7 @@ export interface ExtensionFieldQuery extends PageQuery {
   moduleCode?: string;
   sheetId?: string | number;
   fieldCode?: string;
+  fieldName?: string;
   enabledFlag?: boolean;
   params?: any;
 }

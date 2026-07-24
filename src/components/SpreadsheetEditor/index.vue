@@ -42,6 +42,8 @@
               v-model="row[column.prop]"
               filterable
               clearable
+              :allow-create="column.allowCreate"
+              :default-first-option="column.allowCreate"
               class="cell-control"
               @change="handleCellChange(row, column)"
             >
@@ -362,7 +364,7 @@ const validateRows = (rows: SpreadsheetRow[]) => {
         rowErrors[column.prop] = `${column.label}不能为空`;
       } else if (column.type === 'number' && !isBlank(value) && !Number.isFinite(Number(value))) {
         rowErrors[column.prop] = `${column.label}必须是数字`;
-      } else if (column.type === 'select' && !isBlank(value)) {
+      } else if (column.type === 'select' && !column.allowCreate && !isBlank(value)) {
         const options = selectOptions(column, row);
         const valid = !options.length || options.some((option) => option.value === value || String(option.value) === String(value));
         if (!valid) {

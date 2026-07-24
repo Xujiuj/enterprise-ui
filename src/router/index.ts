@@ -109,4 +109,33 @@ const router = createRouter({
   }
 });
 
+const chunkReloadStorageKey = 'fx-enterprise-chunk-reload-at';
+
+const isChunkLoadError = (error: unknown) => {
+  const message = error instanceof Error ? `${error.name} ${error.message}` : String(error);
+  return /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|ChunkLoadError|Loading chunk .* failed/i.test(
+    message
+  );
+};
+
+router.onError((error) => {
+  if (!isChunkLoadError(error)) {
+    return;
+  }
+
+  const now = Date.now();
+  const lastReloadAt = Number(window.sessionStorage.getItem(chunkReloadStorageKey) || 0);
+  if (!lastReloadAt || now - lastReloadAt > 10000) {
+    window.sessionStorage.setItem(chunkReloadStorageKey, String(now));
+    window.location.reload();
+  } else {
+    window.sessionStorage.removeItem(chunkReloadStorageKey);
+    window.location.href = `${import.meta.env.VITE_APP_CONTEXT_PATH || '/'}?t=${now}`;
+  }
+});
+
+router.afterEach(() => {
+  window.sessionStorage.removeItem(chunkReloadStorageKey);
+});
+
 export default router;

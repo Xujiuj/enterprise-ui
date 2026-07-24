@@ -16,6 +16,18 @@ const encryptHeader = 'encrypt-key';
 let downloadLoadingInstance: LoadingInstance;
 export const isRelogin = { show: false };
 
+const redirectToLogin = () => {
+  const currentPath = router.currentRoute.value.fullPath || '/';
+  useUserStore().clearAuthState();
+  isRelogin.show = false;
+  router.replace({
+    path: '/login',
+    query: {
+      redirect: encodeURIComponent(currentPath)
+    }
+  });
+};
+
 export const globalHeaders = () => {
   return {
     Authorization: 'Bearer ' + getToken(),
@@ -108,31 +120,22 @@ service.interceptors.response.use(
       return res.data;
     }
     if (code === HttpStatus.UNAUTHORIZED) {
+      const reloginMessage = res.data.msg || errorCode['401'] || '登录状态已失效，请重新登录';
       if (!isRelogin.show) {
         isRelogin.show = true;
-        ElMessageBox.confirm('登录状态已过期，您可以继续留在当前页面，或重新登录', '系统提示', {
+        ElMessageBox.confirm(reloginMessage, '系统提示', {
           confirmButtonText: '重新登录',
           cancelButtonText: '取消',
           type: 'warning'
         })
           .then(() => {
-            isRelogin.show = false;
-            useUserStore()
-              .logout()
-              .then(() => {
-                router.replace({
-                  path: '/login',
-                  query: {
-                    redirect: encodeURIComponent(router.currentRoute.value.fullPath || '/')
-                  }
-                });
-              });
+            redirectToLogin();
           })
           .catch(() => {
             isRelogin.show = false;
           });
       }
-      return Promise.reject('无效会话或会话已过期，请重新登录');
+      return Promise.reject(new Error(reloginMessage));
     } else if (code === HttpStatus.FORBIDDEN) {
       ElMessage({ message: msg, type: 'error', duration: 5 * 1000 });
       return Promise.reject(new Error(msg));

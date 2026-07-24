@@ -259,8 +259,7 @@ const handleLogin = () => {
     const [err] = await to(userStore.login(loginForm.value));
     if (!err) {
       syncLoginPreference();
-      const redirectUrl = redirect.value || '/';
-      await router.push(redirectUrl);
+      await router.push('/');
       loading.value = false;
       return;
     }

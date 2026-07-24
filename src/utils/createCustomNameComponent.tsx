@@ -19,12 +19,17 @@ export function createCustomNameComponent(loader: () => Promise<any>, options: O
       component = loadedComponent;
     } catch (error) {
       console.error(`Cannot resolve component ${name}, error:`, error);
+      throw error;
     }
   };
 
   return async () => {
     if (!component) {
       await load();
+    }
+
+    if (!component) {
+      throw new Error(`Cannot resolve component ${name}`);
     }
 
     return Promise.resolve(

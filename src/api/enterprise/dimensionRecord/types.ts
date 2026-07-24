@@ -177,4 +177,6 @@ export interface DimensionRecordQuery extends PageQuery {
   recordName?: string;
   parentCode?: string;
   status?: string;
+  currentFlag?: string;
+  versionNo?: string;
 }

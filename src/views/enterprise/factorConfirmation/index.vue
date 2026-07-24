@@ -64,9 +64,8 @@ const config = {
     { prop: 'confirmedTime', label: '确认时间', minWidth: 170 },
   ],
   searchFields: [
-    { prop: 'factorCode', label: '因子编码' },
     { prop: 'factorName', label: '因子名称' },
-    { prop: 'factorVersionCode', label: '版本编码' },
+    { prop: 'confirmedBy', label: '确认人', type: 'select', loadOptions: loadConfirmedByOptions },
     { prop: 'confirmationStatus', label: '确认状态', type: 'select', loadOptions: loadConfirmationStatusOptions }
   ],
   formFields: [

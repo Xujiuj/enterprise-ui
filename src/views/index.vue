@@ -6,7 +6,7 @@
         <p>企业填报流程与本期数据验证概览。</p>
       </div>
       <div class="btns">
-        <button type="button" class="btn primary" @click="openBusiness('/activity-data/emission-activity-data')">去录入</button>
+        <button type="button" class="btn primary" @click="openBusiness('/emission-source-config/emission-source')">开始填报</button>
         <button type="button" class="btn" @click="openBusiness('/report-management/report-template-download')">下载报表模板</button>
       </div>
     </section>
@@ -193,9 +193,9 @@ const scopeBars = computed(() =>
 );
 
 const businessActions = [
-  { step: '01', title: '配置排放源', detail: '建立排放源台账', path: '/emission-source-config/emission-source' },
-  { step: '02', title: '确认排放因子', detail: '匹配因子库，支持企业自主登记', path: '/factor-confirm/ef-factor' },
-  { step: '03', title: '录入活动数据', detail: '上传并校验 656 表数据', path: '/activity-data/emission-activity-data' },
+  { step: '01', title: '配置排放源', detail: '维护排放源识别和排放源主数据', path: '/emission-source-config/emission-source' },
+  { step: '02', title: '确认排放因子', detail: '维护排放源、单位和因子', path: '/factor-confirm/ef-factor' },
+  { step: '03', title: '活动数据', detail: '上传并校验 656 表数据', path: '/activity-data/emission-activity-data' },
   { step: '04', title: '绿电绿证', detail: '登记抵扣记录', path: '/green-electricity/green-electricity-data' },
   { step: '05', title: '强度管理', detail: '分母录入与目标核算', path: '/intensity/intensity-target' }
 ];

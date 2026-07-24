@@ -33,6 +33,7 @@ const enterpriseTopLevelOrder = [
   'green-electricity',
   'intensity',
   'report-management',
+  'dynamic-data',
   'system',
   'log'
 ];
@@ -53,6 +54,7 @@ const enterpriseAllowedTopLevelTitles = new Set([
   '5 强度管理',
   '05 强度管理',
   '报表管理',
+  '动态数据管理',
   '系统管理',
   '日志'
 ]);
@@ -65,6 +67,7 @@ const enterpriseCanonicalTopLevelTitles = new Map([
   ['green-electricity', '4 绿电绿证'],
   ['intensity', '5 强度管理'],
   ['report-management', '报表管理'],
+  ['dynamic-data', '动态数据管理'],
   ['system', '系统管理'],
   ['log', '日志']
 ]);
@@ -74,7 +77,8 @@ const enterpriseCanonicalTopLevelIcons = new Map([
   ['factor-confirm', 'list'],
   ['activity-data', 'list'],
   ['green-electricity', 'list'],
-  ['intensity', 'list']
+  ['intensity', 'list'],
+  ['dynamic-data', 'table']
 ]);
 
 const enterpriseTopLevelAliases = new Map([
@@ -98,6 +102,7 @@ const enterpriseTopLevelAliases = new Map([
   ['05 强度管理', 'intensity'],
   ['强度管理', 'intensity'],
   ['报表管理', 'report-management'],
+  ['动态数据管理', 'dynamic-data'],
   ['系统管理', 'system'],
   ['日志', 'log'],
   ['日志管理', 'log']
@@ -263,7 +268,7 @@ function promoteLogRoute(routes: RouteRecordRaw[]): RouteRecordRaw[] {
   let logRoute: RouteRecordRaw | undefined;
 
   routes.forEach((route) => {
-      if (resolveTopLevelRouteKey(route as unknown as PortalRoute) !== 'system' || !route.children) {
+    if (resolveTopLevelRouteKey(route as unknown as PortalRoute) !== 'system' || !route.children) {
       promotedRoutes.push(route);
       return;
     }

@@ -1,28 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVER_HOST="${FX_DEPLOY_HOST:-124.221.155.102}"
-SSH_USER="${FX_DEPLOY_USER:-ubuntu}"
-PASSWORD="${FX_DEPLOY_PASSWORD:-Test0000}"
-REMOTE_DEST="${FX_ENTERPRISE_UI_DEST:-/opt/fx/www/enterprise}"
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LOCAL_DIST="$REPO_ROOT/dist"
-REMOTE_TMP="/tmp/enterprise-ui-dist"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${ENV_FILE:-$SCRIPT_DIR/.env}"
+COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+SKIP_BUILD="${SKIP_BUILD:-false}"
 
-if [[ ! -d "$LOCAL_DIST" ]]; then
-  echo "dist directory not found. Run npm run build:prod first: $LOCAL_DIST" >&2
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Missing env file: $ENV_FILE. Copy deploy/.env.example to deploy/.env and configure it first." >&2
   exit 1
 fi
+command -v docker >/dev/null 2>&1 || { echo "Missing required command: docker" >&2; exit 1; }
 
-SSH=(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10)
-SCP=(scp -o StrictHostKeyChecking=no -o ConnectTimeout=30)
-if command -v sshpass >/dev/null 2>&1; then
-  SSH=(sshpass -p "$PASSWORD" "${SSH[@]}")
-  SCP=(sshpass -p "$PASSWORD" "${SCP[@]}")
+if [[ "$SKIP_BUILD" != "true" ]]; then
+  "$SCRIPT_DIR/build-image.sh" "$ENV_FILE"
 fi
 
-TARGET="$SSH_USER@$SERVER_HOST"
-"${SSH[@]}" "$TARGET" "rm -rf '$REMOTE_TMP' && mkdir -p '$REMOTE_TMP'"
-"${SCP[@]}" -r "$LOCAL_DIST"/* "$TARGET:$REMOTE_TMP/"
-"${SSH[@]}" "$TARGET" "echo '$PASSWORD' | sudo -S rm -rf '$REMOTE_DEST'/* && echo '$PASSWORD' | sudo -S cp -r '$REMOTE_TMP'/* '$REMOTE_DEST'/ && echo '$PASSWORD' | sudo -S chown -R www-data:www-data '$REMOTE_DEST'/ && rm -rf '$REMOTE_TMP'"
-echo "Enterprise UI deployed."
+echo "==> Starting enterprise UI"
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps
+echo "Enterprise UI deployment complete."

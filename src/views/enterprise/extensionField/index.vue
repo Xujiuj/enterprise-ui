@@ -14,8 +14,8 @@
             <el-option v-for="item in moduleOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="字段名">
-          <el-input v-model="queryParams.fieldCode" clearable placeholder="请输入字段名" @keyup.enter="handleQuery" />
+        <el-form-item label="显示名称">
+          <el-input v-model="queryParams.fieldName" clearable placeholder="请输入显示名称" @keyup.enter="handleQuery" />
         </el-form-item>
         <el-form-item label="启用">
           <el-select v-model="queryParams.enabledFlag" clearable placeholder="全部" class="w-120" @change="handleQuery">
@@ -202,7 +202,7 @@ const handleQuery = () => {
 
 const resetQuery = () => {
   queryParams.moduleCode = undefined;
-  queryParams.fieldCode = undefined;
+  queryParams.fieldName = undefined;
   queryParams.enabledFlag = undefined;
   handleQuery();
 };

@@ -3,7 +3,7 @@
     <section class="page-head">
       <div>
         <h1>部门管理</h1>
-        <p>维护公司、工厂和部门层级；部门必须归属于工厂。</p>
+        <p>维护工厂下的部门层级；公司和工厂由公司表维护。</p>
       </div>
     </section>
 
@@ -11,7 +11,12 @@
       <el-form v-show="showSearch" :model="queryParams" inline label-width="82px" class="search-bar wide">
         <el-form-item label="所属公司">
           <el-select v-model="queryParams.deptCategory" clearable filterable placeholder="请选择所属公司" class="query-medium">
-            <el-option v-for="option in companyOptions" :key="String(option.value)" :label="companyOptionLabel(option)" :value="String(option.value)" />
+            <el-option
+              v-for="option in companyOptions"
+              :key="String(option.value)"
+              :label="companyOptionLabel(option)"
+              :value="String(option.value)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="部门名称">
@@ -31,26 +36,77 @@
       <div class="toolbar">
         <div class="btns">
           <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['system:dept:add']">新增</el-button>
+          <el-button plain icon="Grid" @click="handleOnlineFill" v-hasPermi="['system:dept:add']">在线填报</el-button>
+          <el-button plain icon="Download" @click="downloadImportTemplate" v-hasPermi="['system:dept:add']">模板下载</el-button>
+          <el-button plain icon="Upload" @click="handleImport" v-hasPermi="['system:dept:add']">Excel上传</el-button>
         </div>
       </div>
 
-      <el-table v-loading="loading" :data="deptList" row-key="deptId" :tree-props="{ children: 'children' }">
-        <el-table-column prop="deptName" label="部门名称" min-width="180" />
-        <el-table-column prop="deptCategory" label="所属公司" min-width="220" :show-overflow-tooltip="true">
+      <el-table v-loading="loading" :data="deptList" row-key="deptId" :fit="false" :tree-props="{ children: 'children' }">
+        <el-table-column
+          prop="deptName"
+          label="组织层级"
+          width="360"
+          align="left"
+          header-align="left"
+          class-name="dept-name-column"
+          :show-overflow-tooltip="true"
+        >
+          <template #default="scope">
+            <div class="dept-name-cell">
+              <el-tag size="small" effect="plain" :type="deptLevelTagType(scope.row)">{{ deptLevelLabel(scope.row) }}</el-tag>
+              <span class="dept-name-text">{{ scope.row.deptName }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="deptCategory" label="公司编号" width="96" align="center" :show-overflow-tooltip="true">
+          <template #default="scope">{{ scope.row.deptCategory || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="deptCategory" label="所属公司" width="240" :show-overflow-tooltip="true">
           <template #default="scope">{{ companyLabel(scope.row.deptCategory) }}</template>
         </el-table-column>
-        <el-table-column prop="orderNum" label="排序" width="90" align="center" />
-        <el-table-column prop="status" label="状态" width="90" align="center">
+        <el-table-column label="工厂编号" width="116" align="center" :show-overflow-tooltip="true">
+          <template #default="scope">{{ factoryCodeLabel(scope.row) }}</template>
+        </el-table-column>
+        <el-table-column label="部门编号" width="116" align="center" :show-overflow-tooltip="true">
+          <template #default="scope">{{ departmentCodeLabel(scope.row) }}</template>
+        </el-table-column>
+        <el-table-column prop="orderNum" label="排序" width="72" align="center" />
+        <el-table-column prop="status" label="状态" width="76" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.status === '0' ? 'success' : 'info'">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="170" fixed="right" align="center">
+        <el-table-column prop="createTime" label="创建时间" width="158" />
+        <el-table-column label="操作" width="150" fixed="right" align="center">
           <template #default="scope">
-            <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:dept:add']">新增</el-button>
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:dept:edit']">编辑</el-button>
-            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:dept:remove']">删除</el-button>
+            <el-button
+              v-if="['factory', 'department'].includes(deptLevel(scope.row))"
+              link
+              type="primary"
+              icon="Plus"
+              @click="handleAdd(scope.row)"
+              v-hasPermi="['system:dept:add']"
+              >新增</el-button
+            >
+            <el-button
+              v-if="deptLevel(scope.row) === 'department'"
+              link
+              type="primary"
+              icon="Edit"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['system:dept:edit']"
+              >编辑</el-button
+            >
+            <el-button
+              v-if="deptLevel(scope.row) === 'department'"
+              link
+              type="danger"
+              icon="Delete"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['system:dept:remove']"
+              >删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -60,8 +116,16 @@
       <el-form ref="deptFormRef" :model="form" :rules="rules" label-width="112px">
         <el-form-item label="所属公司" prop="deptCategory">
           <el-select v-model="form.deptCategory" clearable filterable placeholder="请选择所属公司" class="w-full" @change="handleCompanyChange">
-            <el-option v-for="option in companyOptions" :key="String(option.value)" :label="companyOptionLabel(option)" :value="String(option.value)" />
+            <el-option
+              v-for="option in companyOptions"
+              :key="String(option.value)"
+              :label="companyOptionLabel(option)"
+              :value="String(option.value)"
+            />
           </el-select>
+        </el-form-item>
+        <el-form-item label="公司编号">
+          <el-input :model-value="form.deptCategory || '选择所属公司后自动带出'" disabled />
         </el-form-item>
         <el-form-item label="上级部门" prop="parentId">
           <el-tree-select
@@ -71,9 +135,15 @@
             value-key="deptId"
             check-strictly
             :disabled="!form.deptCategory"
-            :placeholder="form.deptCategory ? '请选择上级部门' : '请先选择所属公司'"
+            :placeholder="parentPlaceholder"
             class="w-full"
           />
+        </el-form-item>
+        <el-form-item label="工厂编号">
+          <el-input :model-value="selectedFactoryCode || '选择上级工厂或部门后自动带出'" disabled />
+        </el-form-item>
+        <el-form-item label="部门编号">
+          <el-input :model-value="form.deptId || '保存后自动生成'" disabled />
         </el-form-item>
         <el-form-item label="部门名称" prop="deptName">
           <el-input v-model="form.deptName" placeholder="请输入部门名称" />
@@ -102,25 +172,59 @@
         <el-button @click="dialog.visible = false">取消</el-button>
       </template>
     </el-drawer>
+
+    <el-dialog v-model="upload.open" title="部门Excel上传" width="440px" append-to-body>
+      <el-upload
+        ref="uploadRef"
+        :limit="1"
+        accept=".xlsx"
+        :headers="upload.headers"
+        :action="upload.url"
+        :disabled="upload.isUploading"
+        :on-progress="handleFileUploadProgress"
+        :on-success="handleFileSuccess"
+        :auto-upload="false"
+        drag
+      >
+        <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+        <div class="el-upload__text">拖入Excel，或<em>选择文件</em></div>
+      </el-upload>
+      <template #footer>
+        <el-button type="primary" :loading="upload.isUploading" @click="submitImportFile">上传</el-button>
+        <el-button @click="upload.open = false">取消</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Dept" lang="ts">
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadFile, type UploadInstance } from 'element-plus';
 import { addDept, delDept, getDept, listDept, listDeptExcludeChild, updateDept } from '@/api/system/dept';
 import type { DeptForm, DeptQuery, DeptVO } from '@/api/system/dept/types';
-import { loadCompanyCodeOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
+import { loadCompanyCodeOptions, loadFactoryCodeOptions, type SelectOption } from '@/utils/enterpriseFieldOptions';
 import { useAutoQuery } from '@/hooks/useAutoQuery';
+import { globalHeaders } from '@/utils/request';
 
 type DeptTreeRow = DeptVO & { children?: DeptTreeRow[] };
+type DeptLevel = 'company' | 'factory' | 'department' | 'root';
 
 const loading = ref(false);
 const buttonLoading = ref(false);
 const showSearch = ref(true);
 const deptList = ref<DeptTreeRow[]>([]);
+const flatDeptRows = ref<DeptVO[]>([]);
 const parentOptions = ref<DeptTreeRow[]>([]);
 const companyOptions = ref<SelectOption[]>([]);
+const factoryOptions = ref<SelectOption[]>([]);
 const deptFormRef = ref<FormInstance>();
+const uploadRef = ref<UploadInstance>();
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const upload = reactive({
+  open: false,
+  isUploading: false,
+  headers: globalHeaders(),
+  url: import.meta.env.VITE_APP_BASE_API + '/system/dept/importData'
+});
 
 const queryParams = reactive<DeptQuery>({
   pageNum: 1,
@@ -182,11 +286,11 @@ const buildDeptTree = (rows: DeptVO[]) => {
   return roots;
 };
 
-const companyRecord = (option?: SelectOption) => option?.record?.record ?? option?.record;
+const optionRecord = (option?: SelectOption) => option?.record?.record ?? option?.record;
 
 const companyOptionLabel = (option?: SelectOption) => {
   if (!option) return '';
-  return String(companyRecord(option)?.companyName ?? option.label ?? '').trim();
+  return String(optionRecord(option)?.companyName ?? option.label ?? '').trim();
 };
 
 const companyLabel = (value?: string) => {
@@ -194,6 +298,53 @@ const companyLabel = (value?: string) => {
   const option = companyOptions.value.find((item) => String(item.value) === String(value));
   return companyOptionLabel(option) || value;
 };
+
+const rowById = (rows: DeptVO[], deptId?: string | number) => rows.find((item) => String(item.deptId) === String(deptId ?? ''));
+
+const findFactoryNode = (row?: DeptVO, rows = flatDeptRows.value): DeptVO | undefined => {
+  if (!row) return undefined;
+  if (deptLevel(row, rows) === 'factory') return row;
+  let current = row;
+  const visited = new Set<string>();
+  while (current?.parentId && Number(current.parentId) > 0 && !visited.has(String(current.parentId))) {
+    visited.add(String(current.parentId));
+    const parent = rowById(rows, current.parentId);
+    if (!parent) return undefined;
+    if (deptLevel(parent, rows) === 'factory') return parent;
+    current = parent;
+  }
+  return undefined;
+};
+
+const factoryRecordByNode = (factory?: DeptVO) => {
+  if (!factory) return undefined;
+  return factoryOptions.value
+    .map((option) => optionRecord(option))
+    .find((record) => {
+      const companyMatched = String(record?.companyCode ?? '') === String(factory.deptCategory ?? '');
+      const factoryName = String(record?.factoryName ?? '').trim();
+      const factoryCode = String(record?.factoryCode ?? '').trim();
+      return companyMatched && (factoryName === factory.deptName || factoryCode === factory.deptName);
+    });
+};
+
+const factoryCodeLabel = (row: DeptVO) => {
+  const factory = findFactoryNode(row);
+  return String(factoryRecordByNode(factory)?.factoryCode ?? '').trim() || '-';
+};
+
+const departmentCodeLabel = (row: DeptVO) => (deptLevel(row) === 'department' ? row.deptId || '-' : '-');
+
+const selectedFactoryCode = computed(() => {
+  const parent = rowById(flatDeptRows.value, form.value.parentId);
+  if (!parent) return '';
+  return String(factoryRecordByNode(findFactoryNode(parent))?.factoryCode ?? '').trim();
+});
+
+const parentPlaceholder = computed(() => {
+  if (!form.value.deptCategory) return '请先选择所属公司';
+  return '请选择所属工厂或上级部门';
+});
 
 const getRows = async (query?: DeptQuery) => {
   const res = await listDept(query);
@@ -203,7 +354,9 @@ const getRows = async (query?: DeptQuery) => {
 const getList = async () => {
   loading.value = true;
   try {
-    deptList.value = buildDeptTree(await getRows(queryParams));
+    const rows = await getRows(queryParams);
+    flatDeptRows.value = rows;
+    deptList.value = buildDeptTree(rows);
   } finally {
     loading.value = false;
   }
@@ -226,6 +379,33 @@ const isFactoryNode = (row: DeptVO, rows: DeptVO[]) => {
   return !!parent && isCompanyNode(parent, rows);
 };
 
+const deptLevel = (row: DeptVO, rows = flatDeptRows.value): DeptLevel => {
+  if (!row.deptCategory) return 'root';
+  if (isCompanyNode(row, rows)) return 'company';
+  if (isFactoryNode(row, rows)) return 'factory';
+  return 'department';
+};
+
+const deptLevelLabel = (row: DeptVO) => {
+  const labels: Record<DeptLevel, string> = {
+    root: '根',
+    company: '公司',
+    factory: '工厂',
+    department: '部门'
+  };
+  return labels[deptLevel(row)];
+};
+
+const deptLevelTagType = (row: DeptVO) => {
+  const types: Record<DeptLevel, 'primary' | 'success' | 'warning' | 'info'> = {
+    root: 'info',
+    company: 'primary',
+    factory: 'success',
+    department: 'warning'
+  };
+  return types[deptLevel(row)];
+};
+
 const factoryRowsByCompany = (rows: DeptVO[], companyCode?: string) => {
   const companyRows = filterRowsByCompany(rows, companyCode);
   return companyRows.filter((row) => isFactoryNode(row, rows));
@@ -237,7 +417,14 @@ const loadParentOptions = async (companyCode?: string, excludeDeptId?: string | 
   const factories = factoryRowsByCompany(rows as DeptVO[], companyCode);
   const factoryIds = new Set(factories.map((row) => String(row.deptId)));
   const selectableRows = companyRows.filter(
-    (row) => factoryIds.has(String(row.deptId)) || factoryIds.has(String(row.parentId ?? 0)) || factories.some((factory) => String(row.ancestors ?? '').split(',').includes(String(factory.deptId)))
+    (row) =>
+      factoryIds.has(String(row.deptId)) ||
+      factoryIds.has(String(row.parentId ?? 0)) ||
+      factories.some((factory) =>
+        String(row.ancestors ?? '')
+          .split(',')
+          .includes(String(factory.deptId))
+      )
   );
   parentOptions.value = buildDeptTree(selectableRows);
   return factories[0]?.deptId ?? 0;
@@ -253,25 +440,72 @@ const handleQuery = () => {
 };
 
 const handleCompanyChange = async (value: string) => {
-  const defaultFactoryId = await loadParentOptions(value);
-  form.value.parentId = defaultFactoryId;
-  if (!defaultFactoryId && value) {
-    ElMessage.warning('请先在公司管理中维护该公司下的工厂');
+  const defaultParentId = await loadParentOptions(value);
+  form.value.parentId = defaultParentId;
+  if (!defaultParentId && value) {
+    ElMessage.warning('请先在公司表维护该公司下的工厂');
   }
 };
 
-const handleAdd = async (row?: DeptVO) => {
+const handleAdd = async (row?: DeptVO, title = '新增部门') => {
   reset();
   const rows = await getRows({ pageNum: 1, pageSize: 1000 });
   form.value.deptCategory = row?.deptCategory || queryParams.deptCategory || '';
-  const defaultFactoryId = await loadParentOptions(form.value.deptCategory);
-  form.value.parentId = row && !isCompanyNode(row, rows) ? row.deptId : defaultFactoryId;
-  dialog.title = '新增部门';
+  if (row && !['factory', 'department'].includes(deptLevel(row, rows))) {
+    ElMessage.warning('请在工厂或部门节点下新增部门');
+    return;
+  }
+  const defaultParentId = await loadParentOptions(form.value.deptCategory);
+  if (row && ['factory', 'department'].includes(deptLevel(row, rows))) {
+    form.value.parentId = row.deptId;
+  } else {
+    form.value.parentId = defaultParentId;
+  }
+  if (form.value.deptCategory && !form.value.parentId) {
+    ElMessage.warning('请先在公司表维护该公司下的工厂');
+    return;
+  }
+  dialog.title = title;
   dialog.visible = true;
+};
+
+const handleOnlineFill = () => handleAdd(undefined, '部门在线填报');
+
+const downloadImportTemplate = () => {
+  proxy?.download('system/dept/importTemplate', {}, `部门导入模板_${new Date().getTime()}.xlsx`);
+};
+
+const handleImport = () => {
+  upload.open = true;
+};
+
+const handleFileUploadProgress = () => {
+  upload.isUploading = true;
+};
+
+const handleFileSuccess = async (response: { code?: number; msg?: string; data?: number }, file: UploadFile) => {
+  upload.isUploading = false;
+  if (response.code !== 200) {
+    ElMessage.error(response.msg || '部门导入失败');
+    return;
+  }
+  upload.open = false;
+  uploadRef.value?.handleRemove(file);
+  ElMessage.success(`成功导入${response.data ?? 0}个部门`);
+  await getList();
+};
+
+const submitImportFile = () => {
+  uploadRef.value?.submit();
 };
 
 const handleUpdate = async (row: DeptVO) => {
   reset();
+  const rows = await getRows({ pageNum: 1, pageSize: 1000 });
+  if (deptLevel(row, rows) !== 'department') {
+    ElMessage.warning('公司和工厂由公司表维护，部门管理只维护工厂下的部门');
+    return;
+  }
   const res = await getDept(row.deptId);
   form.value = { ...defaultForm, ...(res.data ?? row) };
   await loadParentOptions(form.value.deptCategory, row.deptId);
@@ -309,10 +543,37 @@ const handleDelete = async (row: DeptVO) => {
 };
 
 const init = async () => {
-  companyOptions.value = await loadCompanyCodeOptions();
-  await getList();
+  const [companies, factories] = await Promise.all([loadCompanyCodeOptions(), loadFactoryCodeOptions(), getList()]);
+  companyOptions.value = companies;
+  factoryOptions.value = factories;
 };
 
 onMounted(init);
 useAutoQuery(queryParams, () => handleQuery());
 </script>
+
+<style scoped>
+.dept-name-cell {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  gap: 8px;
+  text-align: left;
+}
+
+.dept-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:deep(.dept-name-column .cell) {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.w-full {
+  width: 100%;
+}
+</style>

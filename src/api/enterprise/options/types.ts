@@ -7,6 +7,8 @@ export interface EnterpriseOptionVO {
 export interface EnterpriseOptionQuery {
   dimensionCode?: string;
   field?: string;
+  parentField?: string;
+  parentValue?: string | number | boolean;
   companyName?: string;
   factoryName?: string;
   sourceCategoryKey?: string;

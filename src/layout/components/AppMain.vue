@@ -1,7 +1,7 @@
 <template>
   <section class="app-main">
     <router-view v-slot="{ Component, route }">
-      <transition :enter-active-class="animate" mode="out-in">
+      <transition :enter-active-class="animate">
         <keep-alive :include="tagsViewStore.cachedViews">
           <component :is="Component" v-if="!route.meta.link" :key="route.path" />
         </keep-alive>
@@ -23,15 +23,18 @@ const tagsViewStore = useTagsViewStore();
 // 随机动画集合
 const animate = ref<string>('');
 const animationEnable = ref(useSettingsStore().animationEnable);
+
+const pickRouteAnimation = () => {
+  const list = proxy?.animate.animateList ?? [];
+  if (!list.length) return '';
+  return list[Math.floor(Math.random() * list.length)] as string;
+};
+
 watch(
   () => useSettingsStore().animationEnable,
   (val: boolean) => {
     animationEnable.value = val;
-    if (val) {
-      animate.value = proxy?.animate.animateList[Math.round(Math.random() * proxy?.animate.animateList.length)] as string;
-    } else {
-      animate.value = proxy?.animate.defaultAnimate as string;
-    }
+    animate.value = val ? pickRouteAnimation() : '';
   },
   { immediate: true }
 );
