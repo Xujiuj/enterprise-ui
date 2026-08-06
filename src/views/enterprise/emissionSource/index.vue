@@ -13,7 +13,6 @@ import {
   loadDataSourceOptions,
   loadEmissionSourceIdentificationFromFactorOptions,
   loadEmissionSourceNameFromFactorOptions,
-  loadFactorOptions,
   loadFactoryNameOptions,
   loadResponsibleDeptOptions,
   loadResponsibleUserOptions,
@@ -227,7 +226,6 @@ const config = {
     { prop: 'responsibleUserName', label: '负责人姓名', hidden: true },
     { prop: 'responsibleDept', label: '负责部门', type: 'select', loadOptions: loadResponsibleDeptOptions },
     { prop: 'dataSource', label: '数据来源', type: 'select', loadOptions: loadDataSourceOptions, allowCreate: true },
-    { prop: 'factorKey', label: '适用因子', type: 'select', loadOptions: loadFactorOptions, hidden: true }
   ],
   emptyForm: {
     dataFrequency: 'monthly',

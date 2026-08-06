@@ -33,7 +33,10 @@ router.beforeEach(async (to) => {
         if (err) {
           useUserStore().clearAuthState();
           isRelogin.show = false;
-          ElMessage.error(err);
+          const errorMessage = err instanceof Error ? err.message : String(err ?? '');
+          if (errorMessage.trim()) {
+            ElMessage.error(errorMessage);
+          }
           const redirect = encodeURIComponent(to.fullPath || '/');
           return `/login?redirect=${redirect}`;
         } else {

@@ -142,7 +142,31 @@
         <el-table-column label="来源工作表" prop="sheetName" min-width="160" />
         <el-table-column label="状态" width="90" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.status === '0' ? 'success' : 'info'">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag>
+            <el-tag :type="scope.row.status === '0' ? 'success' : 'info'">{{ scope.row.status === '0' ? '启用' : '已归档' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="90" fixed="right" align="center">
+          <template #default="scope">
+            <el-tooltip v-if="scope.row.status === '0'" content="归档页面" placement="top">
+              <el-button
+                v-hasPermi="['enterprise:dynamicModule:remove']"
+                link
+                type="danger"
+                icon="Delete"
+                :loading="moduleActionCode === scope.row.moduleCode"
+                @click="handleArchive(scope.row)"
+              />
+            </el-tooltip>
+            <el-tooltip v-else content="恢复页面" placement="top">
+              <el-button
+                v-hasPermi="['enterprise:dynamicModule:remove']"
+                link
+                type="primary"
+                icon="RefreshRight"
+                :loading="moduleActionCode === scope.row.moduleCode"
+                @click="handleRestore(scope.row)"
+              />
+            </el-tooltip>
           </template>
         </el-table-column>
       </el-table>
@@ -152,9 +176,15 @@
 
 <script setup lang="ts" name="EnterpriseDynamicModule">
 import { computed, onMounted, ref } from 'vue';
-import type { UploadFile, UploadInstance, UploadUserFile } from 'element-plus';
-import { ElMessage } from 'element-plus';
-import { generateDynamicModules, listDynamicModules, previewDynamicWorkbook } from '@/api/enterprise/dynamicModule';
+import type { UploadFile, UploadInstance } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import {
+  archiveDynamicModules,
+  generateDynamicModules,
+  listDynamicModules,
+  previewDynamicWorkbook,
+  restoreDynamicModule
+} from '@/api/enterprise/dynamicModule';
 import type {
   DynamicFieldDefinition,
   DynamicGenerateResult,
@@ -170,6 +200,7 @@ const activeSheet = ref('0');
 const previewLoading = ref(false);
 const generateLoading = ref(false);
 const modulesLoading = ref(false);
+const moduleActionCode = ref<string>();
 const modules = ref<DynamicModuleSchema[]>([]);
 
 const valueTypeOptions = [
@@ -265,6 +296,33 @@ const handleGenerate = async () => {
     window.setTimeout(() => window.location.reload(), 800);
   } finally {
     generateLoading.value = false;
+  }
+};
+
+const handleArchive = async (module: DynamicModuleSchema) => {
+  await ElMessageBox.confirm(
+    `确认归档“${module.moduleName}”吗？页面入口和权限将被移除，但数据表 ${module.tableName} 及其中记录会保留。`,
+    '归档页面',
+    { confirmButtonText: '归档', cancelButtonText: '取消', type: 'warning' }
+  );
+  moduleActionCode.value = module.moduleCode;
+  try {
+    await archiveDynamicModules(module.moduleCode);
+    ElMessage.success('页面已归档，正在刷新登录状态');
+    window.setTimeout(() => window.location.reload(), 600);
+  } finally {
+    moduleActionCode.value = undefined;
+  }
+};
+
+const handleRestore = async (module: DynamicModuleSchema) => {
+  moduleActionCode.value = module.moduleCode;
+  try {
+    await restoreDynamicModule(module.moduleCode);
+    ElMessage.success('页面已恢复，正在刷新菜单');
+    window.setTimeout(() => window.location.reload(), 600);
+  } finally {
+    moduleActionCode.value = undefined;
   }
 };
 

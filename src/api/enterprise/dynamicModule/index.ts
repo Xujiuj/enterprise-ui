@@ -29,6 +29,20 @@ export const listDynamicModules = () => {
   });
 };
 
+export const archiveDynamicModules = (moduleCodes: string | string[]) => {
+  return request({
+    url: '/enterprise/dynamic-module/' + (Array.isArray(moduleCodes) ? moduleCodes.join(',') : moduleCodes),
+    method: 'delete'
+  });
+};
+
+export const restoreDynamicModule = (moduleCode: string) => {
+  return request<DynamicModuleSchema>({
+    url: `/enterprise/dynamic-module/${moduleCode}/restore`,
+    method: 'put'
+  });
+};
+
 export const getDynamicSchema = (moduleCode: string) => {
   return request<DynamicModuleSchema>({
     url: `/enterprise/dynamic/${moduleCode}/schema`,

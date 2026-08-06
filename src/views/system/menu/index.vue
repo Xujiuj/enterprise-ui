@@ -31,7 +31,9 @@
             <el-button v-hasPermi="['system:menu:add']" type="primary" plain icon="Plus" @click="handleAdd()">新增</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button v-hasPermi="['system:menu:remove']" type="danger" plain icon="Delete" @click="handleCascadeDelete" :loading="deleteLoading">级联删除</el-button>
+            <el-button v-hasPermi="['system:menu:remove']" type="danger" plain icon="Delete" @click="handleCascadeDelete" :loading="deleteLoading"
+              >级联删除</el-button
+            >
           </el-col>
           <right-toolbar v-model:show-search="showSearch" @query-table="getList"></right-toolbar>
         </el-row>
@@ -303,7 +305,7 @@
 </template>
 
 <script setup name="Menu" lang="ts">
-import { addMenu, cascadeDelMenu, delMenu, getMenu, listMenu, updateMenu } from '@/api/system/menu';
+import { addMenu, cascadeDelMenu, getMenu, listMenu, updateMenu } from '@/api/system/menu';
 import { MenuForm, MenuQuery, MenuVO } from '@/api/system/menu/types';
 import { MenuTypeEnum } from '@/enums/MenuTypeEnum';
 
@@ -489,10 +491,10 @@ const submitForm = () => {
 };
 /** 删除按钮操作 */
 const handleDelete = async (row: MenuVO) => {
-  await proxy?.$modal.confirm('是否确认删除名称为"' + row.menuName + '"的数据项?');
-  await delMenu(row.menuId);
-  await getList();
-  proxy?.$modal.msgSuccess('删除成功');
+  await proxy?.$modal.confirm('是否确认删除“' + row.menuName + '”及其全部子菜单？相关角色权限将一并移除。');
+  await cascadeDelMenu([row.menuId]);
+  proxy?.$modal.msgSuccess('删除成功，正在刷新登录状态');
+  window.setTimeout(() => window.location.reload(), 600);
 };
 
 const deleteLoading = ref<boolean>(false);
@@ -519,16 +521,16 @@ const cancelCascade = () => {
 /** 删除提交按钮 */
 const submitDeleteForm = async () => {
   const menuIds = menuTreeRef.value?.getCheckedKeys();
-  if (menuIds.length < 0) {
+  if (!menuIds?.length) {
     proxy?.$modal.msgWarning('请选择要删除的菜单');
     return;
   }
 
   deleteLoading.value = true;
   await cascadeDelMenu(menuIds).finally(() => (deleteLoading.value = false));
-  await getList();
-  proxy?.$modal.msgSuccess('删除成功');
+  proxy?.$modal.msgSuccess('删除成功，正在刷新登录状态');
   deleteDialog.visible = false;
+  window.setTimeout(() => window.location.reload(), 600);
 };
 
 onMounted(() => {
