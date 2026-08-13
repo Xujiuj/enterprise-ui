@@ -145,7 +145,7 @@ const showExpiryNotice = computed(() => {
   return query.license === 'expired' || query.expired === '1';
 });
 const supportLinks = {
-  website: 'https://www.carbondata.com'
+  website: 'https://fengxingzhicheng.com'
 };
 type LegalDialogType = 'privacy' | 'terms';
 const legalDialogVisible = ref(false);

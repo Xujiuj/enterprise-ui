@@ -43,6 +43,7 @@
 
         <div class="toolbar">
           <div class="btns">
+            <el-tag v-if="isOrganizationProjection" type="info" effect="plain">组织数据由部门管理维护</el-tag>
             <el-button v-if="isEditable" type="primary" icon="Plus" @click="handleAdd" v-hasPermi="['enterprise:dimension:add']">新增</el-button>
             <el-button v-if="isEditable" icon="Grid" @click="openSheetDrawer" v-hasPermi="['enterprise:dimension:edit']">在线填报</el-button>
             <el-button v-if="isEditable" icon="Download" @click="downloadDimensionTemplate" v-hasPermi="['enterprise:dimension:edit']"
@@ -812,7 +813,8 @@ const parentCodeOptions = computed(() => {
     }));
 });
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
-const isEditable = computed(() => editableDimensionCodes.has(routeKey.value));
+const isOrganizationProjection = computed(() => routeKey.value === 'company');
+const isEditable = computed(() => !isOrganizationProjection.value && editableDimensionCodes.has(routeKey.value));
 const isVendorLinked = computed(() =>
   [
     'admin-division',

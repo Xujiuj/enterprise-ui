@@ -3,7 +3,7 @@
     <section class="page-head">
       <div>
         <h1>部门管理</h1>
-        <p>维护工厂下的部门层级；公司和工厂由公司表维护。</p>
+        <p>维护公司、工厂和部门三级组织；其他业务页面统一引用此组织架构。</p>
       </div>
     </section>
 
@@ -81,7 +81,7 @@
         <el-table-column label="操作" width="150" fixed="right" align="center">
           <template #default="scope">
             <el-button
-              v-if="['factory', 'department'].includes(deptLevel(scope.row))"
+              v-if="deptLevel(scope.row) !== 'department'"
               link
               type="primary"
               icon="Plus"
@@ -90,7 +90,6 @@
               >新增</el-button
             >
             <el-button
-              v-if="deptLevel(scope.row) === 'department'"
               link
               type="primary"
               icon="Edit"
@@ -99,7 +98,6 @@
               >编辑</el-button
             >
             <el-button
-              v-if="deptLevel(scope.row) === 'department'"
               link
               type="danger"
               icon="Delete"
@@ -115,7 +113,8 @@
     <el-drawer v-model="dialog.visible" :title="dialog.title" size="560px" append-to-body>
       <el-form ref="deptFormRef" :model="form" :rules="rules" label-width="112px">
         <el-form-item label="所属公司" prop="deptCategory">
-          <el-select v-model="form.deptCategory" clearable filterable placeholder="请选择所属公司" class="w-full" @change="handleCompanyChange">
+          <el-input v-if="organizationFormLevel === 'company'" v-model="form.deptCategory" placeholder="请输入公司编号" />
+          <el-select v-else v-model="form.deptCategory" clearable filterable placeholder="请选择所属公司" class="w-full" @change="handleCompanyChange">
             <el-option
               v-for="option in companyOptions"
               :key="String(option.value)"
@@ -134,13 +133,14 @@
             :props="{ value: 'deptId', label: 'deptName', children: 'children' } as any"
             value-key="deptId"
             check-strictly
-            :disabled="!form.deptCategory"
+            :disabled="organizationFormLevel === 'company' || !form.deptCategory"
             :placeholder="parentPlaceholder"
             class="w-full"
           />
         </el-form-item>
         <el-form-item label="工厂编号">
-          <el-input :model-value="selectedFactoryCode || '选择上级工厂或部门后自动带出'" disabled />
+          <el-input v-if="organizationFormLevel === 'factory'" v-model="form.factoryCode" placeholder="请输入工厂编号" />
+          <el-input v-else :model-value="selectedFactoryCode || '选择上级工厂或部门后自动带出'" disabled />
         </el-form-item>
         <el-form-item label="部门编号">
           <el-input :model-value="form.deptId || '保存后自动生成'" disabled />
@@ -243,6 +243,7 @@ const defaultForm: DeptForm = {
   parentId: 0,
   deptName: '',
   deptCategory: '',
+  factoryCode: '',
   orderNum: 0,
   leader: undefined,
   phone: '',
@@ -251,6 +252,7 @@ const defaultForm: DeptForm = {
 };
 
 const form = ref<DeptForm>({ ...defaultForm });
+const organizationFormLevel = ref<DeptLevel>('department');
 
 const rules: FormRules = {
   deptName: [{ required: true, message: '部门名称不能为空', trigger: 'blur' }],
@@ -316,21 +318,9 @@ const findFactoryNode = (row?: DeptVO, rows = flatDeptRows.value): DeptVO | unde
   return undefined;
 };
 
-const factoryRecordByNode = (factory?: DeptVO) => {
-  if (!factory) return undefined;
-  return factoryOptions.value
-    .map((option) => optionRecord(option))
-    .find((record) => {
-      const companyMatched = String(record?.companyCode ?? '') === String(factory.deptCategory ?? '');
-      const factoryName = String(record?.factoryName ?? '').trim();
-      const factoryCode = String(record?.factoryCode ?? '').trim();
-      return companyMatched && (factoryName === factory.deptName || factoryCode === factory.deptName);
-    });
-};
-
 const factoryCodeLabel = (row: DeptVO) => {
   const factory = findFactoryNode(row);
-  return String(factoryRecordByNode(factory)?.factoryCode ?? '').trim() || '-';
+  return String(factory?.factoryCode ?? '').trim() || '-';
 };
 
 const departmentCodeLabel = (row: DeptVO) => (deptLevel(row) === 'department' ? row.deptId || '-' : '-');
@@ -338,7 +328,7 @@ const departmentCodeLabel = (row: DeptVO) => (deptLevel(row) === 'department' ? 
 const selectedFactoryCode = computed(() => {
   const parent = rowById(flatDeptRows.value, form.value.parentId);
   if (!parent) return '';
-  return String(factoryRecordByNode(findFactoryNode(parent))?.factoryCode ?? '').trim();
+  return String(findFactoryNode(parent)?.factoryCode ?? '').trim();
 });
 
 const parentPlaceholder = computed(() => {
@@ -443,33 +433,47 @@ const handleCompanyChange = async (value: string) => {
   const defaultParentId = await loadParentOptions(value);
   form.value.parentId = defaultParentId;
   if (!defaultParentId && value) {
-    ElMessage.warning('请先在公司表维护该公司下的工厂');
+    ElMessage.warning('请先在部门管理中新建该公司的工厂');
   }
 };
 
 const handleAdd = async (row?: DeptVO, title = '新增部门') => {
   reset();
   const rows = await getRows({ pageNum: 1, pageSize: 1000 });
+  const level = row ? deptLevel(row, rows) : 'root';
+  organizationFormLevel.value = level === 'root' ? 'company' : level === 'company' ? 'factory' : 'department';
   form.value.deptCategory = row?.deptCategory || queryParams.deptCategory || '';
-  if (row && !['factory', 'department'].includes(deptLevel(row, rows))) {
-    ElMessage.warning('请在工厂或部门节点下新增部门');
+  if (organizationFormLevel.value === 'company') {
+    const root = rows.find((item) => deptLevel(item, rows) === 'root');
+    form.value.parentId = root?.deptId || 100;
+    dialog.title = '新增公司';
+    dialog.visible = true;
     return;
   }
   const defaultParentId = await loadParentOptions(form.value.deptCategory);
-  if (row && ['factory', 'department'].includes(deptLevel(row, rows))) {
+  if (row) {
     form.value.parentId = row.deptId;
   } else {
     form.value.parentId = defaultParentId;
   }
   if (form.value.deptCategory && !form.value.parentId) {
-    ElMessage.warning('请先在公司表维护该公司下的工厂');
+    ElMessage.warning('请先在部门管理中新建该公司的工厂');
     return;
   }
   dialog.title = title;
   dialog.visible = true;
 };
 
-const handleOnlineFill = () => handleAdd(undefined, '部门在线填报');
+const handleOnlineFill = async () => {
+  const rows = await getRows({ pageNum: 1, pageSize: 1000 });
+  const companyCode = queryParams.deptCategory || (companyOptions.value.length === 1 ? String(companyOptions.value[0].value) : '');
+  const factory = factoryRowsByCompany(rows, companyCode)[0];
+  if (!factory) {
+    ElMessage.warning('请先选择所属公司，并在该公司下新建工厂');
+    return;
+  }
+  await handleAdd(factory, '部门在线填报');
+};
 
 const downloadImportTemplate = () => {
   proxy?.download('system/dept/importTemplate', {}, `部门导入模板_${new Date().getTime()}.xlsx`);
@@ -502,10 +506,7 @@ const submitImportFile = () => {
 const handleUpdate = async (row: DeptVO) => {
   reset();
   const rows = await getRows({ pageNum: 1, pageSize: 1000 });
-  if (deptLevel(row, rows) !== 'department') {
-    ElMessage.warning('公司和工厂由公司表维护，部门管理只维护工厂下的部门');
-    return;
-  }
+  organizationFormLevel.value = deptLevel(row, rows);
   const res = await getDept(row.deptId);
   form.value = { ...defaultForm, ...(res.data ?? row) };
   await loadParentOptions(form.value.deptCategory, row.deptId);
@@ -516,8 +517,15 @@ const handleUpdate = async (row: DeptVO) => {
 const submitForm = async () => {
   await deptFormRef.value?.validate();
   if (!form.value.parentId || Number(form.value.parentId) <= 0) {
-    ElMessage.warning('部门必须归属于工厂，请先选择所属工厂或上级部门');
+    ElMessage.warning('请选择上级组织');
     return;
+  }
+  if (organizationFormLevel.value === 'factory' && !String(form.value.factoryCode ?? '').trim()) {
+    ElMessage.warning('请填写工厂编号');
+    return;
+  }
+  if (organizationFormLevel.value !== 'factory') {
+    form.value.factoryCode = '';
   }
   buttonLoading.value = true;
   try {

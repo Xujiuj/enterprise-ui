@@ -18,6 +18,7 @@ export interface DeptVO extends BaseEntity {
   deptId: number | string;
   deptName: string;
   deptCategory: string;
+  factoryCode?: string;
   orderNum: number;
   leader: string;
   phone: string;
@@ -50,6 +51,7 @@ export interface DeptForm {
   deptId?: number | string;
   deptName?: string;
   deptCategory?: string;
+  factoryCode?: string;
   orderNum?: number;
   leader?: string;
   phone?: string;
