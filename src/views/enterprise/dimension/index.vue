@@ -43,7 +43,6 @@
 
         <div class="toolbar">
           <div class="btns">
-            <el-tag v-if="isOrganizationProjection" type="info" effect="plain">公司和工厂由部门管理维护；可维护补充信息</el-tag>
             <el-button v-if="isEditable" type="primary" icon="Plus" @click="handleAdd" v-hasPermi="['enterprise:dimension:add']">新增</el-button>
             <el-button v-if="isEditable" icon="Grid" @click="openSheetDrawer" v-hasPermi="['enterprise:dimension:edit']">在线填报</el-button>
             <el-button v-if="isEditable" icon="Download" @click="downloadDimensionTemplate" v-hasPermi="['enterprise:dimension:edit']"
@@ -1151,13 +1150,30 @@ const applyComputedFields = (row: Record<string, any>) => {
   });
 };
 
-const handleParentCodeChange = (value: unknown) => {
+const handleParentCodeChange = async (value: unknown) => {
   if (routeKey.value !== 'company') return;
   const selected = parentCodeOptions.value.find((option) => optionValueEquals(option.value, value));
   if (selected) {
     assignFormValueFromRecord(optionRecord(selected), 'recordCode');
     assignFormValueFromRecord(optionRecord(selected), 'recordName');
     assignFormValueFromRecord(optionRecord(selected), 'factoryName');
+    const factoryCode = String(selected.value);
+    const result = await listDimensionRecord({
+      dimensionCode: 'company',
+      parentCode: factoryCode,
+      pageNum: 1,
+      pageSize: 1
+    });
+    if (String(form.value.parentCode ?? '') !== factoryCode || !result.rows?.[0]?.id) {
+      return;
+    }
+    const record = await getDimensionRecord(result.rows[0].id, 'company');
+    if (String(form.value.parentCode ?? '') !== factoryCode) {
+      return;
+    }
+    Object.assign(form.value, record.data);
+    await loadCompanyDependentOptions(form.value);
+    dialog.title = `修改${page.value?.title ?? ''}`;
     return;
   }
   form.value.recordCode = undefined;
