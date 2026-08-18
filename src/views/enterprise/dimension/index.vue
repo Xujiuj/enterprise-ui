@@ -1150,30 +1150,13 @@ const applyComputedFields = (row: Record<string, any>) => {
   });
 };
 
-const handleParentCodeChange = async (value: unknown) => {
+const handleParentCodeChange = (value: unknown) => {
   if (routeKey.value !== 'company') return;
   const selected = parentCodeOptions.value.find((option) => optionValueEquals(option.value, value));
   if (selected) {
     assignFormValueFromRecord(optionRecord(selected), 'recordCode');
     assignFormValueFromRecord(optionRecord(selected), 'recordName');
     assignFormValueFromRecord(optionRecord(selected), 'factoryName');
-    const factoryCode = String(selected.value);
-    const result = await listDimensionRecord({
-      dimensionCode: 'company',
-      parentCode: factoryCode,
-      pageNum: 1,
-      pageSize: 1
-    });
-    if (String(form.value.parentCode ?? '') !== factoryCode || !result.rows?.[0]?.id) {
-      return;
-    }
-    const record = await getDimensionRecord(result.rows[0].id, 'company');
-    if (String(form.value.parentCode ?? '') !== factoryCode) {
-      return;
-    }
-    Object.assign(form.value, record.data);
-    await loadCompanyDependentOptions(form.value);
-    dialog.title = `修改${page.value?.title ?? ''}`;
     return;
   }
   form.value.recordCode = undefined;
