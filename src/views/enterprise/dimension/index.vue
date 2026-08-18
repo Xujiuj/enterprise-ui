@@ -43,7 +43,7 @@
 
         <div class="toolbar">
           <div class="btns">
-            <el-tag v-if="isOrganizationProjection" type="info" effect="plain">组织数据由部门管理维护</el-tag>
+            <el-tag v-if="isOrganizationProjection" type="info" effect="plain">公司和工厂由部门管理维护；可维护补充信息</el-tag>
             <el-button v-if="isEditable" type="primary" icon="Plus" @click="handleAdd" v-hasPermi="['enterprise:dimension:add']">新增</el-button>
             <el-button v-if="isEditable" icon="Grid" @click="openSheetDrawer" v-hasPermi="['enterprise:dimension:edit']">在线填报</el-button>
             <el-button v-if="isEditable" icon="Download" @click="downloadDimensionTemplate" v-hasPermi="['enterprise:dimension:edit']"
@@ -135,8 +135,21 @@
 
       <el-drawer v-model="dialog.visible" :title="dialog.title" size="620px" append-to-body>
         <el-form ref="dimensionFormRef" :model="form" :rules="rules" label-width="120px">
+          <el-form-item v-if="isOrganizationProjection" label="所属工厂" prop="parentCode" required>
+            <el-select
+              v-model="form.parentCode"
+              placeholder="请选择工厂"
+              clearable
+              filterable
+              class="w-full"
+              :disabled="Boolean(form.id)"
+              @change="handleParentCodeChange"
+            >
+              <el-option v-for="item in parentCodeOptions" :key="String(item.value)" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
           <el-form-item v-if="!autoRecordCodePage" :label="displayLabel(page.codeLabel)" prop="recordCode">
-            <el-input v-model="form.recordCode" :placeholder="`请输入${displayLabel(page.codeLabel)}`" />
+            <el-input v-model="form.recordCode" :placeholder="`请输入${displayLabel(page.codeLabel)}`" :disabled="isOrganizationProjection" />
           </el-form-item>
           <el-form-item v-if="showRecordName" :label="page.nameLabel" prop="recordName">
             <el-select
@@ -151,10 +164,10 @@
             >
               <el-option v-for="item in fieldOptions(page.nameField, form)" :key="String(item.value)" :label="item.label" :value="item.value" />
             </el-select>
-            <el-input v-else v-model="form.recordName" :placeholder="`请输入${page.nameLabel}`" />
+            <el-input v-else v-model="form.recordName" :placeholder="`请输入${page.nameLabel}`" :disabled="isOrganizationProjection" />
           </el-form-item>
           <el-form-item
-            v-if="page.showParent"
+            v-if="page.showParent && !isOrganizationProjection"
             :label="displayLabel(page.parentLabel ?? '上级编码')"
             :prop="page.parentRequired ? 'parentCode' : undefined"
             :required="page.parentRequired"
@@ -164,8 +177,9 @@
               :placeholder="page.parentPlaceholder ?? `请选择${displayLabel(page.parentLabel ?? '上级编码')}`"
               clearable
               filterable
-              allow-create
+              :allow-create="!isOrganizationProjection"
               class="w-full"
+              :disabled="isOrganizationProjection && Boolean(form.id)"
               @change="handleParentCodeChange"
             >
               <el-option v-for="item in parentCodeOptions" :key="String(item.value)" :label="item.label" :value="item.value" />
@@ -210,7 +224,7 @@
             <el-input v-else v-model="form[field.prop]" :placeholder="field.placeholder ?? `请输入${displayLabel(field.formLabel ?? field.label)}`" :disabled="field.readonly" />
           </el-form-item>
           <el-form-item v-if="page.showStatus !== false" label="状态" prop="status">
-            <el-radio-group v-model="form.status">
+            <el-radio-group v-model="form.status" :disabled="isOrganizationProjection">
               <el-radio value="0">启用</el-radio>
               <el-radio value="1">停用</el-radio>
             </el-radio-group>
@@ -425,10 +439,11 @@ const dimensionPages: Record<string, PageConfig> = {
     showParent: true,
     parentRequired: true,
     parentLabel: '工厂编号',
-    parentPlaceholder: '请输入工厂编号',
+    parentPlaceholder: '请选择工厂',
+    showSort: false,
     fields: [
       { prop: 'companySk', label: '公司内部键', hidden: true },
-      { prop: 'factoryName', label: '工厂', placeholder: '请输入工厂名称', required: true, width: 260 },
+      { prop: 'factoryName', label: '工厂', placeholder: '由部门管理自动带出', readonly: true, width: 260 },
       {
         prop: 'provinceCode',
         label: '省份编码',
@@ -797,7 +812,7 @@ const parentCodeOptions = computed(() => {
       const factoryCode = String(record.parentCode ?? '').trim();
       if (!factoryCode || uniqueFactories.has(factoryCode)) return;
       uniqueFactories.set(factoryCode, {
-        label: record.factoryName || factoryCode,
+        label: [record.recordName, record.factoryName, factoryCode].filter(Boolean).join(' / '),
         value: factoryCode,
         record
       });
@@ -814,7 +829,7 @@ const parentCodeOptions = computed(() => {
 });
 const isVendorOnly = computed(() => vendorOnlyDimensionCodes.has(routeKey.value));
 const isOrganizationProjection = computed(() => routeKey.value === 'company');
-const isEditable = computed(() => !isOrganizationProjection.value && editableDimensionCodes.has(routeKey.value));
+const isEditable = computed(() => editableDimensionCodes.has(routeKey.value));
 const isVendorLinked = computed(() =>
   [
     'admin-division',
@@ -1140,10 +1155,14 @@ const handleParentCodeChange = (value: unknown) => {
   if (routeKey.value !== 'company') return;
   const selected = parentCodeOptions.value.find((option) => optionValueEquals(option.value, value));
   if (selected) {
+    assignFormValueFromRecord(optionRecord(selected), 'recordCode');
+    assignFormValueFromRecord(optionRecord(selected), 'recordName');
     assignFormValueFromRecord(optionRecord(selected), 'factoryName');
     return;
   }
-  form.value.factoryName = value == null ? undefined : String(value);
+  form.value.recordCode = undefined;
+  form.value.recordName = undefined;
+  form.value.factoryName = undefined;
 };
 
 const handleFieldSelect = async (field: FieldConfig, value: unknown) => {

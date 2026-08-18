@@ -21,18 +21,14 @@ describe('enterprise dimension edit permissions', () => {
   });
 });
 
-describe('enterprise dimension required field UX', () => {
-  it('only binds validation rules to fields marked required', () => {
-    expect(source).toContain(':prop="page.parentRequired ? \'parentCode\' : undefined"');
-    expect(source).toContain(':prop="field.required ? field.prop : undefined"');
-    expect(source).toContain(':required="page.parentRequired"');
-    expect(source).toContain(':required="field.required"');
-  });
-
-  it('marks company factory fields required before submit', () => {
+describe('company table organization binding', () => {
+  it('keeps organization fields read-only and binds additions to a department-managed factory', () => {
     expect(source).toContain('parentRequired: true');
-    expect(source).toMatch(/prop:\s*'factoryName'[\s\S]*label:\s*'工厂'[\s\S]*placeholder:\s*'请输入工厂名称'[\s\S]*required:\s*true/);
-    expect(source).toContain("parentCode: [{ required: true, message: '工厂编号不能为空', trigger: 'change' }]");
-    expect(source).toContain("factoryName: [{ required: true, message: '工厂名称不能为空', trigger: 'blur' }]");
+    expect(source).toContain("parentPlaceholder: '请选择工厂'");
+    expect(source).toMatch(/prop:\s*'factoryName'[\s\S]*label:\s*'工厂'[\s\S]*readonly:\s*true/);
+    expect(source).toContain(':disabled="isOrganizationProjection"');
+    expect(source).toContain(':allow-create="!isOrganizationProjection"');
+    expect(source).toContain("assignFormValueFromRecord(optionRecord(selected), 'recordCode')");
+    expect(source).toContain("assignFormValueFromRecord(optionRecord(selected), 'recordName')");
   });
 });
